@@ -1,10 +1,16 @@
 // lib/features.ts
-// Feature Flags — التحكم المنطقي بالإطلاق والطلبات
 
 export const FEATURES = {
-  // فتح تسجيل مقدمي الخدمات
+  // فتح استقبال الطلبات / التسجيل (عام)
   requestsEnabled: true,
 
-  // خصائص مستقبلية (غير مستخدمة حاليًا)
+  // وضع الصيانة (عام)
   maintenanceMode: false,
-};
+
+  // تفعيل صفحة تسجيل مقدم الخدمة (الداشبورد يعتمد عليها)
+  providerSignupEnabled: true,
+} as const;
+
+export function requestsOpen() {
+  return FEATURES.requestsEnabled;
+}

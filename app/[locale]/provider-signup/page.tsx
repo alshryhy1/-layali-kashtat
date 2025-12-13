@@ -15,7 +15,7 @@ export default function ProviderSignupPage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
 
@@ -91,9 +91,7 @@ export default function ProviderSignupPage() {
 
         <select
           value={form.city}
-          onChange={(e) =>
-            setForm({ ...form, city: e.target.value })
-          }
+          onChange={(e) => setForm({ ...form, city: e.target.value })}
           style={input}
         >
           <option value="">اختر المنطقة / المدينة</option>
@@ -108,7 +106,7 @@ export default function ProviderSignupPage() {
           <option value="أبها">أبها</option>
         </select>
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
+        {error && <p style={errorText}>{error}</p>}
 
         <button type="submit" disabled={loading} style={button}>
           {loading ? "جاري الإرسال..." : "إرسال"}
@@ -118,9 +116,38 @@ export default function ProviderSignupPage() {
   );
 }
 
-const box = { maxWidth: 520, margin: "48px auto", padding: 24 };
-const title = { fontSize: 24 };
-const text = { marginBottom: 16 };
-const formStyle = { display: "flex", flexDirection: "column", gap: 12 };
-const input = { padding: 10 };
-const button = { padding: 12 };
+/* ===== Styles (Typed – no TS errors) ===== */
+
+const box: React.CSSProperties = {
+  maxWidth: 520,
+  margin: "48px auto",
+  padding: 24,
+};
+
+const title: React.CSSProperties = {
+  fontSize: 24,
+  marginBottom: 16,
+};
+
+const text: React.CSSProperties = {
+  marginBottom: 16,
+};
+
+const formStyle: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 12,
+};
+
+const input: React.CSSProperties = {
+  padding: 10,
+};
+
+const button: React.CSSProperties = {
+  padding: 12,
+  cursor: "pointer",
+};
+
+const errorText: React.CSSProperties = {
+  color: "red",
+};
