@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 
 type Props = {
   locale?: string;
+  m?: any;
 };
 
-export default function ProviderRegisterForm({ locale }: Props) {
+export default function ProviderRegisterForm({ locale, m }: Props) {
   const router = useRouter();
 
   const [name, setName] = useState("");
@@ -16,6 +17,9 @@ export default function ProviderRegisterForm({ locale }: Props) {
   const [city, setCity] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const t = (key: string, fallback: string) =>
+    typeof m?.[key] === "string" ? m[key] : fallback;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,8 +46,8 @@ export default function ProviderRegisterForm({ locale }: Props) {
       sp.set("status", "success");
 
       router.push(`/${locale ?? "ar"}/dashboard?${sp.toString()}`);
-    } catch (err) {
-      setError("حدث خطأ أثناء الإرسال، حاول لاحقًا");
+    } catch {
+      setError(t("providerSignup_error", "حدث خطأ أثناء الإرسال، حاول لاحقًا"));
     } finally {
       setLoading(false);
     }
@@ -51,11 +55,13 @@ export default function ProviderRegisterForm({ locale }: Props) {
 
   return (
     <form onSubmit={handleSubmit} style={{ maxWidth: 420, margin: "0 auto" }}>
-      <h2 style={{ marginBottom: 16 }}>التسجيل كمقدّم خدمة</h2>
+      <h2 style={{ marginBottom: 16 }}>
+        {t("providerSignup_title", "التسجيل كمقدّم خدمة")}
+      </h2>
 
       <input
         type="text"
-        placeholder="الاسم"
+        placeholder={t("providerSignup_name", "الاسم")}
         value={name}
         onChange={(e) => setName(e.target.value)}
         required
@@ -64,7 +70,7 @@ export default function ProviderRegisterForm({ locale }: Props) {
 
       <input
         type="tel"
-        placeholder="رقم الجوال"
+        placeholder={t("providerSignup_phone", "رقم الجوال")}
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
         required
@@ -77,10 +83,12 @@ export default function ProviderRegisterForm({ locale }: Props) {
         required
         style={{ width: "100%", marginBottom: 12, padding: 10 }}
       >
-        <option value="">اختر نوع الخدمة</option>
-        <option value="camping">مخيمات</option>
-        <option value="food">ضيافة</option>
-        <option value="activities">أنشطة</option>
+        <option value="">
+          {t("providerSignup_serviceType", "اختر نوع الخدمة")}
+        </option>
+        <option value="camping">{t("service_camping", "مخيمات")}</option>
+        <option value="food">{t("service_food", "ضيافة")}</option>
+        <option value="activities">{t("service_activities", "أنشطة")}</option>
       </select>
 
       <select
@@ -89,23 +97,23 @@ export default function ProviderRegisterForm({ locale }: Props) {
         required
         style={{ width: "100%", marginBottom: 12, padding: 10 }}
       >
-        <option value="">اختر المدينة</option>
+        <option value="">{t("providerSignup_city", "اختر المدينة")}</option>
 
-        <option value="riyadh">الرياض</option>
-        <option value="jeddah">جدة</option>
-        <option value="dammam">الدمام</option>
+        <option value="riyadh">{t("city_riyadh", "الرياض")}</option>
+        <option value="jeddah">{t("city_jeddah", "جدة")}</option>
+        <option value="dammam">{t("city_dammam", "الدمام")}</option>
 
-        <option value="albaha">الباحة</option>
-        <option value="hail">حائل</option>
-        <option value="northern-borders">الحدود الشمالية</option>
-        <option value="jouf">الجوف</option>
-        <option value="arar">عرعر</option>
-        <option value="tabuk">تبوك</option>
+        <option value="albaha">{t("city_albaha", "الباحة")}</option>
+        <option value="hail">{t("city_hail", "حائل")}</option>
+        <option value="northern-borders">
+          {t("city_northern_borders", "الحدود الشمالية")}
+        </option>
+        <option value="jouf">{t("city_jouf", "الجوف")}</option>
+        <option value="arar">{t("city_arar", "عرعر")}</option>
+        <option value="tabuk">{t("city_tabuk", "تبوك")}</option>
       </select>
 
-      {error && (
-        <p style={{ color: "red", marginBottom: 12 }}>{error}</p>
-      )}
+      {error && <p style={{ color: "red", marginBottom: 12 }}>{error}</p>}
 
       <button
         type="submit"
@@ -119,7 +127,9 @@ export default function ProviderRegisterForm({ locale }: Props) {
           cursor: "pointer",
         }}
       >
-        {loading ? "جاري الإرسال..." : "إرسال طلب التسجيل"}
+        {loading
+          ? t("providerSignup_sending", "جاري الإرسال...")
+          : t("providerSignup_submit", "إرسال طلب التسجيل")}
       </button>
     </form>
   );
