@@ -1,0 +1,43 @@
+{
+  "appName": "Layali Kashtat",
+  "home": {
+    "subtitle": "A technical intermediary platform for organizing requests and communication between service providers and customers.",
+    "ctaProvider": "Register as Provider",
+    "ctaWaitlist": "Waitlist",
+    "ctaLegal": "Legal"
+  },
+  "dashboard": {
+    "title": "Provider Dashboard",
+    "statusLabel": "Status",
+    "statusAvailable": "Available",
+    "capacityLabel": "Daily Capacity",
+    "serviceTypeLabel": "Service Type",
+    "workAreaLabel": "Work Area",
+    "workersLabel": "Workers",
+    "note": "Read-only dashboard for the current phase — no actions available."
+  },
+  "legal": {
+    "title": "Legal",
+    "disclaimer": "The platform is a technical intermediary and bears no responsibility for execution."
+  },
+  "waitlist": {
+    "title": "Provider Waitlist",
+    "description": "Register your interest to be notified when we launch.",
+    "name": "Name",
+    "phone": "Phone number",
+    "submit": "Register interest",
+    "legal": "Demo registration — no real saving or contact at this stage."
+  },
+  "waitlistSuccess": {
+    "title": "Request Received",
+    "description": "Your interest has been recorded. You will be contacted when we launch.",
+    "backHome": "Back to home",
+    "note": "Demo confirmation — no real saving or contact at this stage."
+  },
+  "comingSoon": {
+    "title": "Coming Soon",
+    "description": "Requests are not available yet. They will open after the provider onboarding phase.",
+    "backHome": "Back to home",
+    "note": "Informational page — no active requests at this stage."
+  }
+}
