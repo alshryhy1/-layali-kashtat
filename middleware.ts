@@ -1,25 +1,30 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
-  // السماح لمسارات اللغة + API
+  // لا تلمس API / Next internals / ملفات ثابتة (favicon, css, js, images...)
   if (
-    pathname.startsWith("/ar") ||
-    pathname.startsWith("/en") ||
     pathname.startsWith("/api") ||
     pathname.startsWith("/_next") ||
-    pathname.includes(".")
+    pathname.startsWith("/ar") ||
+    pathname.startsWith("/en") ||
+    /\.[^/]+$/.test(pathname) // أي مسار فيه امتداد ملف
   ) {
     return NextResponse.next();
   }
 
-  // إعادة التوجيه الافتراضي للعربية
-  request.nextUrl.pathname = `/ar${pathname}`;
-  return NextResponse.redirect(request.nextUrl);
+  // لو فتح الجذر /
+  if (pathname === "/") {
+    return NextResponse.redirect(new URL("/ar", req.url));
+  }
+
+  // أي مسار بدون لغة → حطه تحت /ar
+  return NextResponse.redirect(new URL(`/ar${pathname}`, req.url));
 }
 
 export const config = {
-  matcher: ["/((?!_next).*)"],
+  // شغّل الميدلوير فقط على المسارات "الصفحات" وليس ملفات/Api/_next أو /ar /en
+  matcher: ["/((?!api|_next|ar|en|.*\\..*).*)"],
 };
