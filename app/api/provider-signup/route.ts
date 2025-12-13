@@ -6,39 +6,45 @@ export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
-    // تأكيد أن DATABASE_URL موجود فعلاً داخل Vercel Runtime
     if (!process.env.DATABASE_URL) {
       console.error("DATABASE_URL is missing in runtime env");
       return NextResponse.json(
-        { error: "DATABASE_URL is missing" },
+        { error: "DATABASE_URL is missing", detail: "DATABASE_URL is missing" },
         { status: 500 }
       );
     }
 
     const body = await req.json();
-    const { name, phone, serviceType, city } = body;
+    const { name, phone, serviceType, city } = body || {};
 
     if (!name || !phone || !serviceType || !city) {
-      return NextResponse.json({ error: "بيانات ناقصة" }, { status: 400 });
+      return NextResponse.json(
+        { error: "بيانات ناقصة", detail: "Missing required fields" },
+        { status: 400 }
+      );
     }
 
-    await query(
-      `
+    const sql = `
       INSERT INTO provider_requests
       (name, phone, service_type, city, created_at)
       VALUES ($1, $2, $3, $4, NOW())
-      `,
-      [name, phone, serviceType, city]
-    );
+      RETURNING id
+    `;
 
-    return NextResponse.json({ success: true });
+    const res = await query(sql, [name, phone, serviceType, city]);
+
+    return NextResponse.json({ success: true, id: res.rows?.[0]?.id ?? null });
   } catch (error: any) {
-    // نطبع السبب الحقيقي في Vercel Runtime Logs
-    console.error("provider-signup error:", error);
+    // اطبع الخطأ كامل في Logs
+    console.error("provider-signup error message:", error?.message || error);
+    console.error("provider-signup error stack:", error?.stack || error);
 
-    // ونرجّع سبب مختصر عشان نعرف هل هو اتصال/SQL
+    // ✅ رجّع detail دائمًا (تشخيص مؤقت)
     return NextResponse.json(
-      { error: "خطأ في الخادم", detail: String(error?.message || error) },
+      {
+        error: "خطأ في الخادم",
+        detail: String(error?.message || error),
+      },
       { status: 500 }
     );
   }
