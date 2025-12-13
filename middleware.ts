@@ -1,52 +1,25 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
 
-  const match = pathname.match(/^\/(ar|en)(\/.*)?$/);
-  if (!match) return NextResponse.next();
-
-  const locale = match[1] as "ar" | "en";
-
-  // ✅ مسارات مفتوحة دائمًا
+  // السماح لمسارات اللغة + API
   if (
-    pathname === `/${locale}/providers/docs` ||
-    pathname.startsWith(`/${locale}/providers/docs/`) ||
-    pathname === `/${locale}/providers/signup` ||
-    pathname.startsWith(`/${locale}/providers/signup/`)
+    pathname.startsWith("/ar") ||
+    pathname.startsWith("/en") ||
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/_next") ||
+    pathname.includes(".")
   ) {
     return NextResponse.next();
   }
 
-  // 🔒 Dashboard يبقى مقفول دائمًا الآن
-  const dashboardBase = `/${locale}/dashboard`;
-  const dashboardClosed = `/${locale}/dashboard/closed`;
-
-  const isDashboard =
-    pathname === dashboardBase || pathname.startsWith(`${dashboardBase}/`);
-  const isClosed = pathname === dashboardClosed;
-
-  if (isDashboard && !isClosed) {
-    const url = req.nextUrl.clone();
-    url.pathname = dashboardClosed;
-    return NextResponse.redirect(url);
-  }
-
-  // 2) قفل request نهائيًا
-  const requestBase = `/${locale}/request`;
-  const comingSoon = `/${locale}/coming-soon`;
-
-  const isRequest =
-    pathname === requestBase || pathname.startsWith(`${requestBase}/`);
-  if (isRequest) {
-    const url = req.nextUrl.clone();
-    url.pathname = comingSoon;
-    return NextResponse.redirect(url);
-  }
-
-  return NextResponse.next();
+  // إعادة التوجيه الافتراضي للعربية
+  request.nextUrl.pathname = `/ar${pathname}`;
+  return NextResponse.redirect(request.nextUrl);
 }
 
 export const config = {
-  matcher: ["/ar/:path*", "/en/:path*"],
+  matcher: ["/((?!_next).*)"],
 };
