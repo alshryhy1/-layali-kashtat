@@ -3,11 +3,12 @@ import { getMessages } from "@/lib/i18n";
 import { Locale } from "@/lib/locales";
 
 type Props = {
-  params: { locale: Locale };
+  params: Promise<{ locale: Locale }>;
 };
 
 export default async function HomePage({ params }: Props) {
-  const m = await getMessages(params.locale);
+  const { locale } = await params; // ✅ مهم: فك الـ Promise
+  const m = await getMessages(locale);
 
   return (
     <section
@@ -17,6 +18,7 @@ export default async function HomePage({ params }: Props) {
         margin: "0 auto",
         textAlign: "center",
       }}
+      dir={String(locale).toLowerCase().startsWith("ar") ? "rtl" : "ltr"}
     >
       <h1 style={{ marginBottom: "12px", fontSize: 32 }}>
         {m?.appName ?? "Layali Kashtat"}
@@ -41,8 +43,9 @@ export default async function HomePage({ params }: Props) {
           flexWrap: "wrap",
         }}
       >
+        {/* ✅ رابط التسجيل الصحيح */}
         <Link
-          href={`/${params.locale}/auth/provider`}
+          href={`/${locale}/provider-signup`}
           style={{
             padding: "10px 18px",
             border: "1px solid #000",
@@ -55,7 +58,7 @@ export default async function HomePage({ params }: Props) {
         </Link>
 
         <Link
-          href={`/${params.locale}/waitlist`}
+          href={`/${locale}/waitlist`}
           style={{
             padding: "10px 18px",
             border: "1px solid #ccc",
@@ -67,7 +70,7 @@ export default async function HomePage({ params }: Props) {
         </Link>
 
         <Link
-          href={`/${params.locale}/legal`}
+          href={`/${locale}/legal`}
           style={{
             padding: "10px 18px",
             border: "1px solid #ccc",
