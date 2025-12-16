@@ -17,7 +17,9 @@ type Row = {
 function sbAdmin() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !key) {
+    throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+  }
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
@@ -26,9 +28,7 @@ export default async function DashboardPage({
 }: {
   params: { locale: string };
 }) {
-  // ملاحظة: أنت قلت "كلهم عربي" — نخليه عربي دائمًا
   const locale = params?.locale === "en" ? "en" : "ar";
-
   const supabase = sbAdmin();
 
   async function updateStatus(formData: FormData) {
@@ -57,6 +57,9 @@ export default async function DashboardPage({
   return (
     <main style={pageStyle}>
       <div style={{ maxWidth: 1100, width: "100%" }}>
+        {/* ✅ علامة إثبات أن هذا الملف هو الذي يعمل على الإنتاج */}
+        <div style={testBanner}>TEST-OK (dashboard page.tsx)</div>
+
         <div style={topRow}>
           <div>
             <h1 style={h1}>لوحة الطلبات</h1>
@@ -95,7 +98,7 @@ export default async function DashboardPage({
                   </tr>
                 ) : (
                   rows.map((r) => {
-                    const st = (r.status ?? "pending").toLowerCase(); // ✅ NULL = pending
+                    const st = (r.status ?? "pending").toLowerCase(); // NULL = pending
                     const pending = st === "pending";
 
                     return (
@@ -114,17 +117,13 @@ export default async function DashboardPage({
                               <form action={updateStatus}>
                                 <input type="hidden" name="id" value={r.id} />
                                 <input type="hidden" name="status" value="approved" />
-                                <button type="submit" style={okBtn}>
-                                  قبول
-                                </button>
+                                <button type="submit" style={okBtn}>قبول</button>
                               </form>
 
                               <form action={updateStatus}>
                                 <input type="hidden" name="id" value={r.id} />
                                 <input type="hidden" name="status" value="rejected" />
-                                <button type="submit" style={noBtn}>
-                                  رفض
-                                </button>
+                                <button type="submit" style={noBtn}>رفض</button>
                               </form>
                             </div>
                           ) : (
@@ -163,6 +162,16 @@ const pageStyle: React.CSSProperties = {
   background: "#f6f7f9",
   display: "flex",
   justifyContent: "center",
+};
+
+const testBanner: React.CSSProperties = {
+  background: "#111",
+  color: "#fff",
+  padding: "10px 12px",
+  borderRadius: 12,
+  fontWeight: 900,
+  marginBottom: 12,
+  textAlign: "center",
 };
 
 const topRow: React.CSSProperties = {
@@ -209,7 +218,11 @@ const card: React.CSSProperties = {
   boxShadow: "0 6px 16px rgba(0,0,0,0.04)",
 };
 
-const table: React.CSSProperties = { width: "100%", borderCollapse: "collapse", minWidth: 980 };
+const table: React.CSSProperties = {
+  width: "100%",
+  borderCollapse: "collapse",
+  minWidth: 980,
+};
 
 const th: React.CSSProperties = {
   textAlign: "right",
