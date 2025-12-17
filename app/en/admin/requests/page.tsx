@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 async function requireAdmin(locale: string) {
   const store = await cookies();
-  const session = store.get("admin_session")?.value;
+  const session = store.get("kashtat_admin")?.value;
 
   if (!session || session !== (process.env.ADMIN_SESSION_SECRET || "")) {
     redirect(`/${locale}/admin/login`);
