@@ -6,23 +6,6 @@ import { revalidatePath } from "next/cache";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/* =======================
-   🔐 ADMIN GUARD (TOP)
-   ======================= */
-
-function requireAdmin(locale: string) {
-  const cookieStore = cookies();
-  const session = cookieStore.get("admin_session")?.value;
-
-  if (!session || session !== process.env.ADMIN_SESSION_SECRET) {
-    redirect(`/${locale}/admin/login`);
-  }
-}
-
-/* =======================
-   DB
-   ======================= */
-
 type Row = {
   id: string;
   name: string | null;
@@ -33,6 +16,15 @@ type Row = {
   created_at: string | null;
 };
 
+async function requireAdmin(locale: string) {
+  const cookieStore = await cookies(); // ✅ مهم: await
+  const session = cookieStore.get("admin_session")?.value;
+
+  if (!session || session !== (process.env.ADMIN_SESSION_SECRET || "")) {
+    redirect(`/${locale}/admin/login`);
+  }
+}
+
 function sbAdmin() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -42,10 +34,6 @@ function sbAdmin() {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
-/* =======================
-   PAGE
-   ======================= */
-
 export default async function AdminRequestsPage({
   params,
 }: {
@@ -54,7 +42,7 @@ export default async function AdminRequestsPage({
   const locale = params?.locale === "en" ? "en" : "ar";
 
   // 🔐 حماية الأدمن
-  requireAdmin(locale);
+  await requireAdmin(locale);
 
   const supabase = sbAdmin();
 
@@ -82,133 +70,226 @@ export default async function AdminRequestsPage({
 
   return (
     <main style={pageStyle}>
-      <div style={{ maxWidth: 1100, width: "100%" }}>
+      <div style={{ maxWidth: 1100, width: "100%", margin: "0 auto" }}>
         <div style={testBanner}>ADMIN-REQUESTS OK</div>
 
-        <h1 style={h1}>لوحة الطلبات (أدمن)</h1>
+        <div style={topRow}>
+          <div>
+            <h1 style={h1}>لوحة الطلبات (أدمن)</h1>
+            <div style={sub}>
+              عرض آخر 200 طلب من <code>provider_requests</code>
+            </div>
+            {error ? <div style={err}>{String(error.message || error)}</div> : null}
+          </div>
 
-        {error ? (
-          <div style={err}>{String(error.message || error)}</div>
-        ) : null}
+          <a href={`/${locale}/provider-signup`} style={btnLink}>
+            فتح صفحة التسجيل
+          </a>
+        </div>
 
         <div style={card}>
-          <table style={table} dir="rtl">
-            <thead>
-              <tr>
-                <th style={th}>الاسم</th>
-                <th style={th}>الجوال</th>
-                <th style={th}>الخدمة</th>
-                <th style={th}>المدينة</th>
-                <th style={th}>الحالة</th>
-                <th style={th}>إجراء</th>
-                <th style={th}>التاريخ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.length === 0 ? (
+          <div style={{ overflowX: "auto" }}>
+            <table style={table} dir="rtl">
+              <thead>
                 <tr>
-                  <td colSpan={7} style={empty}>
-                    لا يوجد طلبات
-                  </td>
+                  <th style={th}>الاسم</th>
+                  <th style={th}>الجوال</th>
+                  <th style={th}>الخدمة</th>
+                  <th style={th}>المدينة</th>
+                  <th style={th}>الحالة</th>
+                  <th style={th}>إجراء</th>
+                  <th style={th}>التاريخ</th>
                 </tr>
-              ) : (
-                rows.map((r) => {
-                  const st = (r.status ?? "pending").toLowerCase();
-                  const pending = st === "pending";
+              </thead>
 
-                  return (
-                    <tr key={r.id}>
-                      <td style={td}>{r.name ?? ""}</td>
-                      <td style={td}>{r.phone ?? ""}</td>
-                      <td style={td}>{r.service_type ?? ""}</td>
-                      <td style={td}>{r.city ?? ""}</td>
-                      <td style={td}>{st}</td>
-                      <td style={td}>
-                        {pending ? (
-                          <div style={{ display: "flex", gap: 6 }}>
-                            <form action={updateStatus}>
-                              <input type="hidden" name="id" value={r.id} />
-                              <input
-                                type="hidden"
-                                name="status"
-                                value="approved"
-                              />
-                              <button style={okBtn}>قبول</button>
-                            </form>
-                            <form action={updateStatus}>
-                              <input type="hidden" name="id" value={r.id} />
-                              <input
-                                type="hidden"
-                                name="status"
-                                value="rejected"
-                              />
-                              <button style={noBtn}>رفض</button>
-                            </form>
-                          </div>
-                        ) : (
-                          <span style={done}>تم</span>
-                        )}
-                      </td>
-                      <td style={td}>{fmt(r.created_at)}</td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+              <tbody>
+                {rows.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} style={empty}>
+                      لا يوجد طلبات
+                    </td>
+                  </tr>
+                ) : (
+                  rows.map((r) => {
+                    const st = (r.status ?? "pending").toLowerCase();
+                    const pending = st === "pending";
+
+                    return (
+                      <tr key={r.id}>
+                        <td style={td}>{r.name ?? ""}</td>
+                        <td style={td}>{r.phone ?? ""}</td>
+                        <td style={td}>{r.service_type ?? ""}</td>
+                        <td style={td}>{r.city ?? ""}</td>
+                        <td style={td}>
+                          <span style={badge}>{st}</span>
+                        </td>
+
+                        <td style={td}>
+                          {pending ? (
+                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                              <form action={updateStatus}>
+                                <input type="hidden" name="id" value={r.id} />
+                                <input type="hidden" name="status" value="approved" />
+                                <button type="submit" style={okBtn}>
+                                  قبول
+                                </button>
+                              </form>
+
+                              <form action={updateStatus}>
+                                <input type="hidden" name="id" value={r.id} />
+                                <input type="hidden" name="status" value="rejected" />
+                                <button type="submit" style={noBtn}>
+                                  رفض
+                                </button>
+                              </form>
+                            </div>
+                          ) : (
+                            <span style={done}>تمت المعالجة</span>
+                          )}
+                        </td>
+
+                        <td style={td}>{fmt(r.created_at)}</td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 12, fontSize: 12, color: "#666" }}>
+          الرابط: <code>/{locale}/admin/requests</code>
         </div>
       </div>
     </main>
   );
 }
 
-/* =======================
-   UI
-   ======================= */
-
 function fmt(v: string | null) {
   if (!v) return "—";
-  return new Date(v).toLocaleString("ar-SA");
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return "—";
+  try {
+    return d.toLocaleString("ar-SA");
+  } catch {
+    return d.toISOString();
+  }
 }
 
-const pageStyle = { padding: 24, background: "#f6f7f9", minHeight: "100vh" };
-const testBanner = {
-  background: "#000",
+const pageStyle: React.CSSProperties = {
+  minHeight: "100vh",
+  padding: 24,
+  background: "#f6f7f9",
+};
+
+const testBanner: React.CSSProperties = {
+  background: "#111",
   color: "#fff",
-  padding: 10,
-  borderRadius: 10,
+  padding: "10px 12px",
+  borderRadius: 12,
+  fontWeight: 900,
   marginBottom: 12,
   textAlign: "center",
-  fontWeight: 900,
 };
-const h1 = { marginBottom: 12 };
-const err = {
-  background: "#fee",
-  border: "1px solid #f99",
-  padding: 10,
+
+const topRow: React.CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  gap: 12,
   marginBottom: 12,
 };
-const card = {
+
+const h1: React.CSSProperties = { margin: 0, fontSize: 22, fontWeight: 900 };
+const sub: React.CSSProperties = { marginTop: 6, color: "#666", fontSize: 13 };
+
+const err: React.CSSProperties = {
+  marginTop: 10,
+  padding: 10,
+  borderRadius: 10,
+  background: "#fff3f3",
+  border: "1px solid #ffd0d0",
+  color: "#b00",
+  fontSize: 13,
+};
+
+const btnLink: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "10px 12px",
+  borderRadius: 10,
+  border: "1px solid #111",
   background: "#fff",
+  color: "#111",
+  textDecoration: "none",
+  fontWeight: 900,
+  fontSize: 13,
+  whiteSpace: "nowrap",
+};
+
+const card: React.CSSProperties = {
+  background: "#fff",
+  border: "1px solid #e7e7e7",
+  borderRadius: 14,
   padding: 16,
-  borderRadius: 12,
+  boxShadow: "0 6px 16px rgba(0,0,0,0.04)",
 };
-const table = { width: "100%", borderCollapse: "collapse" };
-const th = { borderBottom: "1px solid #ddd", padding: 8 };
-const td = { borderBottom: "1px solid #eee", padding: 8 };
-const empty = { textAlign: "center", padding: 16 };
-const okBtn = {
-  background: "green",
+
+const table: React.CSSProperties = {
+  width: "100%",
+  borderCollapse: "collapse",
+  minWidth: 980,
+};
+
+const th: React.CSSProperties = {
+  textAlign: "right",
+  padding: 10,
+  borderBottom: "1px solid #ddd",
+  background: "#fafafa",
+  fontWeight: 900,
+  fontSize: 13,
+};
+
+const td: React.CSSProperties = {
+  padding: 10,
+  borderBottom: "1px solid #eee",
+  fontSize: 13,
+  verticalAlign: "top",
+};
+
+const empty: React.CSSProperties = { padding: 14, textAlign: "center", color: "#666" };
+
+const badge: React.CSSProperties = {
+  display: "inline-block",
+  padding: "4px 10px",
+  borderRadius: 999,
+  border: "1px solid #e7e7e7",
+  fontWeight: 900,
+  fontSize: 12,
+};
+
+const okBtn: React.CSSProperties = {
+  padding: "8px 10px",
+  borderRadius: 10,
+  border: "1px solid #0a0",
+  background: "#0a0",
   color: "#fff",
-  border: "none",
-  padding: "6px 10px",
-  borderRadius: 6,
+  fontWeight: 900,
+  fontSize: 12,
+  cursor: "pointer",
 };
-const noBtn = {
+
+const noBtn: React.CSSProperties = {
+  padding: "8px 10px",
+  borderRadius: 10,
+  border: "1px solid #b00",
   background: "#fff",
-  color: "red",
-  border: "1px solid red",
-  padding: "6px 10px",
-  borderRadius: 6,
+  color: "#b00",
+  fontWeight: 900,
+  fontSize: 12,
+  cursor: "pointer",
 };
-const done = { color: "#666" };
+
+const done: React.CSSProperties = { color: "#666", fontWeight: 800, fontSize: 12 };
