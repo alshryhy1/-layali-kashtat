@@ -6,6 +6,23 @@ import { revalidatePath } from "next/cache";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/* =======================
+   🔐 ADMIN GUARD
+   ======================= */
+
+async function requireAdmin(locale: string) {
+  const store = await cookies();
+  const session = store.get("admin_session")?.value;
+
+  if (!session || session !== (process.env.ADMIN_SESSION_SECRET || "")) {
+    redirect(`/${locale}/admin/login`);
+  }
+}
+
+/* =======================
+   TYPES + DB
+   ======================= */
+
 type Row = {
   id: string;
   name: string | null;
@@ -16,15 +33,6 @@ type Row = {
   created_at: string | null;
 };
 
-async function requireAdmin(locale: string) {
-  const cookieStore = await cookies(); // ✅ مهم: await
-  const session = cookieStore.get("admin_session")?.value;
-
-  if (!session || session !== (process.env.ADMIN_SESSION_SECRET || "")) {
-    redirect(`/${locale}/admin/login`);
-  }
-}
-
 function sbAdmin() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -33,6 +41,10 @@ function sbAdmin() {
   }
   return createClient(url, key, { auth: { persistSession: false } });
 }
+
+/* =======================
+   PAGE
+   ======================= */
 
 export default async function AdminRequestsPage({
   params,
@@ -53,16 +65,18 @@ export default async function AdminRequestsPage({
     const status = String(formData.get("status") || "").trim().toLowerCase();
 
     if (!id) return;
-    if (!["approved", "rejected", "pending"].includes(status)) return;
+    if (!["approved", "rejected"].includes(status)) return;
 
     await supabase.from("provider_requests").update({ status }).eq("id", id);
 
     revalidatePath(`/${locale}/admin/requests`);
   }
 
+  // ✅ فلترة: pending فقط
   const { data, error } = await supabase
     .from("provider_requests")
     .select("id,name,phone,service_type,city,status,created_at")
+    .eq("status", "pending")
     .order("created_at", { ascending: false })
     .limit(200);
 
@@ -71,225 +85,120 @@ export default async function AdminRequestsPage({
   return (
     <main style={pageStyle}>
       <div style={{ maxWidth: 1100, width: "100%", margin: "0 auto" }}>
-        <div style={testBanner}>ADMIN-REQUESTS OK</div>
+        <div style={testBanner}>طلبات قيد المراجعة (Pending)</div>
 
-        <div style={topRow}>
-          <div>
-            <h1 style={h1}>لوحة الطلبات (أدمن)</h1>
-            <div style={sub}>
-              عرض آخر 200 طلب من <code>provider_requests</code>
-            </div>
-            {error ? <div style={err}>{String(error.message || error)}</div> : null}
-          </div>
-
-          <a href={`/${locale}/provider-signup`} style={btnLink}>
-            فتح صفحة التسجيل
-          </a>
-        </div>
+        {error ? <div style={err}>{String(error.message || error)}</div> : null}
 
         <div style={card}>
-          <div style={{ overflowX: "auto" }}>
-            <table style={table} dir="rtl">
-              <thead>
+          <table style={table} dir="rtl">
+            <thead>
+              <tr>
+                <th style={th}>الاسم</th>
+                <th style={th}>الجوال</th>
+                <th style={th}>الخدمة</th>
+                <th style={th}>المدينة</th>
+                <th style={th}>إجراء</th>
+                <th style={th}>التاريخ</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {rows.length === 0 ? (
                 <tr>
-                  <th style={th}>الاسم</th>
-                  <th style={th}>الجوال</th>
-                  <th style={th}>الخدمة</th>
-                  <th style={th}>المدينة</th>
-                  <th style={th}>الحالة</th>
-                  <th style={th}>إجراء</th>
-                  <th style={th}>التاريخ</th>
+                  <td colSpan={6} style={empty}>
+                    لا توجد طلبات قيد المراجعة
+                  </td>
                 </tr>
-              </thead>
-
-              <tbody>
-                {rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} style={empty}>
-                      لا يوجد طلبات
+              ) : (
+                rows.map((r) => (
+                  <tr key={r.id}>
+                    <td style={td}>{r.name ?? ""}</td>
+                    <td style={td}>{r.phone ?? ""}</td>
+                    <td style={td}>{r.service_type ?? ""}</td>
+                    <td style={td}>{r.city ?? ""}</td>
+                    <td style={td}>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <form action={updateStatus}>
+                          <input type="hidden" name="id" value={r.id} />
+                          <input type="hidden" name="status" value="approved" />
+                          <button style={okBtn}>قبول</button>
+                        </form>
+                        <form action={updateStatus}>
+                          <input type="hidden" name="id" value={r.id} />
+                          <input type="hidden" name="status" value="rejected" />
+                          <button style={noBtn}>رفض</button>
+                        </form>
+                      </div>
                     </td>
+                    <td style={td}>{fmt(r.created_at)}</td>
                   </tr>
-                ) : (
-                  rows.map((r) => {
-                    const st = (r.status ?? "pending").toLowerCase();
-                    const pending = st === "pending";
-
-                    return (
-                      <tr key={r.id}>
-                        <td style={td}>{r.name ?? ""}</td>
-                        <td style={td}>{r.phone ?? ""}</td>
-                        <td style={td}>{r.service_type ?? ""}</td>
-                        <td style={td}>{r.city ?? ""}</td>
-                        <td style={td}>
-                          <span style={badge}>{st}</span>
-                        </td>
-
-                        <td style={td}>
-                          {pending ? (
-                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                              <form action={updateStatus}>
-                                <input type="hidden" name="id" value={r.id} />
-                                <input type="hidden" name="status" value="approved" />
-                                <button type="submit" style={okBtn}>
-                                  قبول
-                                </button>
-                              </form>
-
-                              <form action={updateStatus}>
-                                <input type="hidden" name="id" value={r.id} />
-                                <input type="hidden" name="status" value="rejected" />
-                                <button type="submit" style={noBtn}>
-                                  رفض
-                                </button>
-                              </form>
-                            </div>
-                          ) : (
-                            <span style={done}>تمت المعالجة</span>
-                          )}
-                        </td>
-
-                        <td style={td}>{fmt(r.created_at)}</td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div style={{ marginTop: 12, fontSize: 12, color: "#666" }}>
-          الرابط: <code>/{locale}/admin/requests</code>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </main>
   );
 }
 
+/* =======================
+   UI HELPERS
+   ======================= */
+
 function fmt(v: string | null) {
   if (!v) return "—";
-  const d = new Date(v);
-  if (Number.isNaN(d.getTime())) return "—";
-  try {
-    return d.toLocaleString("ar-SA");
-  } catch {
-    return d.toISOString();
-  }
+  return new Date(v).toLocaleString("ar-SA");
 }
 
-const pageStyle: React.CSSProperties = {
-  minHeight: "100vh",
+const pageStyle = {
   padding: 24,
   background: "#f6f7f9",
+  minHeight: "100vh",
 };
 
-const testBanner: React.CSSProperties = {
+const testBanner = {
   background: "#111",
   color: "#fff",
-  padding: "10px 12px",
+  padding: 12,
   borderRadius: 12,
-  fontWeight: 900,
   marginBottom: 12,
+  fontWeight: 900,
   textAlign: "center",
 };
 
-const topRow: React.CSSProperties = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "flex-start",
-  gap: 12,
+const err = {
+  background: "#fee",
+  border: "1px solid #f99",
+  padding: 10,
   marginBottom: 12,
 };
 
-const h1: React.CSSProperties = { margin: 0, fontSize: 22, fontWeight: 900 };
-const sub: React.CSSProperties = { marginTop: 6, color: "#666", fontSize: 13 };
-
-const err: React.CSSProperties = {
-  marginTop: 10,
-  padding: 10,
-  borderRadius: 10,
-  background: "#fff3f3",
-  border: "1px solid #ffd0d0",
-  color: "#b00",
-  fontSize: 13,
-};
-
-const btnLink: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  padding: "10px 12px",
-  borderRadius: 10,
-  border: "1px solid #111",
+const card = {
   background: "#fff",
-  color: "#111",
-  textDecoration: "none",
-  fontWeight: 900,
-  fontSize: 13,
-  whiteSpace: "nowrap",
-};
-
-const card: React.CSSProperties = {
-  background: "#fff",
-  border: "1px solid #e7e7e7",
-  borderRadius: 14,
   padding: 16,
-  boxShadow: "0 6px 16px rgba(0,0,0,0.04)",
+  borderRadius: 14,
 };
 
-const table: React.CSSProperties = {
-  width: "100%",
-  borderCollapse: "collapse",
-  minWidth: 980,
-};
+const table = { width: "100%", borderCollapse: "collapse" };
+const th = { borderBottom: "1px solid #ddd", padding: 8, fontWeight: 900 };
+const td = { borderBottom: "1px solid #eee", padding: 8 };
+const empty = { textAlign: "center", padding: 16, color: "#666" };
 
-const th: React.CSSProperties = {
-  textAlign: "right",
-  padding: 10,
-  borderBottom: "1px solid #ddd",
-  background: "#fafafa",
-  fontWeight: 900,
-  fontSize: 13,
-};
-
-const td: React.CSSProperties = {
-  padding: 10,
-  borderBottom: "1px solid #eee",
-  fontSize: 13,
-  verticalAlign: "top",
-};
-
-const empty: React.CSSProperties = { padding: 14, textAlign: "center", color: "#666" };
-
-const badge: React.CSSProperties = {
-  display: "inline-block",
-  padding: "4px 10px",
-  borderRadius: 999,
-  border: "1px solid #e7e7e7",
-  fontWeight: 900,
-  fontSize: 12,
-};
-
-const okBtn: React.CSSProperties = {
-  padding: "8px 10px",
-  borderRadius: 10,
-  border: "1px solid #0a0",
+const okBtn = {
   background: "#0a0",
   color: "#fff",
-  fontWeight: 900,
-  fontSize: 12,
+  border: "none",
+  padding: "6px 10px",
+  borderRadius: 8,
   cursor: "pointer",
 };
 
-const noBtn: React.CSSProperties = {
-  padding: "8px 10px",
-  borderRadius: 10,
-  border: "1px solid #b00",
+const noBtn = {
   background: "#fff",
   color: "#b00",
-  fontWeight: 900,
-  fontSize: 12,
+  border: "1px solid #b00",
+  padding: "6px 10px",
+  borderRadius: 8,
   cursor: "pointer",
 };
-
-const done: React.CSSProperties = { color: "#666", fontWeight: 800, fontSize: 12 };
