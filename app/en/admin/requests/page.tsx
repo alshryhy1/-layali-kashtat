@@ -1,10 +1,27 @@
-﻿import type { CSSProperties } from "react";
+﻿import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
-import { notFound } from "next/navigation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+/* =======================
+   🔐 ADMIN GUARD (TOP)
+   ======================= */
+
+function requireAdmin(locale: string) {
+  const cookieStore = cookies();
+  const session = cookieStore.get("admin_session")?.value;
+
+  if (!session || session !== process.env.ADMIN_SESSION_SECRET) {
+    redirect(`/${locale}/admin/login`);
+  }
+}
+
+/* =======================
+   DB
+   ======================= */
 
 type Row = {
   id: string;
@@ -25,22 +42,20 @@ function sbAdmin() {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
+/* =======================
+   PAGE
+   ======================= */
+
 export default async function AdminRequestsPage({
   params,
-  searchParams,
 }: {
   params: { locale: string };
-  searchParams?: { token?: string };
 }) {
-  const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
-  const token = searchParams?.token;
-
-  // 🔒 قفل الصفحة
-  if (!ADMIN_TOKEN || token !== ADMIN_TOKEN) {
-    notFound();
-  }
-
   const locale = params?.locale === "en" ? "en" : "ar";
+
+  // 🔐 حماية الأدمن
+  requireAdmin(locale);
+
   const supabase = sbAdmin();
 
   async function updateStatus(formData: FormData) {
@@ -52,8 +67,7 @@ export default async function AdminRequestsPage({
     if (!id) return;
     if (!["approved", "rejected", "pending"].includes(status)) return;
 
-    const admin = sbAdmin();
-    await admin.from("provider_requests").update({ status }).eq("id", id);
+    await supabase.from("provider_requests").update({ status }).eq("id", id);
 
     revalidatePath(`/${locale}/admin/requests`);
   }
@@ -69,9 +83,13 @@ export default async function AdminRequestsPage({
   return (
     <main style={pageStyle}>
       <div style={{ maxWidth: 1100, width: "100%" }}>
-        <div style={testBanner}>ADMIN – PROTECTED</div>
+        <div style={testBanner}>ADMIN-REQUESTS OK</div>
 
-        {error ? <div style={err}>{String(error.message || error)}</div> : null}
+        <h1 style={h1}>لوحة الطلبات (أدمن)</h1>
+
+        {error ? (
+          <div style={err}>{String(error.message || error)}</div>
+        ) : null}
 
         <div style={card}>
           <table style={table} dir="rtl">
@@ -83,41 +101,59 @@ export default async function AdminRequestsPage({
                 <th style={th}>المدينة</th>
                 <th style={th}>الحالة</th>
                 <th style={th}>إجراء</th>
+                <th style={th}>التاريخ</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => {
-                const st = (r.status ?? "pending").toLowerCase();
-                const pending = st === "pending";
+              {rows.length === 0 ? (
+                <tr>
+                  <td colSpan={7} style={empty}>
+                    لا يوجد طلبات
+                  </td>
+                </tr>
+              ) : (
+                rows.map((r) => {
+                  const st = (r.status ?? "pending").toLowerCase();
+                  const pending = st === "pending";
 
-                return (
-                  <tr key={r.id}>
-                    <td style={td}>{r.name}</td>
-                    <td style={td}>{r.phone}</td>
-                    <td style={td}>{r.service_type}</td>
-                    <td style={td}>{r.city}</td>
-                    <td style={td}>{st}</td>
-                    <td style={td}>
-                      {pending ? (
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <form action={updateStatus}>
-                            <input type="hidden" name="id" value={r.id} />
-                            <input type="hidden" name="status" value="approved" />
-                            <button style={okBtn}>قبول</button>
-                          </form>
-                          <form action={updateStatus}>
-                            <input type="hidden" name="id" value={r.id} />
-                            <input type="hidden" name="status" value="rejected" />
-                            <button style={noBtn}>رفض</button>
-                          </form>
-                        </div>
-                      ) : (
-                        "تم"
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
+                  return (
+                    <tr key={r.id}>
+                      <td style={td}>{r.name ?? ""}</td>
+                      <td style={td}>{r.phone ?? ""}</td>
+                      <td style={td}>{r.service_type ?? ""}</td>
+                      <td style={td}>{r.city ?? ""}</td>
+                      <td style={td}>{st}</td>
+                      <td style={td}>
+                        {pending ? (
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <form action={updateStatus}>
+                              <input type="hidden" name="id" value={r.id} />
+                              <input
+                                type="hidden"
+                                name="status"
+                                value="approved"
+                              />
+                              <button style={okBtn}>قبول</button>
+                            </form>
+                            <form action={updateStatus}>
+                              <input type="hidden" name="id" value={r.id} />
+                              <input
+                                type="hidden"
+                                name="status"
+                                value="rejected"
+                              />
+                              <button style={noBtn}>رفض</button>
+                            </form>
+                          </div>
+                        ) : (
+                          <span style={done}>تم</span>
+                        )}
+                      </td>
+                      <td style={td}>{fmt(r.created_at)}</td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
@@ -126,13 +162,53 @@ export default async function AdminRequestsPage({
   );
 }
 
-/* styles */
-const pageStyle: CSSProperties = { padding: 24 };
-const testBanner: CSSProperties = { background: "#111", color: "#fff", padding: 10 };
-const card: CSSProperties = { background: "#fff", padding: 16 };
-const table: CSSProperties = { width: "100%", borderCollapse: "collapse" };
-const th: CSSProperties = { borderBottom: "1px solid #ddd", padding: 8 };
-const td: CSSProperties = { borderBottom: "1px solid #eee", padding: 8 };
-const okBtn: CSSProperties = { background: "#0a0", color: "#fff" };
-const noBtn: CSSProperties = { background: "#fff", color: "#b00", border: "1px solid #b00" };
-const err: CSSProperties = { color: "#b00", marginBottom: 12 };
+/* =======================
+   UI
+   ======================= */
+
+function fmt(v: string | null) {
+  if (!v) return "—";
+  return new Date(v).toLocaleString("ar-SA");
+}
+
+const pageStyle = { padding: 24, background: "#f6f7f9", minHeight: "100vh" };
+const testBanner = {
+  background: "#000",
+  color: "#fff",
+  padding: 10,
+  borderRadius: 10,
+  marginBottom: 12,
+  textAlign: "center",
+  fontWeight: 900,
+};
+const h1 = { marginBottom: 12 };
+const err = {
+  background: "#fee",
+  border: "1px solid #f99",
+  padding: 10,
+  marginBottom: 12,
+};
+const card = {
+  background: "#fff",
+  padding: 16,
+  borderRadius: 12,
+};
+const table = { width: "100%", borderCollapse: "collapse" };
+const th = { borderBottom: "1px solid #ddd", padding: 8 };
+const td = { borderBottom: "1px solid #eee", padding: 8 };
+const empty = { textAlign: "center", padding: 16 };
+const okBtn = {
+  background: "green",
+  color: "#fff",
+  border: "none",
+  padding: "6px 10px",
+  borderRadius: 6,
+};
+const noBtn = {
+  background: "#fff",
+  color: "red",
+  border: "1px solid red",
+  padding: "6px 10px",
+  borderRadius: 6,
+};
+const done = { color: "#666" };
