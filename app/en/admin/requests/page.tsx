@@ -68,11 +68,33 @@ export default async function AdminRequestsPage({
     if (!["approved", "rejected"].includes(status)) return;
 
     await supabase.from("provider_requests").update({ status }).eq("id", id);
-
     revalidatePath(`/${locale}/admin/requests`);
   }
 
-  // ✅ فلترة: pending فقط
+  /* ===========
+     COUNTERS
+     =========== */
+
+  const [{ count: pendingCount }, { count: approvedCount }, { count: rejectedCount }] =
+    await Promise.all([
+      supabase
+        .from("provider_requests")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending"),
+      supabase
+        .from("provider_requests")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "approved"),
+      supabase
+        .from("provider_requests")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "rejected"),
+    ]);
+
+  /* ===========
+     DATA (pending فقط)
+     =========== */
+
   const { data, error } = await supabase
     .from("provider_requests")
     .select("id,name,phone,service_type,city,status,created_at")
@@ -85,7 +107,23 @@ export default async function AdminRequestsPage({
   return (
     <main style={pageStyle}>
       <div style={{ maxWidth: 1100, width: "100%", margin: "0 auto" }}>
-        <div style={testBanner}>طلبات قيد المراجعة (Pending)</div>
+        <div style={title}>لوحة الطلبات</div>
+
+        {/* 🔢 العدّادات */}
+        <div style={statsRow}>
+          <div style={{ ...statBox, borderColor: "#999" }}>
+            ⏳ قيد المراجعة
+            <strong>{pendingCount ?? 0}</strong>
+          </div>
+          <div style={{ ...statBox, borderColor: "#0a0" }}>
+            ✅ مقبول
+            <strong>{approvedCount ?? 0}</strong>
+          </div>
+          <div style={{ ...statBox, borderColor: "#b00" }}>
+            ❌ مرفوض
+            <strong>{rejectedCount ?? 0}</strong>
+          </div>
+        </div>
 
         {error ? <div style={err}>{String(error.message || error)}</div> : null}
 
@@ -143,7 +181,7 @@ export default async function AdminRequestsPage({
 }
 
 /* =======================
-   UI HELPERS
+   UI
    ======================= */
 
 function fmt(v: string | null) {
@@ -157,14 +195,29 @@ const pageStyle = {
   minHeight: "100vh",
 };
 
-const testBanner = {
-  background: "#111",
-  color: "#fff",
-  padding: 12,
-  borderRadius: 12,
-  marginBottom: 12,
+const title = {
+  fontSize: 22,
   fontWeight: 900,
-  textAlign: "center",
+  marginBottom: 12,
+};
+
+const statsRow = {
+  display: "flex",
+  gap: 12,
+  marginBottom: 16,
+};
+
+const statBox = {
+  flex: 1,
+  background: "#fff",
+  border: "2px solid",
+  borderRadius: 12,
+  padding: 12,
+  textAlign: "center" as const,
+  fontWeight: 900,
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: 6,
 };
 
 const err = {
