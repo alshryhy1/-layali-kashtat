@@ -1,79 +1,77 @@
-"use client";
+export const dynamic = "force-dynamic";
 
-import { useEffect, useState } from "react";
-
-type Req = {
+type RequestRow = {
   id: number;
   name: string;
   phone: string;
   service_type: string;
   city: string;
-  status: "pending" | "approved" | "rejected";
+  status: string;
 };
 
-export default function RequestsPage() {
-  const [items, setItems] = useState<Req[]>([]);
-  const [loading, setLoading] = useState(true);
+const card: React.CSSProperties = {
+  background: "rgba(255,255,255,0.9)",
+  padding: "20px",
+  borderRadius: "12px",
+  margin: "40px",
+};
 
-  async function load() {
-    const res = await fetch("/api/admin/requests");
-    const data = await res.json();
-    setItems(data || []);
-    setLoading(false);
+const table: React.CSSProperties = {
+  width: "100%",
+  borderCollapse: "collapse" as const,
+};
+
+const th: React.CSSProperties = {
+  border: "1px solid #000",
+  padding: "8px",
+  background: "#eee",
+  textAlign: "center",
+};
+
+const td: React.CSSProperties = {
+  border: "1px solid #000",
+  padding: "8px",
+  textAlign: "center",
+};
+
+export default async function RequestsPage() {
+  let data: RequestRow[] = [];
+
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/admin/requests`,
+      { cache: "no-store" }
+    );
+    const json = await res.json();
+    data = json.data || [];
+  } catch {
+    data = [];
   }
-
-  async function setStatus(id: number, status: "approved" | "rejected") {
-    await fetch("/api/provider-request/status", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status }),
-    });
-    await load();
-  }
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  if (loading) return <p style={{ padding: 20 }}>تحميل...</p>;
 
   return (
-    <div style={{ padding: 20 }}>
-      <h1>طلبات مقدمي الخدمات</h1>
+    <div style={card}>
+      <h2>Service Providers Requests</h2>
 
-      <table width="100%" border={1} cellPadding={8}>
+      <table style={table} dir="ltr">
         <thead>
           <tr>
-            <th>الاسم</th>
-            <th>الجوال</th>
-            <th>نوع الخدمة</th>
-            <th>المدينة</th>
-            <th>الحالة</th>
-            <th>الإجراء</th>
+            <th style={th}>Name</th>
+            <th style={th}>Phone</th>
+            <th style={th}>Service Type</th>
+            <th style={th}>City</th>
+            <th style={th}>Status</th>
+            <th style={th}>Action</th>
           </tr>
         </thead>
         <tbody>
-          {items.map((r) => (
+          {data.map((r) => (
             <tr key={r.id}>
-              <td>{r.name}</td>
-              <td>{r.phone}</td>
-              <td>{r.service_type}</td>
-              <td>{r.city}</td>
-              <td>{r.status}</td>
-              <td>
-                {r.status === "pending" ? (
-                  <>
-                    <button onClick={() => setStatus(r.id, "approved")}>
-                      قبول
-                    </button>{" "}
-                    <button onClick={() => setStatus(r.id, "rejected")}>
-                      رفض
-                    </button>
-                  </>
-                ) : (
-                  "—"
-                )}
-              </td>
+              <td style={td}>{r.name}</td>
+              <td style={td}>{r.phone}</td>
+              <td style={td}>{r.service_type}</td>
+              <td style={td}>{r.city}</td>
+              <td style={td}>{r.status}</td>
+              <td style={td}>—</td>
             </tr>
           ))}
         </tbody>
