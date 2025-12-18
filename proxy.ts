@@ -1,35 +1,44 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const LOCALES = ["ar", "en"];
+function preferredLocale(req: NextRequest): "ar" | "en" {
+  const h = req.headers.get("accept-language") || "";
+  // لو في تفضيل إنجليزي، خلّه en، غير كذا ar
+  return h.toLowerCase().includes("en") ? "en" : "ar";
+}
 
-export function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+export function proxy(req: NextRequest) {
+  const { pathname, search } = req.nextUrl;
 
-  // استثناءات لازم ما نمسكها
+  // ✅ لا تعيد توجيه أي مسار يبدأ بـ /ar أو /en
+  if (pathname.startsWith("/ar") || pathname.startsWith("/en")) {
+    return NextResponse.next();
+  }
+
+  // ✅ لا تلمس ملفات النظام و الـ static
   if (
-    pathname.startsWith("/api") ||
     pathname.startsWith("/_next") ||
+    pathname.startsWith("/api") ||
     pathname === "/favicon.ico" ||
     pathname === "/robots.txt" ||
-    pathname === "/sitemap.xml" ||
-    pathname.includes(".")
+    pathname === "/sitemap.xml"
   ) {
     return NextResponse.next();
   }
 
-  // لو المسار يبدأ بلغة صحيحة (ar/en) نخليه يمر
-  const first = pathname.split("/")[1];
-  if (LOCALES.includes(first)) {
-    return NextResponse.next();
+  // ✅ فقط الجذر "/" يتحول للغة المفضلة
+  if (pathname === "/") {
+    const loc = preferredLocale(req);
+    const url = req.nextUrl.clone();
+    url.pathname = `/${loc}`;
+    url.search = search;
+    return NextResponse.redirect(url);
   }
 
-  // أي مسار بدون لغة → وجهه للعربية
-  const url = request.nextUrl.clone();
-  url.pathname = `/ar${pathname === "/" ? "" : pathname}`;
+  // ✅ أي مسار بدون لغة: ألحقه باللغة المفضلة
+  const loc = preferredLocale(req);
+  const url = req.nextUrl.clone();
+  url.pathname = `/${loc}${pathname}`;
+  url.search = search;
   return NextResponse.redirect(url);
 }
-
-export const config = {
-  matcher: ["/((?!_next|api|favicon\\.ico|robots\\.txt|sitemap\\.xml).*)"],
-};

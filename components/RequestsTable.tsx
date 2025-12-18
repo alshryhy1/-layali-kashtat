@@ -1,274 +1,104 @@
-"use client";
+import * as React from "react";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+type Locale = "ar" | "en";
 
-type Row = {
+export type Row = {
   id: string;
-  name: string | null;
-  phone: string | null;
-  service_type: string | null;
-  city: string | null;
-  status: string | null;
-  created_at: string | null;
+  name?: string | null;
+  phone?: string | null;
+  service_type?: string | null;
+  city?: string | null;
+  status?: string | null;
+  created_at?: string | null;
 };
 
-export default function RequestsTable({
-  locale,
-  rows,
-}: {
-  locale: "ar" | "en";
-  rows: Row[];
+export default function RequestsTable(props: {
+  locale?: Locale;
+  rows?: Row[];
+  renderActions?: (row: Row) => React.ReactNode;
 }) {
-  const isAr = locale === "ar";
-  const router = useRouter();
-
-  const [busyId, setBusyId] = useState<string | null>(null);
-  const [error, setError] = useState<string>("");
-
-  const dir = isAr ? "rtl" : "ltr";
-
-  const normalized = useMemo(() => {
-    return (rows || []).filter((r) => r.id && r.id.trim().length > 0);
-  }, [rows]);
-
-  async function setStatus(id: string, status: "approved" | "rejected") {
-    try {
-      setError("");
-      setBusyId(id);
-
-      const res = await fetch("/api/provider-requests/status", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, status }),
-      });
-
-      const data = await res.json().catch(() => null);
-
-      if (!res.ok) {
-        const msg =
-          data?.error ||
-          (isAr ? "فشل تحديث الحالة." : "Failed to update status.");
-        setError(msg);
-        return;
-      }
-
-      router.refresh();
-    } finally {
-      setBusyId(null);
-    }
-  }
+  const locale: Locale = props.locale === "en" ? "en" : "ar";
+  const rows: Row[] = Array.isArray(props.rows) ? props.rows : [];
+  const hasActions = typeof props.renderActions === "function";
 
   return (
-    <div style={cardStyle}>
-      {error ? (
-        <div style={errorBoxStyle} dir={dir}>
-          {error}
-        </div>
-      ) : null}
-
-      <div style={tableWrapStyle}>
-        <table style={tableStyle} dir={dir}>
+    <div style={{ width: "100%" }}>
+      <div
+        style={{
+          overflowX: "auto",
+          border: "1px solid #eee",
+          borderRadius: 12,
+        }}
+      >
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr>
-              <Th>{isAr ? "الاسم" : "Name"}</Th>
-              <Th>{isAr ? "الجوال" : "Phone"}</Th>
-              <Th>{isAr ? "نوع الخدمة" : "Service Type"}</Th>
-              <Th>{isAr ? "المدينة" : "City"}</Th>
-              <Th>{isAr ? "الحالة" : "Status"}</Th>
-              <Th>{isAr ? "التحكم" : "Actions"}</Th>
+            <tr style={{ background: "#fafafa" }}>
+              <th style={thStyle}>{locale === "ar" ? "الاسم" : "Name"}</th>
+              <th style={thStyle}>{locale === "ar" ? "الجوال" : "Phone"}</th>
+              <th style={thStyle}>
+                {locale === "ar" ? "نوع الخدمة" : "Service type"}
+              </th>
+              <th style={thStyle}>{locale === "ar" ? "المدينة" : "City"}</th>
+              <th style={thStyle}>{locale === "ar" ? "الحالة" : "Status"}</th>
+              <th style={thStyle}>{locale === "ar" ? "التاريخ" : "Date"}</th>
+              {hasActions ? (
+                <th style={thStyle}>{locale === "ar" ? "إجراءات" : "Actions"}</th>
+              ) : null}
             </tr>
           </thead>
 
           <tbody>
-            {normalized.length === 0 ? (
+            {rows.length === 0 ? (
               <tr>
-                <td style={emptyCellStyle} colSpan={6}>
-                  {isAr ? "لا يوجد طلبات." : "No requests."}
+                <td style={tdStyle} colSpan={hasActions ? 7 : 6}>
+                  {locale === "ar" ? "لا توجد طلبات." : "No requests found."}
                 </td>
               </tr>
             ) : (
-              normalized.map((r) => {
-                const s = (r.status || "pending").toLowerCase();
-                const isPending = s === "pending" || s === "" || s === "null";
-                const busy = busyId === r.id;
-
-                return (
-                  <tr key={r.id} style={rowStyle}>
-                    <Td>{safe(r.name)}</Td>
-                    <Td>{safe(r.phone)}</Td>
-                    <Td>{safe(r.service_type)}</Td>
-                    <Td>{safe(r.city)}</Td>
-                    <Td>
-                      <Badge text={safe(r.status) || (isAr ? "pending" : "pending")} />
-                    </Td>
-                    <Td>
-                      {isPending ? (
-                        <div style={actionsStyle}>
-                          <button
-                            style={primaryBtnStyle(busy)}
-                            disabled={busy}
-                            onClick={() => setStatus(r.id, "approved")}
-                          >
-                            {busy ? (isAr ? "..." : "...") : isAr ? "قبول" : "Approve"}
-                          </button>
-                          <button
-                            style={dangerBtnStyle(busy)}
-                            disabled={busy}
-                            onClick={() => setStatus(r.id, "rejected")}
-                          >
-                            {busy ? (isAr ? "..." : "...") : isAr ? "رفض" : "Reject"}
-                          </button>
-                        </div>
-                      ) : (
-                        <span style={mutedSmallStyle}>
-                          {isAr ? "تمت المعالجة" : "Processed"}
-                        </span>
-                      )}
-                    </Td>
-                  </tr>
-                );
-              })
+              rows.map((r) => (
+                <tr key={r.id}>
+                  <td style={tdStyle}>{r.name || "-"}</td>
+                  <td style={tdStyle}>{r.phone || "-"}</td>
+                  <td style={tdStyle}>{r.service_type || "-"}</td>
+                  <td style={tdStyle}>{r.city || "-"}</td>
+                  <td style={tdStyle}>{r.status || "-"}</td>
+                  <td style={tdStyle}>{formatDate(r.created_at) || "-"}</td>
+                  {hasActions ? (
+                    <td style={tdStyle}>{props.renderActions?.(r) ?? null}</td>
+                  ) : null}
+                </tr>
+              ))
             )}
           </tbody>
         </table>
       </div>
-
-      <p style={hintStyle} dir={dir}>
-        {isAr
-          ? "ملاحظة: الأزرار تظهر فقط للحالة pending."
-          : "Note: buttons show only for pending status."}
-      </p>
     </div>
   );
 }
 
-function safe(v: any) {
-  if (v === null || v === undefined) return "";
-  return String(v);
-}
-
-function Th({ children }: { children: React.ReactNode }) {
-  return <th style={thStyle}>{children}</th>;
-}
-
-function Td({ children }: { children: React.ReactNode }) {
-  return <td style={tdStyle}>{children}</td>;
-}
-
-function Badge({ text }: { text: string }) {
-  const t = text?.trim() || "—";
-  return <span style={badgeStyle}>{t}</span>;
-}
-
-const cardStyle: React.CSSProperties = {
-  background: "#fff",
-  border: "1px solid #e7e7e7",
-  borderRadius: 14,
-  padding: 16,
-  boxShadow: "0 6px 16px rgba(0,0,0,0.04)",
-};
-
-const errorBoxStyle: React.CSSProperties = {
-  padding: 10,
-  borderRadius: 10,
-  border: "1px solid #ffd2d2",
-  background: "#fff5f5",
-  color: "#8a1f1f",
-  fontWeight: 900,
-  marginBottom: 10,
-  fontSize: 13,
-};
-
-const tableWrapStyle: React.CSSProperties = {
-  width: "100%",
-  overflowX: "auto",
-};
-
-const tableStyle: React.CSSProperties = {
-  width: "100%",
-  borderCollapse: "separate",
-  borderSpacing: 0,
-  minWidth: 860,
-};
-
 const thStyle: React.CSSProperties = {
   textAlign: "start",
+  padding: "10px 12px",
+  borderBottom: "1px solid #eee",
+  fontWeight: 900,
   fontSize: 13,
-  color: "#222",
-  padding: "12px 10px",
-  borderBottom: "1px solid #e7e7e7",
-  background: "#fafafa",
-  position: "sticky",
-  top: 0,
+  whiteSpace: "nowrap",
 };
 
 const tdStyle: React.CSSProperties = {
+  padding: "10px 12px",
+  borderBottom: "1px solid #f1f1f1",
   fontSize: 13,
-  color: "#111",
-  padding: "12px 10px",
-  borderBottom: "1px solid #f0f0f0",
-  verticalAlign: "top",
+  whiteSpace: "nowrap",
 };
 
-const rowStyle: React.CSSProperties = {
-  background: "#fff",
-};
-
-const emptyCellStyle: React.CSSProperties = {
-  padding: 14,
-  color: "#666",
-  fontSize: 13,
-  textAlign: "center",
-};
-
-const badgeStyle: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  padding: "4px 10px",
-  borderRadius: 999,
-  border: "1px solid #e7e7e7",
-  background: "#fff",
-  fontSize: 12,
-  fontWeight: 900,
-};
-
-const actionsStyle: React.CSSProperties = {
-  display: "flex",
-  gap: 8,
-  flexWrap: "wrap",
-};
-
-const mutedSmallStyle: React.CSSProperties = {
-  color: "#666",
-  fontSize: 12,
-  fontWeight: 800,
-};
-
-const hintStyle: React.CSSProperties = {
-  margin: "10px 0 0",
-  color: "#666",
-  fontSize: 12,
-};
-
-const primaryBtnStyle = (disabled: boolean): React.CSSProperties => ({
-  padding: "8px 10px",
-  borderRadius: 10,
-  border: "1px solid #111",
-  background: disabled ? "#eee" : "#111",
-  color: disabled ? "#666" : "#fff",
-  fontWeight: 900,
-  fontSize: 12,
-  cursor: disabled ? "not-allowed" : "pointer",
-});
-
-const dangerBtnStyle = (disabled: boolean): React.CSSProperties => ({
-  padding: "8px 10px",
-  borderRadius: 10,
-  border: "1px solid #b00020",
-  background: disabled ? "#eee" : "#fff",
-  color: disabled ? "#666" : "#b00020",
-  fontWeight: 900,
-  fontSize: 12,
-  cursor: disabled ? "not-allowed" : "pointer",
-});
+function formatDate(v?: string | null) {
+  if (!v) return "";
+  try {
+    const d = new Date(v);
+    if (Number.isNaN(d.getTime())) return v;
+    return d.toLocaleString();
+  } catch {
+    return v;
+  }
+}
