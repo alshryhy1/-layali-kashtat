@@ -4,15 +4,12 @@ export const runtime = "nodejs";
 
 export async function POST() {
   const res = NextResponse.json({ ok: true });
-
-  // حذف الكوكي
-  res.cookies.set("admin_auth", "", {
+  res.cookies.set("kashtat_admin", "", {
     httpOnly: true,
-    sameSite: "strict",
-    secure: false,
+    secure: true,
+    sameSite: "lax",
     path: "/",
     maxAge: 0,
   });
-
   return res;
 }

@@ -1,75 +1,52 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 
-function normalizePath(pathname: string) {
-  if (!pathname) return "/";
-  // تأكد يبدأ بشرطة
-  return pathname.startsWith("/") ? pathname : `/${pathname}`;
-}
+function switchLocale(pathname: string, nextLocale: "ar" | "en") {
+  const p = pathname || "/";
+  const parts = p.split("/").filter(Boolean);
 
-function getLocaleFromPath(pathname: string): "ar" | "en" | null {
-  const p = normalizePath(pathname);
-  const m = p.match(/^\/(ar|en)(\/|$)/);
-  return (m?.[1] as "ar" | "en") ?? null;
-}
-
-function switchLocaleInPath(pathname: string, nextLocale: "ar" | "en") {
-  const p = normalizePath(pathname);
-
-  // إذا المسار يبدأ بـ /ar أو /en -> استبدله
-  if (/^\/(ar|en)(\/|$)/.test(p)) {
-    return p.replace(/^\/(ar|en)(\/|$)/, `/${nextLocale}$2`);
+  // إذا أول جزء لغة (ar/en) استبدله
+  if (parts[0] === "ar" || parts[0] === "en") {
+    parts[0] = nextLocale;
+    return "/" + parts.join("/");
   }
 
-  // إذا ما فيه locale في المسار -> أضف locale كبادئة
-  return `/${nextLocale}${p === "/" ? "" : p}`;
+  // إذا ما فيه لغة، أضفها
+  return "/" + [nextLocale, ...parts].join("/");
 }
 
 export default function LanguageSwitcher() {
-  const router = useRouter();
   const pathname = usePathname() || "/";
-  const current = getLocaleFromPath(pathname) ?? "ar";
+  const parts = pathname.split("/").filter(Boolean);
+  const current = parts[0] === "en" ? "en" : "ar";
 
-  const go = (next: "ar" | "en") => {
-    const nextPath = switchLocaleInPath(pathname, next);
-    router.replace(nextPath);
-    router.refresh();
+  const toAr = switchLocale(pathname, "ar");
+  const toEn = switchLocale(pathname, "en");
+
+  const btn: React.CSSProperties = {
+    border: "1px solid #ddd",
+    padding: "6px 10px",
+    borderRadius: 10,
+    fontWeight: 900,
+    background: "rgba(255,255,255,0.85)",
+    cursor: "pointer",
+  };
+
+  const active: React.CSSProperties = {
+    background: "#111",
+    color: "#fff",
+    borderColor: "#111",
   };
 
   return (
-    <div style={{ display: "flex", gap: 8 }}>
-      <button
-        type="button"
-        onClick={() => go("ar")}
-        style={{
-          padding: "6px 10px",
-          border: "1px solid #e5e5e5",
-          borderRadius: 6,
-          background: current === "ar" ? "#333" : "#fff",
-          color: current === "ar" ? "#fff" : "#111",
-          cursor: "pointer",
-        }}
-        aria-label="Switch to Arabic"
-      >
+    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      <a href={toAr} style={{ ...btn, ...(current === "ar" ? active : {}) }}>
         AR
-      </button>
-
-      <button
-        type="button"
-        onClick={() => go("en")}
-        style={{
-          padding: "6px 10px",
-          border: "1px solid #e5e5e5",
-          borderRadius: 6,
-          background: current === "en" ? "#333" : "#fff",
-          color: current === "en" ? "#fff" : "#111",
-          cursor: "pointer",
-        }}
-        aria-label="Switch to English"
-      >
+      </a>
+      <a href={toEn} style={{ ...btn, ...(current === "en" ? active : {}) }}>
         EN
-      </button>
+      </a>
     </div>
   );
 }

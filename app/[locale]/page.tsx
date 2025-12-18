@@ -1,86 +1,77 @@
-import Link from "next/link";
-import { getMessages } from "@/lib/i18n";
-import { Locale } from "@/lib/locales";
+export default function Home({
+  params,
+}: {
+  params: { locale: string };
+}) {
+  const locale = params?.locale === "en" ? "en" : "ar";
+  const isEn = locale === "en";
 
-type Props = {
-  params: Promise<{ locale: Locale }>;
-};
-
-export default async function HomePage({ params }: Props) {
-  const { locale } = await params; // ✅ مهم: فك الـ Promise
-  const m = await getMessages(locale);
+  const t = {
+    title: isEn ? "Layali Kashtat" : "ليالي كشتات",
+    desc: isEn
+      ? "A simple platform to organize requests and connect service providers with customers."
+      : "منصة تقنية بسيطة لتنظيم الطلبات والتواصل بين مقدمي الخدمات والعملاء.",
+    provider: isEn ? "Provider Signup" : "تسجيل مقدم خدمة",
+    legal: isEn ? "Legal" : "النصوص القانونية",
+  };
 
   return (
-    <section
+    <main
       style={{
-        padding: "32px 24px",
-        maxWidth: "720px",
-        margin: "0 auto",
-        textAlign: "center",
+        minHeight: "calc(100vh - 70px)",
+        display: "grid",
+        placeItems: "center",
+        padding: 16,
       }}
-      dir={String(locale).toLowerCase().startsWith("ar") ? "rtl" : "ltr"}
+      dir={isEn ? "ltr" : "rtl"}
     >
-      <h1 style={{ marginBottom: "12px", fontSize: 32 }}>
-        {m?.appName ?? "Layali Kashtat"}
-      </h1>
-
-      <p
-        style={{
-          marginBottom: "28px",
-          color: "#444",
-          lineHeight: "1.8",
-          fontSize: 15,
-        }}
-      >
-        {m?.home?.subtitle ?? ""}
-      </p>
-
       <div
         style={{
-          display: "flex",
-          gap: "12px",
-          justifyContent: "center",
-          flexWrap: "wrap",
+          width: "100%",
+          maxWidth: 900,
+          background: "rgba(255,255,255,0.78)",
+          border: "1px solid #e5e5e5",
+          borderRadius: 18,
+          padding: 22,
+          textAlign: "center",
+          boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
         }}
       >
-        {/* ✅ رابط التسجيل الصحيح */}
-        <Link
-          href={`/${locale}/provider-signup`}
-          style={{
-            padding: "10px 18px",
-            border: "1px solid #000",
-            textDecoration: "none",
-            color: "#000",
-            fontWeight: 500,
-          }}
-        >
-          {m?.home?.ctaProvider ?? "Register as Provider"}
-        </Link>
+        <h1 style={{ margin: 0, fontSize: 36, fontWeight: 900 }}>{t.title}</h1>
+        <p style={{ margin: "10px 0 18px", opacity: 0.75 }}>{t.desc}</p>
 
-        <Link
-          href={`/${locale}/waitlist`}
-          style={{
-            padding: "10px 18px",
-            border: "1px solid #ccc",
-            textDecoration: "none",
-            color: "#333",
-          }}
-        >
-          {m?.home?.ctaWaitlist ?? "Waitlist"}
-        </Link>
+        <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+          <a
+            href={`/${locale}/provider-signup`}
+            style={{
+              display: "inline-block",
+              padding: "10px 14px",
+              borderRadius: 10,
+              border: "1px solid #111",
+              background: "#111",
+              color: "#fff",
+              fontWeight: 900,
+            }}
+          >
+            {t.provider}
+          </a>
 
-        <Link
-          href={`/${locale}/legal`}
-          style={{
-            padding: "10px 18px",
-            border: "1px solid #ccc",
-            textDecoration: "none",
-            color: "#333",
-          }}
-        >
-          {m?.home?.ctaLegal ?? "Legal"}
-        </Link>
+          <a
+            href={`/${locale}/legal`}
+            style={{
+              display: "inline-block",
+              padding: "10px 14px",
+              borderRadius: 10,
+              border: "1px solid #111",
+              background: "#fff",
+              color: "#111",
+              fontWeight: 900,
+            }}
+          >
+            {t.legal}
+          </a>
+        </div>
       </div>
-    </section>
+    </main>
   );
 }

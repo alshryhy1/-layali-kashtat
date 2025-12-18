@@ -1,36 +1,16 @@
-"use client";
-
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-
 export default function LegalFooter() {
-  const pathname = usePathname();
-  const locale = pathname.startsWith("/en") ? "en" : "ar";
-
+  // فوتر مختصر جدًا بدون نصوص طويلة
   return (
     <footer
       style={{
-        marginTop: 40,
-        padding: "16px 0",
-        borderTop: "1px solid #eee",
-        textAlign: "center",
+        padding: "14px 16px",
+        borderTop: "1px solid #e5e5e5",
+        opacity: 0.75,
         fontSize: 12,
-        opacity: 0.7,
+        textAlign: "center",
       }}
     >
-      <p style={{ marginBottom: 8 }}>
-        المنصة وسيط تقني لتنظيم الطلبات والتواصل ولا تتحمل مسؤولية التنفيذ
-      </p>
-
-      <Link
-        href={`/${locale}/legal`}
-        style={{
-          textDecoration: "underline",
-          color: "inherit",
-        }}
-      >
-        النصوص القانونية
-      </Link>
+      © {new Date().getFullYear()} ليالي كشتات | Layali Kashtat
     </footer>
   );
 }

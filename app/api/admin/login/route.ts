@@ -1,38 +1,56 @@
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 
 export const runtime = "nodejs";
 
+type Body = { username?: string; password?: string };
+
+function sign(payload: string, secret: string) {
+  return crypto.createHmac("sha256", secret).update(payload).digest("hex");
+}
+
 export async function POST(req: Request) {
-  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-  const ADMIN_SECRET = process.env.ADMIN_SECRET;
+  try {
+    const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "";
+    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
+    const SECRET = process.env.ADMIN_SESSION_SECRET || "";
 
-  if (!ADMIN_PASSWORD || !ADMIN_SECRET) {
-    return NextResponse.json(
-      { ok: false, error: "Missing env: ADMIN_PASSWORD or ADMIN_SECRET" },
-      { status: 500 }
-    );
+    if (!ADMIN_USERNAME || !ADMIN_PASSWORD || !SECRET) {
+      return NextResponse.json(
+        { ok: false, error: "Missing env: ADMIN_USERNAME / ADMIN_PASSWORD / ADMIN_SESSION_SECRET" },
+        { status: 500 }
+      );
+    }
+
+    const body = (await req.json().catch(() => null)) as Body | null;
+    const username = String(body?.username || "").trim();
+    const password = String(body?.password || "").trim();
+
+    if (!username || !password) {
+      return NextResponse.json({ ok: false, error: "Missing username/password" }, { status: 400 });
+    }
+
+    if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
+      return NextResponse.json({ ok: false, error: "Invalid credentials" }, { status: 401 });
+    }
+
+    const exp = Date.now() + 1000 * 60 * 60 * 12; // 12 hours
+    const payload = JSON.stringify({ u: username, exp });
+    const sig = sign(payload, SECRET);
+    const token = Buffer.from(`${payload}.${sig}`, "utf8").toString("base64url");
+
+    const res = NextResponse.json({ ok: true });
+
+    res.cookies.set("kashtat_admin", token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 12,
+    });
+
+    return res;
+  } catch (e: any) {
+    return NextResponse.json({ ok: false, error: e?.message || "Server error" }, { status: 500 });
   }
-
-  const body = await req.json().catch(() => null);
-  const password = body?.password;
-
-  if (!password || password !== ADMIN_PASSWORD) {
-    return NextResponse.json(
-      { ok: false, error: "Wrong password" },
-      { status: 401 }
-    );
-  }
-
-  const res = NextResponse.json({ ok: true });
-
-  // ✅ مهم: localhost لازم secure=false عشان الكوكي تنقرأ في middleware
-  res.cookies.set("admin_auth", ADMIN_SECRET, {
-    httpOnly: true,
-    sameSite: "strict",
-    secure: false,
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7, // 7 days
-  });
-
-  return res;
 }
