@@ -1,25 +1,28 @@
+// app/[locale]/providers/signup/page.tsx
+import React from "react";
 import ProviderSignupForm from "@/components/ProviderSignupForm";
-import { createProviderRequest } from "@/app/actions/providerRequests";
 
-export default function Page({
+export default async function ProviderSignupPage({
   params,
 }: {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }) {
-  const isAr = (params?.locale || "ar").toLowerCase().startsWith("ar");
+  const { locale } = await params;
+  const lang = locale === "ar" ? "ar" : "en";
 
   return (
-    <div style={{ padding: "20px 14px" }} dir={isAr ? "rtl" : "ltr"}>
-      <h1 style={{ textAlign: "center", marginTop: 8 }}>
-        {isAr ? "تسجيل مقدم خدمة" : "Provider Signup"}
+    <div style={{ padding: 16, maxWidth: 720, margin: "0 auto" }}>
+      <h1 style={{ marginBottom: 8 }}>
+        {lang === "ar" ? "تسجيل مقدّم خدمة" : "Provider Signup"}
       </h1>
-      <p style={{ textAlign: "center", color: "#666", marginTop: 6 }}>
-        {isAr
-          ? "عبّئ البيانات وسيتم استلام طلبك."
-          : "Fill the form and we’ll receive your request."}
+
+      <p style={{ marginTop: 0, opacity: 0.8 }}>
+        {lang === "ar"
+          ? "أدخل بياناتك لإرسال طلب الانضمام."
+          : "Enter your details to submit a provider request."}
       </p>
 
-      <ProviderSignupForm action={createProviderRequest} />
+      <ProviderSignupForm locale={lang as any} />
     </div>
   );
 }
