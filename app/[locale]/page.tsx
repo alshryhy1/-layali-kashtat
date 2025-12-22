@@ -25,78 +25,95 @@ export default async function Home({
     legal: isEn ? "Legal Texts" : "النصوص القانونية",
   };
 
+  const btnBase: React.CSSProperties = {
+    width: "100%",
+    minHeight: 48,
+    padding: "12px 14px",
+    borderRadius: 14,
+    fontWeight: 900,
+    textDecoration: "none",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    textAlign: "center",
+  };
+
   const btnPrimary: React.CSSProperties = {
-    display: "inline-block",
-    padding: "10px 14px",
-    borderRadius: 12,
+    ...btnBase,
     border: "1px solid #111",
     background: "#111",
     color: "#fff",
-    fontWeight: 900,
-    textDecoration: "none",
-    minWidth: 170,
-    textAlign: "center",
   };
 
   const btnGhost: React.CSSProperties = {
-    display: "inline-block",
-    padding: "10px 14px",
-    borderRadius: 12,
-    border: "1px solid #111",
+    ...btnBase,
+    border: "1px solid rgba(0,0,0,0.18)",
     background: "#fff",
     color: "#111",
-    fontWeight: 900,
-    textDecoration: "none",
-    minWidth: 170,
-    textAlign: "center",
   };
 
   return (
-    <main
+    <section
       dir={isEn ? "ltr" : "rtl"}
       style={{
-        minHeight: "calc(100vh - 70px)",
-        display: "grid",
-        placeItems: "center",
-        padding: 16,
+        width: "100%",
+        paddingTop: 8,
+        paddingBottom: 8,
       }}
     >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 900,
-          background: "rgba(255,255,255,0.78)",
-          border: "1px solid #e5e5e5",
-          borderRadius: 18,
-          padding: 22,
-          textAlign: "center",
-          boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
-        }}
-      >
-        <h1 style={{ margin: 0, fontSize: 36, fontWeight: 900 }}>{t.title}</h1>
-        <p style={{ margin: "10px 0 18px", opacity: 0.75 }}>{t.desc}</p>
+      <div style={{ width: "100%", maxWidth: 720, marginInline: "auto" }}>
+        <div className="card" style={{ textAlign: "center" }}>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 28,
+              fontWeight: 900,
+              lineHeight: "34px",
+            }}
+          >
+            {t.title}
+          </h1>
 
-        <div
-          style={{
-            display: "flex",
-            gap: 10,
-            justifyContent: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <a href={`/${locale}/providers/signup`} style={btnPrimary}>
-            {t.signup}
-          </a>
+          <p style={{ margin: "10px 0 14px", opacity: 0.78, fontSize: 14 }}>
+            {t.desc}
+          </p>
 
-          <a href={`/${locale}/providers/status`} style={btnGhost}>
-            {t.status}
-          </a>
+          <div
+            className="home-actions"
+            style={{
+              display: "grid",
+              gap: 10,
+              gridTemplateColumns: "1fr",
+              marginTop: 6,
+            }}
+          >
+            <a href={`/${locale}/providers/signup`} style={btnPrimary}>
+              {t.signup}
+            </a>
 
-          <a href={`/${locale}/legal`} style={btnGhost}>
-            {t.legal}
-          </a>
+            <a href={`/${locale}/providers/status`} style={btnGhost}>
+              {t.status}
+            </a>
+
+            <a href={`/${locale}/legal`} style={btnGhost}>
+              {t.legal}
+            </a>
+          </div>
+
+          {/* ✅ ويب: صفّين بشكل جميل بدون كسر الجوال */}
+          <style
+            dangerouslySetInnerHTML={{
+              __html: `
+              @media (min-width: 768px) {
+                .home-actions {
+                  grid-template-columns: 1fr 1fr 1fr;
+                }
+              }
+            `,
+            }}
+          />
         </div>
       </div>
-    </main>
+    </section>
   );
 }

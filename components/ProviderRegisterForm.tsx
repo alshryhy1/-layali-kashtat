@@ -93,6 +93,7 @@ export default function ProviderRegisterForm({ locale }: Props) {
     return isAr
       ? {
           h2: "التسجيل كمقدّم خدمة",
+          hint: "أدخل بياناتك بدقة — المدينة ونوع الخدمة من القائمة فقط.",
           name: "اسم مقدّم الخدمة",
           phone: "رقم الجوال",
           service: "نوع الخدمة",
@@ -112,6 +113,7 @@ export default function ProviderRegisterForm({ locale }: Props) {
         }
       : {
           h2: "Provider Signup",
+          hint: "Enter accurate info — city and service type must be selected from the list.",
           name: "Provider name",
           phone: "Mobile number",
           service: "Service type",
@@ -133,7 +135,7 @@ export default function ProviderRegisterForm({ locale }: Props) {
 
   const inputStyle = (): CSSProperties => ({
     width: "100%",
-    padding: "10px 12px",
+    padding: "10px 12px", // ✅ أقل قليلًا (بدون كسر اللمس)
     borderRadius: 12,
     border: "1px solid rgba(0,0,0,0.18)",
     outline: "none",
@@ -141,12 +143,13 @@ export default function ProviderRegisterForm({ locale }: Props) {
     background: "#fff",
     direction: isAr ? "rtl" : "ltr",
     textAlign: isAr ? "right" : "left",
+    minHeight: 44, // ✅ لمس للجوال (ثابت)
   });
 
   const labelStyle: CSSProperties = {
     fontSize: 13,
     fontWeight: 900,
-    marginBottom: 6,
+    marginBottom: 5, // ✅ أقل
     textAlign: isAr ? "right" : "left",
   };
 
@@ -154,7 +157,7 @@ export default function ProviderRegisterForm({ locale }: Props) {
     color: "#b00020",
     fontWeight: 900,
     fontSize: 13,
-    marginTop: 6,
+    marginTop: 5, // ✅ أقل
     textAlign: isAr ? "right" : "left",
   };
 
@@ -210,177 +213,241 @@ export default function ProviderRegisterForm({ locale }: Props) {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      style={{
-        maxWidth: 520,
-        margin: "0 auto",
-        background: "rgba(255,255,255,0.92)",
-        padding: 18,
-        borderRadius: 18,
-        border: "1px solid rgba(0,0,0,0.10)",
-        boxShadow: "0 12px 28px rgba(0,0,0,0.10)",
-      }}
-    >
-      <h2 style={{ margin: "0 0 14px", fontSize: 20, fontWeight: 900, textAlign: "center" }}>
-        {ui.h2}
-      </h2>
-
-      <div style={{ display: "grid", gap: 10 }}>
-        <div>
-          <div style={labelStyle}>{ui.name}</div>
-          <input
-            value={name}
-            onChange={(e2) => {
-              setName(e2.target.value);
-              if (fieldErrors.name) setFieldErrors((p) => ({ ...p, name: undefined }));
-            }}
-            style={inputStyle()}
-            disabled={state.loading}
-          />
-          {fieldErrors.name && <div style={errStyle}>{fieldErrors.name}</div>}
-        </div>
-
-        <div>
-          <div style={labelStyle}>{ui.phone}</div>
-          <input
-            value={phone}
-            onChange={(e2) => {
-              const v = e2.target.value.replace(/[^\d+]/g, "");
-              setPhone(v);
-              if (fieldErrors.phone) setFieldErrors((p) => ({ ...p, phone: undefined }));
-            }}
-            inputMode="tel"
-            style={inputStyle()}
-            disabled={state.loading}
-          />
-          {fieldErrors.phone && <div style={errStyle}>{fieldErrors.phone}</div>}
-        </div>
-
-        <div>
-          <div style={labelStyle}>{ui.service}</div>
-          <select
-            value={serviceType}
-            onChange={(e2) => {
-              setServiceType(e2.target.value);
-              if (fieldErrors.serviceType)
-                setFieldErrors((p) => ({ ...p, serviceType: undefined }));
-            }}
-            style={inputStyle()}
-            disabled={state.loading}
-          >
-            <option value="">{ui.service}</option>
-            {services.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-          {fieldErrors.serviceType && <div style={errStyle}>{fieldErrors.serviceType}</div>}
-        </div>
-
-        <div>
-          <div style={labelStyle}>{ui.city}</div>
-          <select
-            value={city}
-            onChange={(e2) => {
-              setCity(e2.target.value);
-              if (fieldErrors.city) setFieldErrors((p) => ({ ...p, city: undefined }));
-            }}
-            style={inputStyle()}
-            disabled={state.loading}
-          >
-            <option value="">{ui.city}</option>
-            {cities.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-          {fieldErrors.city && <div style={errStyle}>{fieldErrors.city}</div>}
-        </div>
+    <>
+      <form
+        onSubmit={handleSubmit}
+        className="lk-form"
+        style={{
+          width: "100%",
+          maxWidth: 520,
+          margin: "0 auto",
+          background: "rgba(255,255,255,0.88)",
+          padding: 16, // ✅ أقل قليلًا
+          borderRadius: 18,
+          border: "1px solid rgba(0,0,0,0.10)",
+          boxShadow: "0 12px 28px rgba(0,0,0,0.10)",
+        }}
+      >
+        <h2
+          className="lk-form-title"
+          style={{
+            margin: "0 0 6px", // ✅ أقل
+            fontSize: 20,
+            fontWeight: 900,
+            textAlign: "center",
+          }}
+        >
+          {ui.h2}
+        </h2>
 
         <div
+          className="lk-form-hint"
           style={{
-            marginTop: 6,
-            padding: 12,
-            borderRadius: 14,
-            background: "#fff",
-            border: "1px solid rgba(0,0,0,0.12)",
-            textAlign: isAr ? "right" : "left",
+            textAlign: "center",
+            fontSize: 13,
+            opacity: 0.72,
+            marginBottom: 10, // ✅ أقل
+            lineHeight: 1.25, // ✅ يقلل الارتفاع
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 10,
-              alignItems: "center",
-              flexDirection: isAr ? "row-reverse" : "row",
-            }}
-          >
-            <div style={{ fontWeight: 900, fontSize: 13 }}>{ui.legalTitle}</div>
-            <a
-              href={`/${locale}/legal`}
-              style={{
-                fontSize: 13,
-                fontWeight: 900,
-                textDecoration: "underline",
-                color: "#111",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {ui.legalLink}
-            </a>
-          </div>
-
-          <label
-            style={{
-              display: "flex",
-              gap: 10,
-              alignItems: "flex-start",
-              marginTop: 10,
-              flexDirection: isAr ? "row-reverse" : "row",
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={agree}
-              onChange={(e2) => {
-                setAgree(e2.target.checked);
-                if (fieldErrors.agree) setFieldErrors((p) => ({ ...p, agree: undefined }));
-              }}
-              style={{ marginTop: 3 }}
-              disabled={state.loading}
-            />
-            <div>
-              <div style={{ fontWeight: 900, fontSize: 13 }}>{ui.legalAgree}</div>
-              <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>{ui.legalHint}</div>
-              {fieldErrors.agree && <div style={{ ...errStyle, marginTop: 8 }}>{fieldErrors.agree}</div>}
-            </div>
-          </label>
+          {ui.hint}
         </div>
 
-        {state.error && <div style={errStyle}>{state.error}</div>}
+        <div className="lk-form-grid" style={{ display: "grid", gap: 9 }}>
+          <div>
+            <div style={labelStyle}>{ui.name}</div>
+            <input
+              value={name}
+              onChange={(e2) => {
+                setName(e2.target.value);
+                if (fieldErrors.name) setFieldErrors((p) => ({ ...p, name: undefined }));
+              }}
+              style={inputStyle()}
+              disabled={state.loading}
+            />
+            {fieldErrors.name && <div style={errStyle}>{fieldErrors.name}</div>}
+          </div>
 
-        <button
-          type="submit"
-          disabled={state.loading}
-          style={{
-            width: "100%",
-            padding: 12,
-            borderRadius: 14,
-            border: "none",
-            background: "#000",
-            color: "#fff",
-            fontWeight: 900,
-            cursor: state.loading ? "not-allowed" : "pointer",
-            opacity: state.loading ? 0.88 : 1,
-          }}
-        >
-          {state.loading ? ui.sending : ui.submit}
-        </button>
-      </div>
-    </form>
+          <div>
+            <div style={labelStyle}>{ui.phone}</div>
+            <input
+              value={phone}
+              onChange={(e2) => {
+                const v = e2.target.value.replace(/[^\d+]/g, "");
+                setPhone(v);
+                if (fieldErrors.phone) setFieldErrors((p) => ({ ...p, phone: undefined }));
+              }}
+              inputMode="tel"
+              style={inputStyle()}
+              disabled={state.loading}
+            />
+            {fieldErrors.phone && <div style={errStyle}>{fieldErrors.phone}</div>}
+          </div>
+
+          <div>
+            <div style={labelStyle}>{ui.service}</div>
+            <select
+              value={serviceType}
+              onChange={(e2) => {
+                setServiceType(e2.target.value);
+                if (fieldErrors.serviceType) setFieldErrors((p) => ({ ...p, serviceType: undefined }));
+              }}
+              style={inputStyle()}
+              disabled={state.loading}
+            >
+              <option value="">{ui.service}</option>
+              {services.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+            {fieldErrors.serviceType && <div style={errStyle}>{fieldErrors.serviceType}</div>}
+          </div>
+
+          <div>
+            <div style={labelStyle}>{ui.city}</div>
+            <select
+              value={city}
+              onChange={(e2) => {
+                setCity(e2.target.value);
+                if (fieldErrors.city) setFieldErrors((p) => ({ ...p, city: undefined }));
+              }}
+              style={inputStyle()}
+              disabled={state.loading}
+            >
+              <option value="">{ui.city}</option>
+              {cities.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            {fieldErrors.city && <div style={errStyle}>{fieldErrors.city}</div>}
+          </div>
+
+          {/* ✅ الإقرار: خفيف + مضغوط */}
+          <div
+            className="lk-legal"
+            style={{
+              marginTop: 3, // ✅ أقل
+              padding: 8,
+              borderRadius: 12,
+              background: "rgba(255,255,255,0.55)",
+              border: "1px solid rgba(0,0,0,0.08)",
+              textAlign: isAr ? "right" : "left",
+            }}
+          >
+            <label
+              style={{
+                display: "flex",
+                gap: 8,
+                alignItems: "flex-start",
+                flexDirection: isAr ? "row-reverse" : "row",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={agree}
+                onChange={(e2) => {
+                  setAgree(e2.target.checked);
+                  if (fieldErrors.agree) setFieldErrors((p) => ({ ...p, agree: undefined }));
+                }}
+                style={{
+                  width: 16,
+                  height: 16,
+                  flex: "0 0 16px",
+                  marginTop: 2,
+                }}
+                disabled={state.loading}
+              />
+
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 900, fontSize: 13, lineHeight: 1.2 }}>
+                  {ui.legalAgree}
+                </div>
+
+                <div style={{ fontSize: 12, opacity: 0.72, marginTop: 2, lineHeight: 1.2 }}>
+                  {ui.legalHint}
+                </div>
+
+                <a
+                  href={`/${locale}/legal`}
+                  style={{
+                    display: "inline-block",
+                    marginTop: 4,
+                    fontSize: 12,
+                    fontWeight: 900,
+                    textDecoration: "underline",
+                    color: "#111",
+                    opacity: 0.9,
+                  }}
+                >
+                  {ui.legalLink}
+                </a>
+
+                {fieldErrors.agree && <div style={{ ...errStyle, marginTop: 6 }}>{fieldErrors.agree}</div>}
+              </div>
+            </label>
+          </div>
+
+          {state.error && <div style={{ ...errStyle, marginTop: 4 }}>{state.error}</div>}
+
+          <button
+            type="submit"
+            disabled={state.loading}
+            className="lk-submit"
+            style={{
+              width: "100%",
+              padding: 12,
+              minHeight: 46, // ✅ لمس
+              borderRadius: 14,
+              border: "none",
+              background: "#000",
+              color: "#fff",
+              fontWeight: 900,
+              cursor: state.loading ? "not-allowed" : "pointer",
+              opacity: state.loading ? 0.88 : 1,
+              marginTop: 1, // ✅ يقرب الزر بصريًا
+            }}
+          >
+            {state.loading ? ui.sending : ui.submit}
+          </button>
+        </div>
+      </form>
+
+      {/* ✅ Mobile-First: ضغط الفراغات العمودية على الجوال فقط */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+          @media (max-width: 520px) {
+            .lk-form {
+              max-width: 460px !important;
+              padding: 13px !important;
+              border-radius: 16px !important;
+              box-shadow: 0 10px 22px rgba(0,0,0,0.10) !important;
+              background: rgba(255,255,255,0.86) !important;
+            }
+            .lk-form-title {
+              font-size: 18px !important;
+              margin-bottom: 5px !important;
+            }
+            .lk-form-hint {
+              margin-bottom: 8px !important;
+              font-size: 12.5px !important;
+            }
+            .lk-form-grid {
+              gap: 8px !important;
+            }
+            .lk-legal {
+              padding: 7px !important;
+              border-radius: 10px !important;
+              margin-top: 2px !important;
+            }
+          }
+        `,
+        }}
+      />
+    </>
   );
 }

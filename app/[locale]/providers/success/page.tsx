@@ -24,103 +24,145 @@ export default async function ProviderSuccessPage({
   const ref = String(sp?.ref || "").trim();
 
   const t = {
-    title: isAr ? "تم استلام طلبك بنجاح" : "Your request has been received",
-    desc: isAr
-      ? "سيتم مراجعة الطلب والتواصل معك في حال القبول."
-      : "We will review your request and contact you if approved.",
-    note: isAr
-      ? "للمتابعة ستحتاج رقم الطلب ورقم الجوال المسجّل."
-      : "To track, you will need the request number and the phone used.",
+    title: isAr ? "تم استلام طلبك بنجاح" : "Request received",
+    desc: isAr ? "سيتم التواصل معك بعد مراجعة الطلب." : "We will contact you after review.",
+    note: isAr ? "احتفظ برقم الطلب ورقم الجوال للمتابعة." : "Keep the request number and phone to track.",
     refLabel: isAr ? "رقم الطلب" : "Request number",
     back: isAr ? "العودة للرئيسية" : "Back to home",
-    track: isAr ? "متابعة حالة الطلب" : "Track request status",
+    track: isAr ? "متابعة حالة الطلب" : "Track status",
+  };
+
+  const btnBase: React.CSSProperties = {
+    width: "100%",
+    minHeight: 48, // ✅ لمس ثابت
+    padding: "12px 14px",
+    borderRadius: 14,
+    fontWeight: 900,
+    textDecoration: "none",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
   };
 
   const btnPrimary: React.CSSProperties = {
-    padding: "10px 14px",
-    borderRadius: 12,
+    ...btnBase,
     border: "1px solid #111",
     background: "#111",
     color: "#fff",
-    fontWeight: 900,
-    textDecoration: "none",
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 170,
   };
 
   const btnGhost: React.CSSProperties = {
-    padding: "10px 14px",
-    borderRadius: 12,
+    ...btnBase,
     border: "1px solid #d0d0d0",
     background: "#fff",
     color: "#111",
-    fontWeight: 900,
-    textDecoration: "none",
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 170,
   };
 
   return (
-    <main
+    <section
       dir={isAr ? "rtl" : "ltr"}
       style={{
-        minHeight: "calc(100vh - 70px)",
-        display: "grid",
-        placeItems: "center",
-        padding: 16,
-        backgroundImage:
-          "linear-gradient(rgba(255,255,255,0.62), rgba(255,255,255,0.62)), url('/bg-desert.jpg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
+        width: "100%",
+        paddingTop: 6,
+        paddingBottom: 10,
       }}
     >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 720,
-          background: "rgba(255,255,255,0.92)",
-          borderRadius: 20,
-          padding: 20,
-          boxShadow: "0 12px 30px rgba(0,0,0,0.10)",
-          border: "1px solid rgba(0,0,0,0.06)",
-          textAlign: "center",
-        }}
-      >
-        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 900 }}>{t.title}</h1>
-        <p style={{ marginTop: 10, marginBottom: 10, opacity: 0.8 }}>{t.desc}</p>
-        <p style={{ marginTop: 0, marginBottom: 18, opacity: 0.75, fontSize: 13 }}>{t.note}</p>
+      <div style={{ width: "100%", maxWidth: 560, marginInline: "auto", paddingInline: 12 }}>
+        <div className="card success-card" style={{ textAlign: "center" }}>
+          <h1 className="success-title" style={{ margin: 0, fontSize: 22, fontWeight: 900 }}>
+            {t.title}
+          </h1>
 
-        <div
-          style={{
-            margin: "0 auto 16px",
-            maxWidth: 520,
-            border: "1px dashed #cfcfcf",
-            borderRadius: 14,
-            padding: 14,
-          }}
-        >
-          <div style={{ fontWeight: 900, marginBottom: 6 }}>{t.refLabel}</div>
-          <div style={{ fontWeight: 900, fontSize: 18 }}>{ref ? ref : "-"}</div>
-        </div>
-
-        <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-          <Link href={`/${locale}`} style={btnPrimary}>
-            {t.back}
-          </Link>
-
-          <Link
-            href={`/${locale}/providers/status${ref ? `?ref=${encodeURIComponent(ref)}` : ""}`}
-            style={btnGhost}
+          <p
+            className="success-desc"
+            style={{
+              marginTop: 8,
+              marginBottom: 6,
+              opacity: 0.84,
+              lineHeight: 1.25,
+            }}
           >
-            {t.track}
-          </Link>
+            {t.desc}
+          </p>
+
+          <p
+            className="success-note"
+            style={{
+              marginTop: 0,
+              marginBottom: 10,
+              opacity: 0.78,
+              fontSize: 13,
+              lineHeight: 1.25,
+            }}
+          >
+            {t.note}
+          </p>
+
+          <div
+            className="success-ref"
+            style={{
+              margin: "0 auto 10px",
+              maxWidth: 520,
+              border: "1px dashed rgba(0,0,0,0.22)",
+              borderRadius: 14,
+              padding: 10,
+              background: "rgba(255,255,255,0.70)",
+            }}
+          >
+            <div style={{ fontWeight: 900, marginBottom: 4, fontSize: 13 }}>{t.refLabel}</div>
+            <div
+              style={{
+                fontWeight: 900,
+                fontSize: 18,
+                letterSpacing: 0.4,
+                wordBreak: "break-word",
+                lineHeight: 1.15,
+              }}
+            >
+              {ref ? ref : "-"}
+            </div>
+          </div>
+
+          <div
+            className="success-actions"
+            style={{
+              display: "grid",
+              gap: 10,
+              gridTemplateColumns: "1fr",
+              marginTop: 4,
+            }}
+          >
+            <Link href={`/${locale}`} style={btnPrimary}>
+              {t.back}
+            </Link>
+
+            <Link
+              href={`/${locale}/providers/status${ref ? `?ref=${encodeURIComponent(ref)}` : ""}`}
+              style={btnGhost}
+            >
+              {t.track}
+            </Link>
+          </div>
+
+          <style
+            dangerouslySetInnerHTML={{
+              __html: `
+              /* Mobile-first tightening (Success page only) */
+              .success-card { padding: 14px; }
+              .success-title { font-size: 20px; }
+
+              @media (min-width: 768px) {
+                .success-card { padding: 18px; }
+                .success-title { font-size: 22px; }
+                .success-actions {
+                  grid-template-columns: 1fr 1fr;
+                }
+              }
+            `,
+            }}
+          />
         </div>
       </div>
-    </main>
+    </section>
   );
 }

@@ -35,8 +35,10 @@ export default async function LegalPage({
         ],
   };
 
-  const btn: React.CSSProperties = {
-    display: "inline-block",
+  const btnBase: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
     padding: "10px 14px",
     borderRadius: 12,
     border: "1px solid #111",
@@ -44,12 +46,13 @@ export default async function LegalPage({
     color: "#111",
     fontWeight: 900,
     textDecoration: "none",
-    minWidth: 170,
+    minHeight: 46, // ✅ لمس للجوال
+    width: "100%",
     textAlign: "center",
   };
 
   const btnPrimary: React.CSSProperties = {
-    ...btn,
+    ...btnBase,
     background: "#111",
     color: "#fff",
   };
@@ -61,51 +64,82 @@ export default async function LegalPage({
         minHeight: "calc(100vh - 70px)",
         display: "grid",
         placeItems: "center",
-        padding: 16,
+        padding: 12, // ✅ أقل على الجوال
       }}
     >
       <div
+        className="legal-card"
         style={{
           width: "100%",
-          maxWidth: 900,
-          background: "rgba(255,255,255,0.92)",
-          borderRadius: 18,
-          padding: 22,
+          maxWidth: 640, // ✅ تقليل كبير (كان 900)
+          background: "rgba(255,255,255,0.90)",
+          borderRadius: 16, // ✅ أقل
+          padding: 16, // ✅ أقل
           border: "1px solid rgba(0,0,0,0.08)",
           boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
         }}
       >
-        <h1 style={{ margin: 0, fontSize: 26, fontWeight: 900, textAlign: "center" }}>
+        <h1
+          className="legal-title"
+          style={{ margin: 0, fontSize: 22, fontWeight: 900, textAlign: "center" }}
+        >
           {t.title}
         </h1>
 
-        <ul style={{ marginTop: 14, lineHeight: 1.9, opacity: 0.9 }}>
+        <ul
+          className="legal-list"
+          style={{
+            marginTop: 10,
+            marginBottom: 0,
+            lineHeight: 1.6, // ✅ أقل
+            opacity: 0.92,
+            paddingInlineStart: isAr ? 18 : 18,
+          }}
+        >
           {t.body.map((x, i) => (
-            <li key={i}>{x}</li>
+            <li key={i} style={{ marginBottom: 6 }}>
+              {x}
+            </li>
           ))}
         </ul>
 
         <div
+          className="legal-actions"
           style={{
-            marginTop: 18,
-            display: "flex",
+            marginTop: 12, // ✅ أقل
+            display: "grid",
             gap: 10,
-            justifyContent: "center",
-            flexWrap: "wrap",
           }}
         >
-          <a href={`/${locale}`} style={btn}>
-            {t.backHome}
-          </a>
-
           <a href={`/${locale}/providers/signup`} style={btnPrimary}>
             {t.goSignup}
           </a>
 
-          <a href={`/${locale}/providers/status`} style={btn}>
+          <a href={`/${locale}/providers/status`} style={btnBase}>
             {t.goStatus}
           </a>
+
+          <a href={`/${locale}`} style={btnBase}>
+            {t.backHome}
+          </a>
         </div>
+
+        {/* Mobile-first + Desktop refinement */}
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+            @media (min-width: 768px) {
+              .legal-card { padding: 18px; max-width: 720px; }
+              .legal-title { font-size: 24px; }
+              .legal-list { line-height: 1.75; }
+              .legal-actions {
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 10px;
+              }
+            }
+          `,
+          }}
+        />
       </div>
     </main>
   );

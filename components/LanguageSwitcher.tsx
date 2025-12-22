@@ -31,36 +31,81 @@ function buildLocaleHref(currentPathname: string, target: Locale) {
 
 export default function LanguageSwitcher({ locale }: { locale?: Locale }) {
   const pathname = usePathname() || "/";
-  const current: Locale = locale === "en" || locale === "ar" ? locale : detectLocaleFromPath(pathname);
+  const current: Locale =
+    locale === "en" || locale === "ar" ? locale : detectLocaleFromPath(pathname);
 
   const arHref = buildLocaleHref(pathname, "ar");
   const enHref = buildLocaleHref(pathname, "en");
 
-  const flagBtn = (active: boolean): React.CSSProperties => ({
+  const linkStyle = (active: boolean): React.CSSProperties => ({
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    width: 36,
+
+    /* ✅ نص فقط بدون كبسولة */
+    background: "transparent",
+    border: "none",
+    boxShadow: "none",
+    padding: 0,
+
+    /* ✅ لمس ممتاز للجوال بدون شكل كبسولة */
+    minWidth: 28,
     height: 28,
-    borderRadius: 10,
-    border: active ? "1px solid #111" : "1px solid #d0d0d0",
-    background: active ? "#111" : "#fff",
-    color: active ? "#fff" : "#111",
-    textDecoration: "none",
+
+    fontSize: 13,
     fontWeight: 900,
-    lineHeight: 1,
+    letterSpacing: 0.3,
+    color: active ? "#111" : "rgba(0,0,0,0.55)",
+    textDecoration: "none",
     userSelect: "none",
+    WebkitTapHighlightColor: "transparent",
+    lineHeight: "28px",
+    flexShrink: 0,
   });
 
+  const sep: React.CSSProperties = {
+    opacity: 0.35,
+    fontWeight: 900,
+    lineHeight: "28px",
+    userSelect: "none",
+  };
+
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <Link href={arHref} prefetch={false} style={flagBtn(current === "ar")} aria-label="العربية" title="العربية">
-        🇸🇦
+    <div style={{ display: "inline-flex", alignItems: "center", gap: 10, whiteSpace: "nowrap" }}>
+      <Link
+        href={arHref}
+        prefetch={false}
+        style={linkStyle(current === "ar")}
+        aria-label="Arabic"
+        title="Arabic"
+      >
+        AR
       </Link>
 
-      <Link href={enHref} prefetch={false} style={flagBtn(current === "en")} aria-label="English" title="English">
-        🇬🇧
+      <span style={sep}>|</span>
+
+      <Link
+        href={enHref}
+        prefetch={false}
+        style={linkStyle(current === "en")}
+        aria-label="English"
+        title="English"
+      >
+        EN
       </Link>
+
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+          a[aria-label="Arabic"]:focus-visible,
+          a[aria-label="English"]:focus-visible {
+            outline: 2px solid rgba(0,0,0,0.35);
+            outline-offset: 3px;
+            border-radius: 8px;
+          }
+          `,
+        }}
+      />
     </div>
   );
 }

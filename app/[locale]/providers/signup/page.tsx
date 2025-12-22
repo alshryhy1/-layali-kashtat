@@ -21,15 +21,38 @@ export default async function ProviderSignupPage({
     <main
       dir={isAr ? "rtl" : "ltr"}
       style={{
-        minHeight: "calc(100vh - 70px)",
-        display: "grid",
-        placeItems: "center",
-        padding: 16,
+        width: "100%",
+        paddingInline: 12,
+        paddingTop: 6,
+        paddingBottom: 14,
       }}
     >
-      <div style={{ width: "100%", maxWidth: 720 }}>
+      <div className="lk-signup-wrap">
         <ProviderRegisterForm locale={locale} />
       </div>
+
+      {/* Mobile First tuning */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+          /* ===== Mobile (default) ===== */
+          .lk-signup-wrap {
+            width: 100%;
+            max-width: 480px;        /* ✅ أصغر = أخف */
+            margin-inline: auto;
+            margin-top: -6px;        /* ✅ رفع خفيف */
+          }
+
+          /* ===== Tablet / Desktop ===== */
+          @media (min-width: 768px) {
+            .lk-signup-wrap {
+              max-width: 560px;
+              margin-top: 0;
+            }
+          }
+        `,
+        }}
+      />
     </main>
   );
 }

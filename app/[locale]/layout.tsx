@@ -12,16 +12,30 @@ export default async function LocaleLayout({
   params: Promise<{ locale: string }>;
 }) {
   const { locale: rawLocale } = await params;
-
   const locale: Locale = rawLocale === "en" ? "en" : "ar";
   const dir = locale === "ar" ? "rtl" : "ltr";
+  const lang = locale;
 
   return (
-    <html lang={locale} dir={dir} suppressHydrationWarning>
-      <body style={{ margin: 0, minHeight: "100vh" }}>
+    <html lang={lang} dir={dir} suppressHydrationWarning>
+      <body>
+        {/* شريط علوي خفيف (طقس/معلومة) — لا يكسر العرض */}
         <TopInfoBar locale={locale} />
+
+        {/* الهيدر — صف واحد على الجوال */}
         <SiteHeader locale={locale} />
-        <main style={{ minHeight: "calc(100vh - 70px)" }}>{children}</main>
+
+        {/* الحاوية العامة لكل الصفحات */}
+        <main
+          className="page-container"
+          style={{
+            minHeight: "calc(100vh - 120px)", // يمنع القفز ويضمن امتلاء الصفحة
+            paddingTop: 16,
+            paddingBottom: 24,
+          }}
+        >
+          {children}
+        </main>
       </body>
     </html>
   );

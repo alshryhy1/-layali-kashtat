@@ -47,11 +47,22 @@ textarea {
   font-size: 14px;
 }
 
-input,
+/* ✅ مهم: استثناء checkbox/radio من padding/border العام */
+input:not([type="checkbox"]):not([type="radio"]),
 select,
 textarea {
   border: 1px solid #ccc;
   padding: 8px;
+}
+
+/* ✅ تثبيت حجم checkbox/radio (بدون تضخيم) */
+input[type="checkbox"],
+input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  margin: 0;
 }
 
 button {
