@@ -4,25 +4,24 @@ import TopInfoBar from "@/components/TopInfoBar";
 
 type Locale = "ar" | "en";
 
-export default function LocaleLayout({
+export default async function LocaleLayout({
   children,
   params,
 }: {
   children: React.ReactNode;
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }) {
-  const rawLocale = params?.locale;
-  const locale: Locale = rawLocale === "en" ? "en" : "ar";
+  const { locale: rawLocale } = await params;
 
-  const lang = locale === "en" ? "en" : "ar";
-  const dir = locale === "en" ? "ltr" : "rtl";
+  const locale: Locale = rawLocale === "en" ? "en" : "ar";
+  const dir = locale === "ar" ? "rtl" : "ltr";
 
   return (
-    <html lang={lang} dir={dir} suppressHydrationWarning>
-      <body>
-        <TopInfoBar />
-        <SiteHeader />
-        <main style={{ minHeight: "80vh" }}>{children}</main>
+    <html lang={locale} dir={dir} suppressHydrationWarning>
+      <body style={{ margin: 0, minHeight: "100vh" }}>
+        <TopInfoBar locale={locale} />
+        <SiteHeader locale={locale} />
+        <main style={{ minHeight: "calc(100vh - 70px)" }}>{children}</main>
       </body>
     </html>
   );

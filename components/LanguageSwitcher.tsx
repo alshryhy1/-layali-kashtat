@@ -1,52 +1,66 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-function switchLocale(pathname: string, nextLocale: "ar" | "en") {
-  const p = pathname || "/";
-  const parts = p.split("/").filter(Boolean);
+type Locale = "ar" | "en";
 
-  // إذا أول جزء لغة (ar/en) استبدله
-  if (parts[0] === "ar" || parts[0] === "en") {
-    parts[0] = nextLocale;
-    return "/" + parts.join("/");
-  }
-
-  // إذا ما فيه لغة، أضفها
-  return "/" + [nextLocale, ...parts].join("/");
+function normalizePath(p: string) {
+  if (!p) return "/";
+  return p.startsWith("/") ? p : `/${p}`;
 }
 
-export default function LanguageSwitcher() {
+function detectLocaleFromPath(pathname: string): Locale {
+  const p = normalizePath(pathname);
+  if (p === "/en" || p.startsWith("/en/")) return "en";
+  return "ar";
+}
+
+function stripLocalePrefix(pathname: string) {
+  const p = normalizePath(pathname);
+  if (p === "/ar" || p.startsWith("/ar/")) return p.slice(3) || "/";
+  if (p === "/en" || p.startsWith("/en/")) return p.slice(3) || "/";
+  return p;
+}
+
+function buildLocaleHref(currentPathname: string, target: Locale) {
+  const rest = stripLocalePrefix(currentPathname);
+  if (rest === "/") return `/${target}`;
+  return `/${target}${rest}`;
+}
+
+export default function LanguageSwitcher({ locale }: { locale?: Locale }) {
   const pathname = usePathname() || "/";
-  const parts = pathname.split("/").filter(Boolean);
-  const current = parts[0] === "en" ? "en" : "ar";
+  const current: Locale = locale === "en" || locale === "ar" ? locale : detectLocaleFromPath(pathname);
 
-  const toAr = switchLocale(pathname, "ar");
-  const toEn = switchLocale(pathname, "en");
+  const arHref = buildLocaleHref(pathname, "ar");
+  const enHref = buildLocaleHref(pathname, "en");
 
-  const btn: React.CSSProperties = {
-    border: "1px solid #ddd",
-    padding: "6px 10px",
+  const flagBtn = (active: boolean): React.CSSProperties => ({
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 36,
+    height: 28,
     borderRadius: 10,
+    border: active ? "1px solid #111" : "1px solid #d0d0d0",
+    background: active ? "#111" : "#fff",
+    color: active ? "#fff" : "#111",
+    textDecoration: "none",
     fontWeight: 900,
-    background: "rgba(255,255,255,0.85)",
-    cursor: "pointer",
-  };
-
-  const active: React.CSSProperties = {
-    background: "#111",
-    color: "#fff",
-    borderColor: "#111",
-  };
+    lineHeight: 1,
+    userSelect: "none",
+  });
 
   return (
-    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-      <a href={toAr} style={{ ...btn, ...(current === "ar" ? active : {}) }}>
-        AR
-      </a>
-      <a href={toEn} style={{ ...btn, ...(current === "en" ? active : {}) }}>
-        EN
-      </a>
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <Link href={arHref} prefetch={false} style={flagBtn(current === "ar")} aria-label="العربية" title="العربية">
+        🇸🇦
+      </Link>
+
+      <Link href={enHref} prefetch={false} style={flagBtn(current === "en")} aria-label="English" title="English">
+        🇬🇧
+      </Link>
     </div>
   );
 }

@@ -1,18 +1,25 @@
-import { getMessages } from "@/lib/i18n";
-import { Locale } from "@/lib/locales";
-import { redirect } from "next/navigation";
-import { requestsOpen } from "@/lib/launchGuard";
 import RequestForm from "@/components/RequestForm";
+import { getMessages } from "@/lib/i18n";
 
-type Props = {
-  params: { locale: Locale };
-};
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-export default async function RequestPage({ params }: Props) {
-  if (!requestsOpen()) {
-    redirect(`/${params.locale}/coming-soon`);
-  }
+type Locale = "ar" | "en";
 
-  const m = await getMessages(params.locale);
+function asLocale(v: any): Locale {
+  return String(v || "").trim().toLowerCase() === "en" ? "en" : "ar";
+}
+
+export default async function RequestPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale: rawLocale } = await params;
+  const locale: Locale = asLocale(rawLocale);
+
+  const m = await getMessages(locale);
+
+  // ✅ RequestForm حسب تعريفه الحالي يقبل m فقط
   return <RequestForm m={m} />;
 }

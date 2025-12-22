@@ -17,6 +17,13 @@ function sbAdmin() {
   });
 }
 
+function getClientIp(req: Request): string {
+  const h = req.headers;
+  const xff = h.get("x-forwarded-for") || "";
+  const xrip = h.get("x-real-ip") || "";
+  return ((xff.split(",")[0] || "").trim() || xrip.trim() || "local").trim();
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => null);
@@ -37,17 +44,37 @@ export async function POST(req: Request) {
     }
 
     const admin = sbAdmin();
+
+    // 1) تحديث الحالة (الأساس)
     const { error } = await admin.from("provider_requests").update({ status }).eq("id", id);
 
     if (error) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
+    // 2) Audit Log (نهائي) — لا نكسر العملية الأساسية إذا فشل الإدخال
+    // actor هنا "admin" لأن التحقق الفعلي يتم عبر حماية مسارات الأدمن/الكوكي عندك
+    // وإذا تبغاه يقرأ اسم الأدمن من الكوكي (موقّع) قلّي وبنسويه بشكل نهائي.
+    const ip = getClientIp(req);
+    const action = status === "approved" ? "requests.approve" : status === "rejected" ? "requests.reject" : "requests.pending";
+
+    const auditInsert = await admin.from("admin_audit_log").insert([
+      {
+        action,
+        actor: "admin",
+        ip,
+        target: id,
+        meta: { id, status },
+      },
+    ]);
+
+    if (auditInsert.error) {
+      // لا نرجّع 500 عشان ما نخرب قبول/رفض عندك
+      console.error("AUDIT_LOG_INSERT_FAILED:", auditInsert.error.message);
+    }
+
     return NextResponse.json({ ok: true });
   } catch (e: any) {
-    return NextResponse.json(
-      { ok: false, error: e?.message || "Server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: e?.message || "Server error" }, { status: 500 });
   }
 }

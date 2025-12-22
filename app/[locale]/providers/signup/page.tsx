@@ -1,42 +1,35 @@
-import ProviderSignupFormAction from "@/components/ProviderSignupFormAction";
-import { createProviderRequest } from "@/app/actions/providerRequests";
+import ProviderRegisterForm from "@/components/ProviderRegisterForm";
 
-export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 type Locale = "ar" | "en";
 
-export default function ProviderSignupPage({
+function asLocale(v: any): Locale {
+  return String(v || "").trim().toLowerCase() === "en" ? "en" : "ar";
+}
+
+export default async function ProviderSignupPage({
   params,
 }: {
-  params: { locale: Locale };
+  params: Promise<{ locale: string }>;
 }) {
-  const locale: Locale = params?.locale === "en" ? "en" : "ar";
+  const p = await params;
+  const locale: Locale = asLocale(p?.locale);
   const isAr = locale === "ar";
 
   return (
-    <div style={{ padding: "24px 16px" }}>
-      <div
-        style={{
-          maxWidth: 520,
-          margin: "0 auto",
-          background: "rgba(255,255,255,0.92)",
-          borderRadius: 14,
-          padding: 16,
-          boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-        }}
-      >
-        <h1 style={{ textAlign: "center", fontWeight: 900, margin: "6px 0 10px" }}>
-          {isAr ? "تسجيل مقدم خدمة" : "Provider Signup"}
-        </h1>
-
-        <p style={{ textAlign: "center", color: "#444", lineHeight: 1.7, marginTop: 0 }}>
-          {isAr
-            ? "املأ البيانات التالية وسيتم استلام طلبك داخل الموقع."
-            : "Fill the form below. Your request will be received within the website."}
-        </p>
-
-        <ProviderSignupFormAction locale={locale} action={createProviderRequest} />
+    <main
+      dir={isAr ? "rtl" : "ltr"}
+      style={{
+        minHeight: "calc(100vh - 70px)",
+        display: "grid",
+        placeItems: "center",
+        padding: 16,
+      }}
+    >
+      <div style={{ width: "100%", maxWidth: 720 }}>
+        <ProviderRegisterForm locale={locale} />
       </div>
-    </div>
+    </main>
   );
 }

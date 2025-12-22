@@ -1,5 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import crypto from "crypto";
+
+import AdminRefSearchBox from "@/components/AdminRefSearchBox";
+import AdminLogoutButton from "@/components/AdminLogoutButton";
+import AdminStatusButtons from "@/components/AdminStatusButtons";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,6 +21,10 @@ type Row = {
   created_at: string | null;
 };
 
+type Locale = "ar" | "en";
+type StatusFilter = "all" | "pending" | "approved" | "rejected";
+type SortKey = "new" | "old";
+
 function sbAdmin() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -21,13 +32,115 @@ function sbAdmin() {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
+function asLocale(v: any): Locale {
+  return String(v || "").trim().toLowerCase() === "en" ? "en" : "ar";
+}
+
+function sign(payload: string, secret: string) {
+  return crypto.createHmac("sha256", secret).update(payload).digest("hex");
+}
+
+function verifyAdminSession(token: string | undefined | null): boolean {
+  if (!token) return false;
+
+  const SECRET = process.env.ADMIN_SESSION_SECRET || "";
+  if (!SECRET) return false;
+
+  try {
+    const raw = Buffer.from(String(token), "base64url").toString("utf8");
+    const idx = raw.lastIndexOf(".");
+    if (idx <= 0) return false;
+
+    const payload = raw.slice(0, idx);
+    const sig = raw.slice(idx + 1);
+
+    const expected = sign(payload, SECRET);
+    const a = Buffer.from(sig, "utf8");
+    const b = Buffer.from(expected, "utf8");
+    if (a.length !== b.length) return false;
+    if (!crypto.timingSafeEqual(a, b)) return false;
+
+    const obj = JSON.parse(payload) as { u?: string; exp?: number };
+    if (!obj?.u || typeof obj.exp !== "number") return false;
+    if (Date.now() > obj.exp) return false;
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function toRef(id: string) {
+  const s = String(id || "").trim();
+  if (/^\d+$/.test(s)) return `LK-${s.padStart(6, "0")}`;
+  const short = s.replace(/[^a-zA-Z0-9]/g, "").slice(0, 6) || "000000";
+  return `LK-${short}`;
+}
+
+function statusLabel(locale: Locale, raw: string) {
+  const s = (raw || "pending").toLowerCase();
+  const isAr = locale === "ar";
+  if (!isAr) return s;
+  if (s === "approved") return "مقبول";
+  if (s === "rejected") return "مرفوض";
+  return "انتظار";
+}
+
+function fmt(locale: Locale, v: string | null) {
+  if (!v) return "—";
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return "—";
+  try {
+    return d.toLocaleString(locale === "ar" ? "ar-SA" : "en-US");
+  } catch {
+    return d.toISOString();
+  }
+}
+
+function asStatusFilter(v: any): StatusFilter {
+  const s = String(v || "").trim().toLowerCase();
+  if (s === "pending" || s === "approved" || s === "rejected" || s === "all") return s;
+  return "all";
+}
+
+function asSortKey(v: any): SortKey {
+  const s = String(v || "").trim().toLowerCase();
+  if (s === "old" || s === "new") return s;
+  return "new";
+}
+
+function buildHref(locale: Locale, status: StatusFilter, sort: SortKey, ref?: string) {
+  const params = new URLSearchParams();
+  if (status !== "all") params.set("status", status);
+  if (sort !== "new") params.set("sort", sort);
+  if (ref && String(ref).trim().length > 0) params.set("ref", String(ref).trim());
+  const qs = params.toString();
+  return `/${locale}/admin/requests${qs ? `?${qs}` : ""}`;
+}
+
 export default async function AdminRequestsPage({
   params,
+  searchParams,
 }: {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ ref?: string; status?: string; sort?: string }>;
 }) {
-  const locale = params?.locale === "en" ? "en" : "ar";
+  const p = await params;
+  const sp = await searchParams;
+
+  const locale: Locale = asLocale(p?.locale);
+  const isAr = locale === "ar";
+
+  const token = (await cookies()).get("kashtat_admin")?.value;
+  const ok = verifyAdminSession(token);
+  if (!ok) {
+    redirect(`/${locale}/admin/login`);
+  }
+
   const supabase = sbAdmin();
+
+  const statusFilter: StatusFilter = asStatusFilter(sp?.status);
+  const sortKey: SortKey = asSortKey(sp?.sort);
 
   async function updateStatus(formData: FormData) {
     "use server";
@@ -41,63 +154,140 @@ export default async function AdminRequestsPage({
     const admin = sbAdmin();
     await admin.from("provider_requests").update({ status }).eq("id", id);
 
+    // أعِد تحديث صفحة الأدمن الأساسية (بدون اعتماد على query string)
     revalidatePath(`/${locale}/admin/requests`);
   }
 
-  const { data, error } = await supabase
+  let q = supabase
     .from("provider_requests")
-    .select("id,name,phone,service_type,city,status,created_at")
-    .order("created_at", { ascending: false })
-    .limit(200);
+    .select("id,name,phone,service_type,city,status,created_at");
 
-  const rows = (data ?? []) as Row[];
+  if (statusFilter !== "all") {
+    q = q.eq("status", statusFilter);
+  }
+
+  q = q.order("created_at", { ascending: sortKey === "old" }).limit(200);
+
+  const { data, error } = await q;
+
+  const rowsAll = (data ?? []) as Row[];
+
+  const refQueryRaw = String(sp?.ref ?? "").trim();
+  const refQuery = refQueryRaw.toLowerCase();
+
+  const rows =
+    refQuery.length === 0
+      ? rowsAll
+      : rowsAll.filter((r) => {
+          const ref = toRef(r.id).toLowerCase();
+          const digitsQ = refQuery.replace(/[^0-9]/g, "");
+          const digitsRef = ref.replace(/[^0-9]/g, "");
+          if (ref.includes(refQuery)) return true;
+          if (digitsQ && digitsRef.endsWith(digitsQ)) return true;
+          return false;
+        });
+
+  const statusTabs: Array<{ key: StatusFilter; labelAr: string; labelEn: string }> = [
+    { key: "all", labelAr: "الكل", labelEn: "All" },
+    { key: "pending", labelAr: "انتظار", labelEn: "Pending" },
+    { key: "approved", labelAr: "مقبول", labelEn: "Approved" },
+    { key: "rejected", labelAr: "مرفوض", labelEn: "Rejected" },
+  ];
+
+  const sortTabs: Array<{ key: SortKey; labelAr: string; labelEn: string }> = [
+    { key: "new", labelAr: "الأحدث أولًا", labelEn: "Newest first" },
+    { key: "old", labelAr: "الأقدم أولًا", labelEn: "Oldest first" },
+  ];
+
+  const shownCount = rows.length;
 
   return (
     <main style={pageStyle}>
       <div style={{ maxWidth: 1100, width: "100%" }}>
-        {/* ✅ إثبات أنك على الصفحة الجديدة */}
-        <div style={testBanner}>ADMIN-REQUESTS OK (/{locale}/admin/requests)</div>
+        <div style={testBanner}>
+          {isAr ? `لوحة الأدمن (/${locale}/admin/requests)` : `Admin (/${locale}/admin/requests)`}
+        </div>
 
         <div style={topRow}>
           <div>
-            <h1 style={h1}>لوحة الطلبات (أدمن)</h1>
+            <h1 style={h1}>{isAr ? "لوحة الطلبات (أدمن)" : "Requests Dashboard (Admin)"}</h1>
+
             <div style={sub}>
-              عرض آخر 200 طلب من <code>provider_requests</code>
+              {isAr ? `عرض ${shownCount} طلب (حد أقصى 200) من ` : `Showing ${shownCount} requests (max 200) from `}
+              <code>provider_requests</code>
             </div>
-            {error ? <div style={err}>{String(error.message || error)}</div> : null}
+
+            {error ? <div style={err}>{String((error as any)?.message || error)}</div> : null}
           </div>
 
-          <a href={`/${locale}/provider-signup`} style={btnLink}>
-            فتح صفحة التسجيل
-          </a>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-end" }}>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
+              <AdminLogoutButton locale={locale} />
+            </div>
+
+            <AdminRefSearchBox locale={locale} />
+          </div>
+        </div>
+
+        <div style={filtersRow} dir={isAr ? "rtl" : "ltr"}>
+          <div style={filterGroup}>
+            <div style={filterLabel}>{isAr ? "فلترة الحالة:" : "Status filter:"}</div>
+            <div style={chips}>
+              {statusTabs.map((t2) => {
+                const active = t2.key === statusFilter;
+                const href = buildHref(locale, t2.key, sortKey, refQueryRaw);
+                return (
+                  <a key={t2.key} href={href} style={chip(active)}>
+                    {isAr ? t2.labelAr : t2.labelEn}
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={filterGroup}>
+            <div style={filterLabel}>{isAr ? "الترتيب:" : "Sort:"}</div>
+            <div style={chips}>
+              {sortTabs.map((s2) => {
+                const active = s2.key === sortKey;
+                const href = buildHref(locale, statusFilter, s2.key, refQueryRaw);
+                return (
+                  <a key={s2.key} href={href} style={chip(active)}>
+                    {isAr ? s2.labelAr : s2.labelEn}
+                  </a>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         <div style={card}>
           <div style={{ overflowX: "auto" }}>
-            <table style={table} dir="rtl">
+            <table style={table} dir={isAr ? "rtl" : "ltr"}>
               <thead>
                 <tr>
-                  <th style={th}>الاسم</th>
-                  <th style={th}>رقم الجوال</th>
-                  <th style={th}>نوع الخدمة</th>
-                  <th style={th}>المدينة</th>
-                  <th style={th}>الحالة</th>
-                  <th style={th}>قبول / رفض</th>
-                  <th style={th}>التاريخ</th>
+                  <th style={th}>{isAr ? "الاسم" : "Name"}</th>
+                  <th style={th}>{isAr ? "رقم الجوال" : "Phone"}</th>
+                  <th style={th}>{isAr ? "نوع الخدمة" : "Service type"}</th>
+                  <th style={th}>{isAr ? "المدينة" : "City"}</th>
+                  <th style={th}>{isAr ? "الحالة" : "Status"}</th>
+                  <th style={th}>{isAr ? "الرقم المرجعي" : "Reference"}</th>
+                  <th style={th}>{isAr ? "تغيير الحالة" : "Change status"}</th>
+                  <th style={th}>{isAr ? "التاريخ" : "Date"}</th>
                 </tr>
               </thead>
 
               <tbody>
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={7} style={empty}>
-                      لا يوجد طلبات
+                    <td colSpan={8} style={empty}>
+                      {isAr ? "لا توجد نتائج" : "No results"}
                     </td>
                   </tr>
                 ) : (
                   rows.map((r) => {
-                    const st = (r.status ?? "pending").toLowerCase();
-                    const pending = st === "pending";
+                    const raw = (r.status ?? "pending").toLowerCase();
+                    const ref = toRef(r.id);
 
                     return (
                       <tr key={r.id}>
@@ -106,34 +296,23 @@ export default async function AdminRequestsPage({
                         <td style={td}>{r.service_type ?? ""}</td>
                         <td style={td}>{r.city ?? ""}</td>
                         <td style={td}>
-                          <span style={badge}>{st}</span>
+                          <span style={badge}>{statusLabel(locale, raw)}</span>
                         </td>
 
                         <td style={td}>
-                          {pending ? (
-                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                              <form action={updateStatus}>
-                                <input type="hidden" name="id" value={r.id} />
-                                <input type="hidden" name="status" value="approved" />
-                                <button type="submit" style={okBtn}>
-                                  قبول
-                                </button>
-                              </form>
-
-                              <form action={updateStatus}>
-                                <input type="hidden" name="id" value={r.id} />
-                                <input type="hidden" name="status" value="rejected" />
-                                <button type="submit" style={noBtn}>
-                                  رفض
-                                </button>
-                              </form>
-                            </div>
-                          ) : (
-                            <span style={done}>تمت المعالجة</span>
-                          )}
+                          <span style={refPill}>{ref}</span>
                         </td>
 
-                        <td style={td}>{fmt(r.created_at)}</td>
+                        <td style={td}>
+                          <AdminStatusButtons
+                            locale={locale}
+                            id={r.id}
+                            currentStatus={raw}
+                            action={updateStatus}
+                          />
+                        </td>
+
+                        <td style={td}>{fmt(locale, r.created_at)}</td>
                       </tr>
                     );
                   })
@@ -144,28 +323,17 @@ export default async function AdminRequestsPage({
         </div>
 
         <div style={{ marginTop: 12, fontSize: 12, color: "#666" }}>
-          الرابط: <code>/{locale}/admin/requests</code>
+          {isAr ? "الرابط:" : "Link:"} <code>/{locale}/admin/requests</code>
         </div>
       </div>
     </main>
   );
 }
 
-function fmt(v: string | null) {
-  if (!v) return "—";
-  const d = new Date(v);
-  if (Number.isNaN(d.getTime())) return "—";
-  try {
-    return d.toLocaleString("ar-SA");
-  } catch {
-    return d.toISOString();
-  }
-}
-
 const pageStyle: React.CSSProperties = {
   minHeight: "100vh",
   padding: 24,
-  background: "#f6f7f9",
+  background: "transparent",
   display: "flex",
   justifyContent: "center",
 };
@@ -216,6 +384,48 @@ const btnLink: React.CSSProperties = {
   whiteSpace: "nowrap",
 };
 
+const filtersRow: React.CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  gap: 12,
+  marginBottom: 12,
+  flexWrap: "wrap",
+};
+
+const filterGroup: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 8,
+};
+
+const filterLabel: React.CSSProperties = {
+  fontWeight: 900,
+  fontSize: 13,
+  color: "#111",
+};
+
+const chips: React.CSSProperties = {
+  display: "flex",
+  gap: 8,
+  flexWrap: "wrap",
+};
+
+const chip = (active: boolean): React.CSSProperties => ({
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "8px 10px",
+  borderRadius: 999,
+  border: `1px solid ${active ? "#111" : "#ddd"}`,
+  background: active ? "#111" : "#fff",
+  color: active ? "#fff" : "#111",
+  textDecoration: "none",
+  fontWeight: 900,
+  fontSize: 12,
+  whiteSpace: "nowrap",
+});
+
 const card: React.CSSProperties = {
   background: "#fff",
   border: "1px solid #e7e7e7",
@@ -227,7 +437,7 @@ const card: React.CSSProperties = {
 const table: React.CSSProperties = {
   width: "100%",
   borderCollapse: "collapse",
-  minWidth: 980,
+  minWidth: 1080,
 };
 
 const th: React.CSSProperties = {
@@ -257,26 +467,15 @@ const badge: React.CSSProperties = {
   fontSize: 12,
 };
 
-const okBtn: React.CSSProperties = {
-  padding: "8px 10px",
-  borderRadius: 10,
-  border: "1px solid #0a0",
-  background: "#0a0",
-  color: "#fff",
-  fontWeight: 900,
-  fontSize: 12,
-  cursor: "pointer",
-};
-
-const noBtn: React.CSSProperties = {
-  padding: "8px 10px",
-  borderRadius: 10,
-  border: "1px solid #b00",
+const refPill: React.CSSProperties = {
+  display: "inline-block",
+  padding: "4px 10px",
+  borderRadius: 999,
+  border: "1px solid #ddd",
   background: "#fff",
-  color: "#b00",
   fontWeight: 900,
   fontSize: 12,
-  cursor: "pointer",
+  whiteSpace: "nowrap",
 };
 
 const done: React.CSSProperties = { color: "#666", fontWeight: 800, fontSize: 12 };

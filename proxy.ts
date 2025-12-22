@@ -1,38 +1,45 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-function preferredLocale(req: NextRequest): "ar" | "en" {
-  const h = req.headers.get("accept-language") || "";
-  // لو في تفضيل إنجليزي، خلّه en، غير كذا ar
-  return h.toLowerCase().includes("en") ? "en" : "ar";
+type Locale = "ar" | "en";
+
+function preferredLocale(req: NextRequest): Locale {
+  const cookie = req.cookies.get("locale")?.value;
+  if (cookie === "en" || cookie === "ar") return cookie;
+
+  const header = req.headers.get("accept-language") || "";
+  return header.toLowerCase().includes("en") ? "en" : "ar";
 }
 
+function isPublicFile(pathname: string) {
+  // أي مسار ينتهي بامتداد ملف: .jpg .png .css .js ...
+  return /\.[a-zA-Z0-9]+$/.test(pathname);
+}
+
+// ✅ Next.js 16 proxy convention: يجب تصدير دالة باسم proxy
 export function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
 
-  // ✅ لا تعيد توجيه أي مسار يبدأ بـ /ar أو /en
-  if (pathname.startsWith("/ar") || pathname.startsWith("/en")) {
-    return NextResponse.next();
-  }
-
-  // ✅ لا تلمس ملفات النظام و الـ static
+  // ✅ اترك كل الملفات الثابتة/الصور/الأيقونات بدون أي Redirect
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
     pathname === "/favicon.ico" ||
     pathname === "/robots.txt" ||
-    pathname === "/sitemap.xml"
+    pathname === "/sitemap.xml" ||
+    isPublicFile(pathname)
   ) {
     return NextResponse.next();
   }
 
-  // ✅ فقط الجذر "/" يتحول للغة المفضلة
-  if (pathname === "/") {
-    const loc = preferredLocale(req);
-    const url = req.nextUrl.clone();
-    url.pathname = `/${loc}`;
-    url.search = search;
-    return NextResponse.redirect(url);
+  // ✅ إذا المسار يبدأ بلغة، اتركه
+  if (
+    pathname === "/ar" ||
+    pathname.startsWith("/ar/") ||
+    pathname === "/en" ||
+    pathname.startsWith("/en/")
+  ) {
+    return NextResponse.next();
   }
 
   // ✅ أي مسار بدون لغة: ألحقه باللغة المفضلة
@@ -42,3 +49,7 @@ export function proxy(req: NextRequest) {
   url.search = search;
   return NextResponse.redirect(url);
 }
+
+export const config = {
+  matcher: ["/((?!_next/static|_next/image).*)"],
+};
