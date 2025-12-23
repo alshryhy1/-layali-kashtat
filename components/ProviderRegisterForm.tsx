@@ -1,48 +1,39 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 
 type Locale = "ar" | "en";
 
 type Props = {
-  locale: Locale;
+  locale?: string;
+  m?: any;
 };
 
-type State =
-  | { ok: false; message: string }
-  | { ok: true; message: string; ref?: string };
-
-function normalizePhone(raw: string) {
-  const s = String(raw || "").trim();
-  return s.replace(/[^\d]/g, "");
+function isLocale(v: any): v is Locale {
+  return v === "ar" || v === "en";
 }
 
-export default function ProviderRegisterForm({ locale }: Props) {
-  const isAr = locale === "ar";
+export default function ProviderRegisterForm({ locale, m }: Props) {
+  const finalLocale: Locale = isLocale(locale) ? locale : "ar";
+  const isAr = finalLocale === "ar";
 
   const t = {
     title: isAr ? "التسجيل كمقدم خدمة" : "Provider Signup",
     hint: isAr
       ? "أدخل بياناتك بدقة — المدينة ونوع الخدمة من القائمة فقط."
-      : "Enter your details carefully — city and service from the list only.",
-    name: isAr ? "اسم مقدم الخدمة" : "Provider name",
-    phone: isAr ? "رقم الجوال" : "Mobile number",
-    service: isAr ? "نوع الخدمة" : "Service type",
-    city: isAr ? "المدينة" : "City",
+      : "Enter your details accurately — city and service type must be selected from the list.",
+    nameLabel: isAr ? "اسم مقدم الخدمة" : "Provider Name",
+    phoneLabel: isAr ? "رقم الجوال" : "Phone Number",
+    serviceLabel: isAr ? "نوع الخدمة" : "Service Type",
+    cityLabel: isAr ? "المدينة" : "City",
     agree: isAr ? "موافق" : "I agree",
-    read: isAr ? "قراءة النصوص القانونية" : "Read legal texts",
-    submit: isAr ? "إرسال طلب التسجيل" : "Submit signup request",
-    sending: isAr ? "جارٍ الإرسال..." : "Sending...",
-    required: isAr ? "اكمل جميع الحقول المطلوبة." : "Please complete all required fields.",
-    agreeReq: isAr ? "يلزم الموافقة على النصوص القانونية." : "You must agree to the legal texts.",
-    phoneInvalid: isAr ? "رقم الجوال غير صحيح." : "Invalid mobile number.",
-    serverError: isAr ? "حدث خطأ. حاول مرة أخرى." : "Something went wrong. Please try again.",
-    success: isAr ? "تم إرسال طلبك بنجاح." : "Your request was sent successfully.",
-    pickService: isAr ? "اختر نوع الخدمة" : "Select service type",
-    pickCity: isAr ? "اختر المدينة" : "Select city",
+    legal: isAr ? "قراءة النصوص القانونية" : "Read legal texts",
+    submit: isAr ? "إرسال طلب التسجيل" : "Submit Request",
+    sending: isAr ? "جاري الإرسال..." : "Sending...",
+    okMsg: isAr ? "تم إرسال طلبك بنجاح." : "Your request has been submitted successfully.",
   };
 
+  // قوائم ثابتة (تقدر تعدّلها لاحقًا)
   const servicesAr = [
     "كشتات برية",
     "كشتات ساحلية",
@@ -54,7 +45,6 @@ export default function ProviderRegisterForm({ locale }: Props) {
     "استراحة",
     "مزرعة",
   ];
-
   const servicesEn = [
     "Desert trips",
     "Coastal trips",
@@ -68,452 +58,242 @@ export default function ProviderRegisterForm({ locale }: Props) {
   ];
 
   const citiesAr = [
-    "مكة المكرمة",
-    "المدينة المنورة",
     "الرياض",
-    "جده",
+    "جدة",
+    "مكة",
+    "المدينة",
     "الدمام",
-    "القصيم",
-    "حائل",
-    "عرعر",
-    "طريف",
-    "القريات",
-    "طبرجل",
-    "الجوف",
-    "سكاكا",
+    "الخبر",
     "تبوك",
-    "العلا",
-    "ينبع",
-    "املج",
-    "حقل",
+    "حائل",
+    "سكاكا",
+    "عرعر",
+    "أبها",
+    "جازان",
+    "نجران",
+    "الباحة",
+    "بريدة",
   ];
-
   const citiesEn = [
-    "Makkah",
-    "Madinah",
     "Riyadh",
     "Jeddah",
+    "Makkah",
+    "Madinah",
     "Dammam",
-    "Qassim",
-    "Hail",
-    "Arar",
-    "Turaif",
-    "Al Qurayyat",
-    "Tabarjal",
-    "Al Jouf",
-    "Sakaka",
+    "Khobar",
     "Tabuk",
-    "Al Ula",
-    "Yanbu",
-    "Umluj",
-    "Haql",
+    "Hail",
+    "Sakaka",
+    "Arar",
+    "Abha",
+    "Jazan",
+    "Najran",
+    "Al Bahah",
+    "Buraidah",
   ];
-
-  const serviceOptions = isAr ? servicesAr : servicesEn;
-  const cityOptions = isAr ? citiesAr : citiesEn;
 
   const [name, setName] = React.useState("");
   const [phone, setPhone] = React.useState("");
   const [serviceType, setServiceType] = React.useState("");
   const [city, setCity] = React.useState("");
-  const [agree, setAgree] = React.useState(false);
+  const [accepted, setAccepted] = React.useState(false);
 
-  const [busy, setBusy] = React.useState(false);
-  const [state, setState] = React.useState<State | null>(null);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string>("");
+  const [ok, setOk] = React.useState(false);
 
-  function friendlyServerMessage(raw: any) {
-    const s = String(raw || "").trim();
-    if (!s) return "";
-
-    const key = s.toLowerCase();
-    if (key === "missing_fields") return t.required;
-    if (key === "invalid_phone") return t.phoneInvalid;
-    if (key === "must_agree") return t.agreeReq;
-
-    return s;
-  }
-
-  function missingMessage(missing: string[]) {
-    if (missing.length === 0) return t.required;
-    if (isAr) return `اكمل الحقول التالية: ${missing.join("، ")}`;
-    return `Please complete: ${missing.join(", ")}`;
-  }
-
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (busy) return;
+    setOk(false);
+    setError("");
 
-    const form = e.currentTarget;
+    // تحقق سريع على الواجهة (والسيرفر عنده تحقق أقوى)
+    if (!name.trim()) return setError(isAr ? "الاسم مطلوب." : "Name is required.");
+    if (!phone.trim()) return setError(isAr ? "رقم الجوال مطلوب." : "Phone is required.");
+    if (!serviceType) return setError(isAr ? "اختر نوع الخدمة." : "Select a service type.");
+    if (!city) return setError(isAr ? "اختر المدينة." : "Select a city.");
+    if (!accepted) return setError(isAr ? "يلزم الموافقة على الشروط قبل الإرسال." : "You must accept the terms.");
 
-    if (!form.checkValidity()) {
-      form.reportValidity();
-      setState({ ok: false, message: t.required });
-      return;
-    }
-
-    const fd = new FormData(form);
-
-    const n = String(fd.get("provider_name") ?? "").trim();
-    const p = normalizePhone(String(fd.get("provider_phone") ?? ""));
-    const s = String(fd.get("service_type") ?? "").trim();
-    const c = String(fd.get("city") ?? "").trim();
-    const a = fd.get("agree") === "on";
-
-    const missing: string[] = [];
-    if (!n) missing.push(t.name);
-    if (!p) missing.push(t.phone);
-    if (!s) missing.push(t.service);
-    if (!c) missing.push(t.city);
-
-    if (missing.length > 0) {
-      setState({ ok: false, message: missingMessage(missing) });
-      return;
-    }
-
-    const looksOk =
-      (p.length === 10 && p.startsWith("05")) ||
-      (p.length === 9 && p.startsWith("5")) ||
-      (p.length === 12 && p.startsWith("9665")) ||
-      (p.length === 13 && p.startsWith("009665"));
-
-    if (!looksOk) {
-      setState({ ok: false, message: t.phoneInvalid });
-      return;
-    }
-
-    if (!a) {
-      setState({ ok: false, message: t.agreeReq });
-      return;
-    }
-
-    setBusy(true);
-    setState(null);
-
+    setLoading(true);
     try {
       const res = await fetch("/api/providers/signup", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          locale,
-          name: n,
-          phone: p,
-          service_type: s,
-          city: c,
+          name: name.trim(),
+          phone: phone.trim(),
+          serviceType: serviceType,
+          city: city,
+          accepted: accepted, // ✅ مهم: الآن تُرسل بشكل صحيح
         }),
       });
 
-      const data = (await res.json().catch(() => null)) as any;
+      const json = await res.json().catch(() => null);
 
-      if (!res.ok || !data?.ok) {
-        const rawMsg = data?.message ?? data?.error ?? "";
-        const msg = friendlyServerMessage(rawMsg);
-        setState({ ok: false, message: msg || t.serverError });
-        setBusy(false);
+      if (!res.ok) {
+        const msg =
+          (json && (json.message || json.error)) ||
+          (isAr ? "تعذر إرسال الطلب الآن." : "Could not submit right now.");
+        setError(String(msg));
         return;
       }
 
-      const ref = String(data?.ref || data?.request_id || data?.id || "").trim();
-      setState({ ok: true, message: t.success, ref });
-
-      const to = `/${locale}/providers/success${ref ? `?ref=${encodeURIComponent(ref)}` : ""}`;
-      window.location.href = to;
+      if (json?.ok) {
+        setOk(true);
+        setError("");
+      } else {
+        setError(isAr ? "تعذر إرسال الطلب الآن." : "Could not submit right now.");
+      }
     } catch {
-      setState({ ok: false, message: t.serverError });
-      setBusy(false);
+      setError(isAr ? "تعذر الاتصال بالسيرفر." : "Could not reach the server.");
+    } finally {
+      setLoading(false);
     }
   }
 
+  const cardStyle: React.CSSProperties = {
+    width: "100%",
+    maxWidth: 560,
+    background: "rgba(255,255,255,0.92)",
+    borderRadius: 18,
+    padding: 18,
+    border: "1px solid rgba(0,0,0,0.08)",
+    boxShadow: "0 8px 26px rgba(0,0,0,0.08)",
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    height: 44,
+    borderRadius: 12,
+    border: "1px solid #d0d0d0",
+    padding: "0 12px",
+    outline: "none",
+    fontSize: 14,
+    background: "#fff",
+    boxSizing: "border-box",
+  };
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: 12,
+    fontWeight: 700,
+    color: "#111",
+    marginBottom: 6,
+    display: "block",
+  };
+
+  const rowStyle: React.CSSProperties = { display: "grid", gap: 12 };
+
+  const btnStyle: React.CSSProperties = {
+    width: "100%",
+    height: 48,
+    borderRadius: 14,
+    border: "none",
+    background: "#000",
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: 800,
+    cursor: loading ? "not-allowed" : "pointer",
+    opacity: loading ? 0.7 : 1,
+  };
+
   return (
-    <form className="lk-form" dir={isAr ? "rtl" : "ltr"} onSubmit={onSubmit} noValidate>
-      <h1>{t.title}</h1>
-      <p className="lk-hint">{t.hint}</p>
+    <div style={{ width: "100%", display: "grid", placeItems: "center", padding: 16 }} dir={isAr ? "rtl" : "ltr"}>
+      <div style={cardStyle}>
+        <div style={{ textAlign: "center", marginBottom: 14 }}>
+          <div style={{ fontSize: 18, fontWeight: 900 }}>{t.title}</div>
+          <div style={{ fontSize: 12, color: "#444", marginTop: 6 }}>{t.hint}</div>
+        </div>
 
-      <div className="lk-field">
-        <label htmlFor="lk-name">{t.name}</label>
-        <input
-          id="lk-name"
-          name="provider_name"
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            if (state) setState(null);
-          }}
-          autoComplete="name"
-          placeholder={isAr ? "مثال: خالد" : "e.g. Khalid"}
-          required
-        />
-      </div>
-
-      <div className="lk-field">
-        <label htmlFor="lk-phone">{t.phone}</label>
-        <input
-          id="lk-phone"
-          name="provider_phone"
-          value={phone}
-          onChange={(e) => {
-            setPhone(e.target.value);
-            if (state) setState(null);
-          }}
-          inputMode="tel"
-          autoComplete="tel"
-          placeholder={isAr ? "05xxxxxxxx" : "05xxxxxxxx"}
-          required
-        />
-      </div>
-
-      <div className="lk-field">
-        <label htmlFor="lk-service">{t.service}</label>
-        <select
-          id="lk-service"
-          name="service_type"
-          value={serviceType}
-          onChange={(e) => {
-            setServiceType(e.target.value);
-            if (state) setState(null);
-          }}
-          aria-label={t.service}
-          required
-        >
-          <option value="" disabled hidden>
-            {t.pickService}
-          </option>
-          {serviceOptions.map((x) => (
-            <option key={x} value={x}>
-              {x}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="lk-field">
-        <label htmlFor="lk-city">{t.city}</label>
-        <select
-          id="lk-city"
-          name="city"
-          value={city}
-          onChange={(e) => {
-            setCity(e.target.value);
-            if (state) setState(null);
-          }}
-          aria-label={t.city}
-          required
-        >
-          <option value="" disabled hidden>
-            {t.pickCity}
-          </option>
-          {cityOptions.map((x) => (
-            <option key={x} value={x}>
-              {x}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="lk-agree" aria-label={isAr ? "الموافقة على النصوص القانونية" : "Legal agreement"}>
-        <div className="lk-agree-box">
-          <label className="lk-agree-row">
+        <form onSubmit={onSubmit} style={rowStyle}>
+          <div>
+            <label style={labelStyle}>{t.nameLabel}</label>
             <input
-              type="checkbox"
-              name="agree"
-              checked={agree}
-              onChange={(e) => {
-                setAgree(e.target.checked);
-                if (state) setState(null);
-              }}
-              aria-label={isAr ? "موافقة" : "Agree"}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              style={inputStyle}
+              autoComplete="name"
             />
-            <span className="lk-agree-text">{t.agree}</span>
-          </label>
+          </div>
 
-          <Link href={`/${locale}/legal`} className="lk-legal-link">
-            {t.read}
-          </Link>
-        </div>
+          <div>
+            <label style={labelStyle}>{t.phoneLabel}</label>
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              style={inputStyle}
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder={isAr ? "05xxxxxxxx" : "05xxxxxxxx"}
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>{t.serviceLabel}</label>
+            <select value={serviceType} onChange={(e) => setServiceType(e.target.value)} style={inputStyle}>
+              <option value="">{isAr ? "اختر" : "Select"}</option>
+              {(isAr ? servicesAr : servicesEn).map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label style={labelStyle}>{t.cityLabel}</label>
+            <select value={city} onChange={(e) => setCity(e.target.value)} style={inputStyle}>
+              <option value="">{isAr ? "اختر" : "Select"}</option>
+              {(isAr ? citiesAr : citiesEn).map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+              padding: 10,
+              borderRadius: 12,
+              border: "1px solid rgba(0,0,0,0.08)",
+              background: "rgba(255,255,255,0.7)",
+            }}
+          >
+            <a href={isAr ? "/ar/legal" : "/en/legal"} style={{ fontSize: 12, color: "#1d4ed8", textDecoration: "none" }}>
+              {t.legal}
+            </a>
+
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 800 }}>
+              <span>{t.agree}</span>
+              <input
+                type="checkbox"
+                checked={accepted}                 // ✅ controlled
+                onChange={(e) => setAccepted(e.target.checked)} // ✅ يغيّر القيمة الحقيقية
+              />
+            </label>
+          </div>
+
+          {error ? (
+            <div style={{ border: "1px solid #ef4444", color: "#111", background: "#fff", padding: 10, borderRadius: 12, fontSize: 13 }}>
+              {error}
+            </div>
+          ) : null}
+
+          {ok ? (
+            <div style={{ border: "1px solid #22c55e", color: "#111", background: "#fff", padding: 10, borderRadius: 12, fontSize: 13 }}>
+              {t.okMsg}
+            </div>
+          ) : null}
+
+          <button type="submit" style={btnStyle} disabled={loading}>
+            {loading ? t.sending : t.submit}
+          </button>
+        </form>
       </div>
-
-      {state?.message ? (
-        <div className={`lk-msg ${state.ok ? "ok" : "bad"}`} role="status" aria-live="polite">
-          {state.message}
-        </div>
-      ) : null}
-
-      <button type="submit" className="lk-submit" disabled={busy}>
-        {busy ? t.sending : t.submit}
-      </button>
-
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-          :root{
-            --lk-h: 44px;
-            --lk-r: 12px;
-            --lk-b: rgba(0,0,0,.18);
-            --lk-bf: rgba(0,0,0,.38);
-            --lk-bg: rgba(255,255,255,0.96);
-          }
-
-          .lk-form{
-            box-sizing:border-box;
-            width:100%;
-            background:rgba(255,255,255,0.90);
-            border:1px solid rgba(0,0,0,0.08);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-            padding:16px;
-            border-radius:18px;
-            box-shadow:0 12px 28px rgba(0,0,0,0.10);
-          }
-
-          .lk-form *{ box-sizing:border-box; }
-
-          .lk-form h1{
-            margin:0 0 6px;
-            font-size:18px;
-            font-weight:900;
-            text-align:center;
-          }
-
-          .lk-hint{
-            margin:0 0 14px;
-            font-size:12px;
-            opacity:.78;
-            text-align:center;
-            line-height: 1.7;
-          }
-
-          .lk-field{ margin-top:12px; }
-
-          .lk-field label{
-            font-size:12px;
-            font-weight:900;
-            display:block;
-            margin:0 0 6px;
-            opacity: .92;
-          }
-
-          .lk-form input:not([type="checkbox"]),
-          .lk-form select{
-            width:100%;
-            height:var(--lk-h);
-            padding:0 14px;
-            border-radius:var(--lk-r);
-            border:1px solid var(--lk-b);
-            background:var(--lk-bg);
-            outline:none;
-            font-size:14px;
-            line-height: var(--lk-h);
-          }
-
-          .lk-form input:not([type="checkbox"])::placeholder{
-            opacity: .55;
-          }
-
-          .lk-form input:not([type="checkbox"]):focus,
-          .lk-form select:focus{
-            border-color: var(--lk-bf);
-          }
-
-          /* توحيد select وراحة السهم بدون كسر RTL/LTR */
-          .lk-form select{
-            appearance:none;
-            -webkit-appearance:none;
-            -moz-appearance:none;
-            padding-inline-end: 40px;
-            background-image:
-              linear-gradient(45deg, transparent 50%, rgba(0,0,0,.55) 50%),
-              linear-gradient(135deg, rgba(0,0,0,.55) 50%, transparent 50%);
-            background-position:
-              calc(100% - 18px) calc(50% + 2px),
-              calc(100% - 12px) calc(50% + 2px);
-            background-size: 6px 6px, 6px 6px;
-            background-repeat:no-repeat;
-          }
-
-          .lk-form[dir="rtl"] select{
-            background-position:
-              18px calc(50% + 2px),
-              12px calc(50% + 2px);
-            padding-inline-end: 14px;
-            padding-inline-start: 40px;
-          }
-
-          .lk-agree{ margin-top: 14px; }
-
-          .lk-agree-box{
-            width:100%;
-            border-radius: 14px;
-            border:1px solid rgba(0,0,0,0.10);
-            background: rgba(255,255,255,0.88);
-            padding:10px 12px;
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            gap:10px;
-          }
-
-          .lk-agree-row{
-            display:inline-flex;
-            align-items:center;
-            gap:10px;
-            font-size:13px;
-            font-weight:900;
-            cursor:pointer;
-            user-select:none;
-            -webkit-tap-highlight-color: transparent;
-            margin:0;
-          }
-
-          .lk-agree-row input[type="checkbox"]{
-            width:18px;
-            height:18px;
-            margin:0;
-            flex:0 0 auto;
-            cursor:pointer;
-          }
-
-          .lk-agree-text{ line-height: 18px; }
-
-          .lk-legal-link{
-            flex:0 0 auto;
-            font-size:12px;
-            font-weight:900;
-            opacity:.78;
-            text-decoration:underline;
-            white-space: nowrap;
-          }
-
-          .lk-msg{
-            margin-top:12px;
-            padding:10px 12px;
-            border-radius:12px;
-            font-size:12px;
-            font-weight:900;
-            border:1px solid rgba(0,0,0,0.10);
-            background: rgba(255,255,255,0.90);
-            line-height: 1.7;
-          }
-          .lk-msg.bad{ border-color: rgba(239,68,68,0.35); }
-          .lk-msg.ok{ border-color: rgba(34,197,94,0.35); }
-
-          .lk-submit{
-            margin-top:12px;
-            width:100%;
-            height:46px;
-            border-radius:14px;
-            border:0;
-            background:#000;
-            color:#fff;
-            font-weight:900;
-            cursor:pointer;
-            opacity:1;
-          }
-          .lk-submit:disabled{
-            opacity:.65;
-            cursor:not-allowed;
-          }
-        `,
-        }}
-      />
-    </form>
+    </div>
   );
 }
