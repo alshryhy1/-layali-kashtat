@@ -1,220 +1,313 @@
-import Link from "next/link";
+"use client";
 
-export const dynamic = "force-dynamic";
+import * as React from "react";
+import Link from "next/link";
 
 type Locale = "ar" | "en";
 
-function asLocale(v: any): Locale {
-  return String(v || "").trim().toLowerCase() === "en" ? "en" : "ar";
+function normalizePhone(raw: string) {
+  let s = String(raw || "").trim().replace(/[^\d]/g, "");
+
+  if (s.startsWith("00966")) s = s.replace(/^00966/, "");
+  if (s.startsWith("966")) s = s.replace(/^966/, "");
+
+  if (s.length === 9 && s.startsWith("5")) s = `0${s}`;
+
+  return s;
 }
 
-/** للعرض فقط (لا يغيّر قيمة ref المرسلة بالـ query) */
-function shortRef(raw: string) {
-  const s = String(raw || "").trim();
-  if (!s) return "";
-  return `LK-${s.slice(0, 8).toUpperCase()}`;
+function digitsOnly(raw: string) {
+  return String(raw || "").replace(/[^\d]/g, "");
 }
 
-export default async function ProviderStatusPage({
+export default function ProviderStatusPage({
   params,
-  searchParams,
 }: {
-  params: Promise<{ locale: string }>;
-  searchParams: Promise<{ ref?: string; phone?: string }>;
+  params: { locale: string };
 }) {
-  const p = await params;
-  const sp = await searchParams;
-
-  const locale: Locale = asLocale(p?.locale);
+  const locale: Locale = params?.locale === "en" ? "en" : "ar";
   const isAr = locale === "ar";
 
-  const refRaw = String(sp?.ref || "").trim();
-  const phone = String(sp?.phone || "").trim();
+  const t = {
+    title: isAr ? "متابعة حالة الطلب" : "Track request status",
+    hint: isAr
+      ? "اكتب رقم الطلب ورقم الجوال ثم اضغط متابعة."
+      : "Enter request number and mobile number, then press Track.",
+    ref: isAr ? "رقم الطلب" : "Request number",
+    phone: isAr ? "رقم الجوال" : "Mobile number",
+    track: isAr ? "متابعة" : "Track",
+    home: isAr ? "العودة للرئيسية" : "Back to home",
 
-  const displayRef = refRaw ? shortRef(refRaw) : "";
+    // رسائل
+    required: isAr ? "يرجى إدخال رقم الطلب ورقم الجوال." : "Please enter request number and mobile.",
+    refInvalid: isAr ? "رقم الطلب غير صحيح (أرقام فقط)." : "Invalid request number (digits only).",
+    phoneInvalid: isAr ? "رقم الجوال غير صحيح." : "Invalid mobile number.",
+    notFound: isAr ? "لم يتم العثور على طلب بهذا الرقم." : "Request not found.",
+    mismatch: isAr ? "رقم الجوال غير مطابق لهذا الطلب." : "Mobile number does not match this request.",
+    serverError: isAr ? "حدث خطأ. حاول لاحقًا." : "Something went wrong. Please try again.",
 
-  const fieldMax = 240;
+    result: isAr ? "نتيجة المتابعة" : "Result",
+    statusPending: isAr ? "قيد الانتظار" : "Pending",
+    statusApproved: isAr ? "تم القبول" : "Approved",
+    statusRejected: isAr ? "تم الرفض" : "Rejected",
+  };
+
+  const [refInput, setRefInput] = React.useState("");
+  const [phoneInput, setPhoneInput] = React.useState("");
+
+  const [loading, setLoading] = React.useState(false);
+  const [msg, setMsg] = React.useState<string | null>(null);
+
+  const [result, setResult] = React.useState<{
+    ref: string;
+    status: "pending" | "approved" | "rejected";
+  } | null>(null);
+
+  // ✅ تهيئة من الـ URL لو موجودة (مع تنظيف صارم)
+  React.useEffect(() => {
+    try {
+      const url = new URL(window.location.href);
+      const refQ = digitsOnly(url.searchParams.get("ref") || "");
+      const phoneQ = normalizePhone(url.searchParams.get("phone") || "");
+
+      if (refQ) setRefInput(refQ);
+      if (phoneQ) setPhoneInput(phoneQ);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  function statusLabel(s: "pending" | "approved" | "rejected") {
+    if (s === "approved") return t.statusApproved;
+    if (s === "rejected") return t.statusRejected;
+    return t.statusPending;
+  }
+
+  async function onTrack(e: React.FormEvent) {
+    e.preventDefault();
+    if (loading) return;
+
+    setMsg(null);
+    setResult(null);
+
+    const refDigits = digitsOnly(refInput);
+    const phoneNorm = normalizePhone(phoneInput);
+
+    if (!refDigits || !phoneNorm) {
+      setMsg(t.required);
+      return;
+    }
+
+    // ref أرقام فقط (إلزامي)
+    if (!/^\d+$/.test(refDigits) || Number(refDigits) <= 0) {
+      setMsg(t.refInvalid);
+      return;
+    }
+
+    // جوال سعودي بصيغة 05xxxxxxxx
+    if (!/^05\d{8}$/.test(phoneNorm)) {
+      setMsg(t.phoneInvalid);
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // ✅ نكتب القيم النظيفة في URL (بدون إفساد الصفحة)
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set("ref", refDigits);
+        url.searchParams.set("phone", phoneNorm);
+        window.history.replaceState({}, "", url.toString());
+      } catch {
+        // ignore
+      }
+
+      const res = await fetch(
+        `/api/providers/status?ref=${encodeURIComponent(refDigits)}&phone=${encodeURIComponent(phoneNorm)}`,
+        { cache: "no-store" }
+      );
+
+      const data = (await res.json().catch(() => null)) as any;
+
+      if (!res.ok || !data?.ok) {
+        const err = String(data?.error || data?.message || "").toLowerCase();
+
+        if (res.status === 404 || err.includes("not found")) {
+          setMsg(t.notFound);
+        } else if (res.status === 403 || err.includes("mismatch")) {
+          setMsg(t.mismatch);
+        } else if (res.status === 400 || err.includes("invalid ref") || err.includes("invalid_phone") || err.includes("phone")) {
+          // 400 ممكن ref/phone غير صالح — نعطي رسالة مناسبة حسب التحقق عندنا
+          setMsg(err.includes("ref") ? t.refInvalid : t.phoneInvalid);
+        } else {
+          setMsg(t.serverError);
+        }
+
+        setLoading(false);
+        return;
+      }
+
+      const st = String(data?.status || "pending").toLowerCase();
+      const normalized: "pending" | "approved" | "rejected" =
+        st === "approved" ? "approved" : st === "rejected" ? "rejected" : "pending";
+
+      setResult({ ref: `LK-${refDigits}`, status: normalized });
+      setLoading(false);
+    } catch {
+      setMsg(t.serverError);
+      setLoading(false);
+    }
+  }
 
   return (
-    <section
+    <main
       dir={isAr ? "rtl" : "ltr"}
       style={{
-        width: "100%",
-        display: "flex",
-        justifyContent: "center",
-        padding: 12,
+        minHeight: "calc(100vh - 120px)",
+        display: "grid",
+        placeItems: "center",
+        padding: 16,
       }}
     >
       <div
         style={{
           width: "100%",
-          maxWidth: 360,
-          background: "#fff",
+          maxWidth: 520,
+          background: "rgba(255,255,255,0.92)",
+          border: "1px solid rgba(0,0,0,0.08)",
           borderRadius: 18,
+          boxShadow: "0 12px 28px rgba(0,0,0,0.10)",
           padding: 16,
-          boxShadow: "0 12px 28px rgba(0,0,0,.08)",
+          boxSizing: "border-box",
         }}
       >
-        <h1
-          style={{
-            margin: "0 0 6px",
-            fontSize: 18,
-            fontWeight: 900,
-            textAlign: "center",
-          }}
-        >
-          متابعة حالة الطلب
+        <h1 style={{ margin: "0 0 6px", fontSize: 18, fontWeight: 900, textAlign: "center" }}>
+          {t.title}
         </h1>
-
-        <p
-          style={{
-            margin: "0 auto 14px",
-            fontSize: 12,
-            opacity: 0.7,
-            textAlign: "center",
-            maxWidth: fieldMax,
-            lineHeight: 1.5,
-          }}
-        >
-          اكتب رقم الطلب ورقم الجوال ثم اضغط متابعة.
+        <p style={{ margin: "0 0 14px", fontSize: 12, opacity: 0.78, textAlign: "center", lineHeight: 1.7 }}>
+          {t.hint}
         </p>
 
-        {/* ✅ GET form لتحديث الصفحة بنفس query (ref + phone) */}
-        <form
-          method="get"
-          style={{
-            width: "100%",
-            maxWidth: fieldMax,
-            margin: "0 auto",
-            display: "grid",
-            gap: 12,
-          }}
-        >
-          <div style={{ textAlign: "center" }}>
-            <label
-              htmlFor="lk-ref"
-              style={{
-                fontSize: 11,
-                fontWeight: 800,
-                opacity: 0.8,
-                display: "block",
-                marginBottom: 4,
-              }}
-            >
-              رقم الطلب
+        <form onSubmit={onTrack} noValidate>
+          <div style={{ marginTop: 12 }}>
+            <label style={{ fontSize: 12, fontWeight: 900, display: "block", margin: "0 0 6px", opacity: 0.92 }}>
+              {t.ref}
             </label>
-
             <input
-              id="lk-ref"
-              name="ref"
-              defaultValue={refRaw}
-              inputMode="text"
-              placeholder={isAr ? "اكتب رقم الطلب" : "Enter request number"}
+              value={refInput}
+              onChange={(e) => {
+                // ✅ يمنع الأحرف مباشرة (أرقام فقط)
+                const v = digitsOnly(e.target.value);
+                setRefInput(v);
+                if (msg) setMsg(null);
+                if (result) setResult(null);
+              }}
+              inputMode="numeric"
+              autoComplete="off"
+              placeholder={isAr ? "مثال: 50" : "e.g. 50"}
               style={{
                 width: "100%",
-                height: 38,
-                padding: "0 10px",
-                boxSizing: "border-box",
-                borderRadius: 10,
+                height: 44,
+                padding: "0 14px",
+                borderRadius: 12,
                 border: "1px solid rgba(0,0,0,.18)",
-                fontSize: 13,
-                fontWeight: 900,
-                textAlign: "center",
+                background: "rgba(255,255,255,0.96)",
                 outline: "none",
-                background: "#fff",
+                fontSize: 14,
+                boxSizing: "border-box",
+                textAlign: "center",
+                fontWeight: 900,
               }}
+              required
             />
           </div>
 
-          <div style={{ textAlign: "center" }}>
-            <label
-              htmlFor="lk-phone"
-              style={{
-                fontSize: 11,
-                fontWeight: 800,
-                opacity: 0.8,
-                display: "block",
-                marginBottom: 4,
-              }}
-            >
-              رقم الجوال
+          <div style={{ marginTop: 12 }}>
+            <label style={{ fontSize: 12, fontWeight: 900, display: "block", margin: "0 0 6px", opacity: 0.92 }}>
+              {t.phone}
             </label>
-
             <input
-              id="lk-phone"
-              name="phone"
-              defaultValue={phone}
+              value={phoneInput}
+              onChange={(e) => {
+                setPhoneInput(e.target.value);
+                if (msg) setMsg(null);
+                if (result) setResult(null);
+              }}
               inputMode="tel"
+              autoComplete="tel"
               placeholder="05xxxxxxxx"
               style={{
                 width: "100%",
-                height: 38,
-                padding: "0 10px",
-                boxSizing: "border-box",
-                borderRadius: 10,
+                height: 44,
+                padding: "0 14px",
+                borderRadius: 12,
                 border: "1px solid rgba(0,0,0,.18)",
-                fontSize: 13,
-                textAlign: "center",
+                background: "rgba(255,255,255,0.96)",
                 outline: "none",
-                background: "#fff",
+                fontSize: 14,
+                boxSizing: "border-box",
+                textAlign: "center",
+                fontWeight: 900,
               }}
+              required
             />
           </div>
 
           <button
             type="submit"
+            disabled={loading}
             style={{
+              marginTop: 12,
               width: "100%",
-              height: 40,
-              borderRadius: 12,
+              height: 46,
+              borderRadius: 14,
               border: 0,
               background: "#000",
               color: "#fff",
               fontWeight: 900,
-              fontSize: 13,
-              cursor: "pointer",
-              marginTop: 2,
+              cursor: loading ? "not-allowed" : "pointer",
+              opacity: loading ? 0.65 : 1,
             }}
           >
-            متابعة
+            {t.track}
           </button>
         </form>
 
-        {/* result */}
-        {refRaw && (
+        {msg ? (
           <div
             style={{
-              maxWidth: fieldMax,
-              margin: "18px auto 0",
-              paddingTop: 12,
-              borderTop: "1px solid rgba(0,0,0,.12)",
+              marginTop: 12,
+              padding: "10px 12px",
+              borderRadius: 12,
+              fontSize: 12,
+              fontWeight: 900,
+              border: "1px solid rgba(239,68,68,0.35)",
+              background: "rgba(255,255,255,0.90)",
+              lineHeight: 1.7,
               textAlign: "center",
             }}
+            role="status"
+            aria-live="polite"
           >
-            <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 4 }}>
-              نتيجة المتابعة
-            </div>
-            <div style={{ fontSize: 14, fontWeight: 900 }}>
-              {displayRef || "-"}
-            </div>
-            <div style={{ fontSize: 12, marginTop: 2 }}>قيد الانتظار</div>
+            {msg}
           </div>
-        )}
+        ) : null}
 
-        <div style={{ marginTop: 14, textAlign: "center" }}>
-          <Link
-            href={`/${locale}`}
-            style={{
-              fontSize: 12,
-              fontWeight: 800,
-              textDecoration: "underline",
-              color: "#111",
-            }}
-          >
-            العودة للرئيسية
+        {result ? (
+          <div style={{ marginTop: 16, textAlign: "center" }}>
+            <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 6, fontWeight: 900 }}>{t.result}</div>
+            <div style={{ fontSize: 16, fontWeight: 900, marginBottom: 4 }}>{result.ref}</div>
+            <div style={{ fontSize: 13, fontWeight: 900 }}>{statusLabel(result.status)}</div>
+          </div>
+        ) : null}
+
+        <div style={{ marginTop: 16, textAlign: "center" }}>
+          <Link href={`/${locale}`} style={{ fontSize: 12, fontWeight: 900, textDecoration: "underline" }}>
+            {t.home}
           </Link>
         </div>
       </div>
-    </section>
+    </main>
   );
 }
