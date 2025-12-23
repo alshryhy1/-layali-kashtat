@@ -1,3 +1,5 @@
+import * as React from "react";
+
 export const dynamic = "force-dynamic";
 
 type Locale = "ar" | "en";
@@ -27,15 +29,16 @@ export default async function Home({
 
   const btnBase: React.CSSProperties = {
     width: "100%",
-    minHeight: 48,
-    padding: "12px 14px",
-    borderRadius: 14,
+    minHeight: 44,
+    padding: "10px 14px",
+    borderRadius: 12,
     fontWeight: 900,
     textDecoration: "none",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
     textAlign: "center",
+    boxSizing: "border-box",
   };
 
   const btnPrimary: React.CSSProperties = {
@@ -47,7 +50,9 @@ export default async function Home({
 
   const btnGhost: React.CSSProperties = {
     ...btnBase,
-    border: "1px solid rgba(0,0,0,0.18)",
+    minHeight: 42,
+    fontWeight: 850,
+    border: "1px solid rgba(0,0,0,0.16)",
     background: "#fff",
     color: "#111",
   };
@@ -57,57 +62,77 @@ export default async function Home({
       dir={isEn ? "ltr" : "rtl"}
       style={{
         width: "100%",
-        paddingTop: 8,
-        paddingBottom: 8,
+        paddingTop: 14,
+        paddingBottom: 14,
+        paddingInline: 12,
       }}
     >
       <div style={{ width: "100%", maxWidth: 720, marginInline: "auto" }}>
-        <div className="card" style={{ textAlign: "center" }}>
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 28,
-              fontWeight: 900,
-              lineHeight: "34px",
-            }}
-          >
-            {t.title}
-          </h1>
+        <div
+          className="card home-card"
+          style={{
+            textAlign: "center",
+            padding: "18px 14px",
+            borderRadius: 18,
+          }}
+        >
+          <div style={{ width: "100%", maxWidth: 420, marginInline: "auto" }}>
+            <h1
+              style={{
+                margin: 0,
+                fontSize: 26,
+                fontWeight: 900,
+                lineHeight: "32px",
+                letterSpacing: isEn ? 0 : "-0.2px",
+              }}
+            >
+              {t.title}
+            </h1>
 
-          <p style={{ margin: "10px 0 14px", opacity: 0.78, fontSize: 14 }}>
-            {t.desc}
-          </p>
+            <p
+              style={{
+                margin: "10px 0 16px",
+                opacity: 0.78,
+                fontSize: 13,
+                lineHeight: "20px",
+              }}
+            >
+              {t.desc}
+            </p>
 
-          <div
-            className="home-actions"
-            style={{
-              display: "grid",
-              gap: 10,
-              gridTemplateColumns: "1fr",
-              marginTop: 6,
-            }}
-          >
-            <a href={`/${locale}/providers/signup`} style={btnPrimary}>
-              {t.signup}
-            </a>
+            <div
+              className="home-actions"
+              style={{
+                display: "grid",
+                gap: 10,
+                gridTemplateColumns: "1fr",
+                marginTop: 6,
+              }}
+            >
+              <a href={`/${locale}/providers/signup`} style={btnPrimary}>
+                {t.signup}
+              </a>
 
-            <a href={`/${locale}/providers/status`} style={btnGhost}>
-              {t.status}
-            </a>
+              <a href={`/${locale}/providers/status`} style={btnGhost}>
+                {t.status}
+              </a>
 
-            <a href={`/${locale}/legal`} style={btnGhost}>
-              {t.legal}
-            </a>
+              <a href={`/${locale}/legal`} style={btnGhost}>
+                {t.legal}
+              </a>
+            </div>
           </div>
 
-          {/* ✅ ويب: صفّين بشكل جميل بدون كسر الجوال */}
           <style
             dangerouslySetInnerHTML={{
               __html: `
+              /* Mobile-first: بطاقة أضيق وتوازن مسافات */
+              .home-card { box-shadow: 0 12px 28px rgba(0,0,0,.08); }
+
+              /* Desktop: 3 أعمدة كما كان */
               @media (min-width: 768px) {
-                .home-actions {
-                  grid-template-columns: 1fr 1fr 1fr;
-                }
+                .home-card { padding: 22px 18px; }
+                .home-actions { grid-template-columns: 1fr 1fr 1fr; }
               }
             `,
             }}

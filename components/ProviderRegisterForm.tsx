@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import * as React from "react";
+import Link from "next/link";
 
 type Locale = "ar" | "en";
 
@@ -9,445 +9,511 @@ type Props = {
   locale: Locale;
 };
 
-type SubmitState = {
-  loading: boolean;
-  error: string | null;
-};
-
-type FieldErrors = {
-  name?: string;
-  phone?: string;
-  serviceType?: string;
-  city?: string;
-  agree?: string;
-};
+type State =
+  | { ok: false; message: string }
+  | { ok: true; message: string; ref?: string };
 
 function normalizePhone(raw: string) {
-  const v = String(raw || "").trim();
-  const cleaned = v.replace(/[^\d+]/g, "");
-
-  const reLocal = /^05\d{8}$/;
-  const rePlus = /^\+9665\d{8}$/;
-  const reNoPlus = /^9665\d{8}$/;
-
-  const ok = reLocal.test(cleaned) || rePlus.test(cleaned) || reNoPlus.test(cleaned);
-  return { cleaned, ok };
+  const s = String(raw || "").trim();
+  return s.replace(/[^\d]/g, "");
 }
 
 export default function ProviderRegisterForm({ locale }: Props) {
-  const router = useRouter();
   const isAr = locale === "ar";
 
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [serviceType, setServiceType] = useState("");
-  const [city, setCity] = useState("");
-  const [agree, setAgree] = useState(false);
-
-  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-  const [state, setState] = useState<SubmitState>({
-    loading: false,
-    error: null,
-  });
-
-  const services = useMemo(
-    () => [
-      "كشتات برية",
-      "كشتات ساحلية",
-      "كشتات جبلية",
-      "كشتات رملية",
-      "منتجع",
-      "شاليه",
-      "مخيم",
-      "استراحة",
-      "مزرعة",
-    ],
-    []
-  );
-
-  const cities = useMemo(
-    () => [
-      "مكة المكرمة",
-      "المدينة المنورة",
-      "الرياض",
-      "جدة",
-      "الدمام",
-      "القصيم",
-      "حائل",
-      "عرعر",
-      "طريف",
-      "القريات",
-      "طبرجل",
-      "الجوف",
-      "سكاكا",
-      "تبوك",
-      "العلا",
-      "ينبع",
-      "أملج",
-      "حقل",
-    ],
-    []
-  );
-
-  const ui = useMemo(() => {
-    return isAr
-      ? {
-          h2: "التسجيل كمقدّم خدمة",
-          hint: "أدخل بياناتك بدقة — المدينة ونوع الخدمة من القائمة فقط.",
-          name: "اسم مقدّم الخدمة",
-          phone: "رقم الجوال",
-          service: "نوع الخدمة",
-          city: "المدينة",
-          submit: "إرسال طلب التسجيل",
-          sending: "جاري الإرسال...",
-          legalTitle: "إقرار وتعهد",
-          legalAgree: "أوافق على النصوص القانونية",
-          legalHint: "يلزم الموافقة لإرسال الطلب.",
-          legalLink: "قراءة النصوص القانونية",
-          errName: "الاسم مطلوب (حد أدنى حرفين).",
-          errPhone: "رقم الجوال غير صحيح.",
-          errService: "اختر نوع الخدمة.",
-          errCity: "اختر المدينة.",
-          errAgree: "الموافقة على النصوص القانونية إلزامية.",
-          errGeneric: "حدث خطأ أثناء الإرسال، حاول لاحقًا.",
-        }
-      : {
-          h2: "Provider Signup",
-          hint: "Enter accurate info — city and service type must be selected from the list.",
-          name: "Provider name",
-          phone: "Mobile number",
-          service: "Service type",
-          city: "City",
-          submit: "Submit request",
-          sending: "Submitting...",
-          legalTitle: "Declaration",
-          legalAgree: "I agree to the legal texts",
-          legalHint: "Approval is required to submit.",
-          legalLink: "Read legal texts",
-          errName: "Name is required (min 2 chars).",
-          errPhone: "Invalid mobile number.",
-          errService: "Select service type.",
-          errCity: "Select city.",
-          errAgree: "You must agree to the legal texts.",
-          errGeneric: "Submission failed. Please try again.",
-        };
-  }, [isAr]);
-
-  const inputStyle = (): CSSProperties => ({
-    width: "100%",
-    padding: "10px 12px", // ✅ أقل قليلًا (بدون كسر اللمس)
-    borderRadius: 12,
-    border: "1px solid rgba(0,0,0,0.18)",
-    outline: "none",
-    fontSize: 14,
-    background: "#fff",
-    direction: isAr ? "rtl" : "ltr",
-    textAlign: isAr ? "right" : "left",
-    minHeight: 44, // ✅ لمس للجوال (ثابت)
-  });
-
-  const labelStyle: CSSProperties = {
-    fontSize: 13,
-    fontWeight: 900,
-    marginBottom: 5, // ✅ أقل
-    textAlign: isAr ? "right" : "left",
+  const t = {
+    title: isAr ? "التسجيل كمقدم خدمة" : "Provider Signup",
+    hint: isAr
+      ? "أدخل بياناتك بدقة — المدينة ونوع الخدمة من القائمة فقط."
+      : "Enter your details carefully — city and service from the list only.",
+    name: isAr ? "اسم مقدم الخدمة" : "Provider name",
+    phone: isAr ? "رقم الجوال" : "Mobile number",
+    service: isAr ? "نوع الخدمة" : "Service type",
+    city: isAr ? "المدينة" : "City",
+    agree: isAr ? "موافق" : "I agree",
+    read: isAr ? "قراءة النصوص القانونية" : "Read legal texts",
+    submit: isAr ? "إرسال طلب التسجيل" : "Submit signup request",
+    sending: isAr ? "جارٍ الإرسال..." : "Sending...",
+    required: isAr ? "اكمل جميع الحقول المطلوبة." : "Please complete all required fields.",
+    agreeReq: isAr ? "يلزم الموافقة على النصوص القانونية." : "You must agree to the legal texts.",
+    phoneInvalid: isAr ? "رقم الجوال غير صحيح." : "Invalid mobile number.",
+    serverError: isAr ? "حدث خطأ. حاول مرة أخرى." : "Something went wrong. Please try again.",
+    success: isAr ? "تم إرسال طلبك بنجاح." : "Your request was sent successfully.",
+    pickService: isAr ? "اختر نوع الخدمة" : "Select service type",
+    pickCity: isAr ? "اختر المدينة" : "Select city",
   };
 
-  const errStyle: CSSProperties = {
-    color: "#b00020",
-    fontWeight: 900,
-    fontSize: 13,
-    marginTop: 5, // ✅ أقل
-    textAlign: isAr ? "right" : "left",
-  };
+  const servicesAr = [
+    "كشتات برية",
+    "كشتات ساحلية",
+    "كشتات جبلية",
+    "كشتات رملية",
+    "منتجع",
+    "شاليه",
+    "مخيم",
+    "استراحة",
+    "مزرعة",
+  ];
 
-  function validate(): FieldErrors {
-    const e: FieldErrors = {};
-    if (name.trim().length < 2) e.name = ui.errName;
-    if (!normalizePhone(phone).ok) e.phone = ui.errPhone;
-    if (!serviceType) e.serviceType = ui.errService;
-    if (!city) e.city = ui.errCity;
-    if (!agree) e.agree = ui.errAgree;
-    return e;
+  const servicesEn = [
+    "Desert trips",
+    "Coastal trips",
+    "Mountain trips",
+    "Sandy trips",
+    "Resort",
+    "Chalet",
+    "Camp",
+    "Rest house",
+    "Farm",
+  ];
+
+  const citiesAr = [
+    "مكة المكرمة",
+    "المدينة المنورة",
+    "الرياض",
+    "جده",
+    "الدمام",
+    "القصيم",
+    "حائل",
+    "عرعر",
+    "طريف",
+    "القريات",
+    "طبرجل",
+    "الجوف",
+    "سكاكا",
+    "تبوك",
+    "العلا",
+    "ينبع",
+    "املج",
+    "حقل",
+  ];
+
+  const citiesEn = [
+    "Makkah",
+    "Madinah",
+    "Riyadh",
+    "Jeddah",
+    "Dammam",
+    "Qassim",
+    "Hail",
+    "Arar",
+    "Turaif",
+    "Al Qurayyat",
+    "Tabarjal",
+    "Al Jouf",
+    "Sakaka",
+    "Tabuk",
+    "Al Ula",
+    "Yanbu",
+    "Umluj",
+    "Haql",
+  ];
+
+  const serviceOptions = isAr ? servicesAr : servicesEn;
+  const cityOptions = isAr ? citiesAr : citiesEn;
+
+  const [name, setName] = React.useState("");
+  const [phone, setPhone] = React.useState("");
+  const [serviceType, setServiceType] = React.useState("");
+  const [city, setCity] = React.useState("");
+  const [agree, setAgree] = React.useState(false);
+
+  const [busy, setBusy] = React.useState(false);
+  const [state, setState] = React.useState<State | null>(null);
+
+  function friendlyServerMessage(raw: any) {
+    const s = String(raw || "").trim();
+    if (!s) return "";
+
+    const key = s.toLowerCase();
+    if (key === "missing_fields") return t.required;
+    if (key === "invalid_phone") return t.phoneInvalid;
+    if (key === "must_agree") return t.agreeReq;
+
+    return s;
   }
 
-  async function handleSubmit(e: FormEvent) {
+  function missingMessage(missing: string[]) {
+    if (missing.length === 0) return t.required;
+    if (isAr) return `اكمل الحقول التالية: ${missing.join("، ")}`;
+    return `Please complete: ${missing.join(", ")}`;
+  }
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (state.loading) return;
+    if (busy) return;
 
-    const errs = validate();
-    setFieldErrors(errs);
-    if (Object.keys(errs).length) return;
+    const form = e.currentTarget;
 
-    setState({ loading: true, error: null });
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      setState({ ok: false, message: t.required });
+      return;
+    }
+
+    const fd = new FormData(form);
+
+    const n = String(fd.get("provider_name") ?? "").trim();
+    const p = normalizePhone(String(fd.get("provider_phone") ?? ""));
+    const s = String(fd.get("service_type") ?? "").trim();
+    const c = String(fd.get("city") ?? "").trim();
+    const a = fd.get("agree") === "on";
+
+    const missing: string[] = [];
+    if (!n) missing.push(t.name);
+    if (!p) missing.push(t.phone);
+    if (!s) missing.push(t.service);
+    if (!c) missing.push(t.city);
+
+    if (missing.length > 0) {
+      setState({ ok: false, message: missingMessage(missing) });
+      return;
+    }
+
+    const looksOk =
+      (p.length === 10 && p.startsWith("05")) ||
+      (p.length === 9 && p.startsWith("5")) ||
+      (p.length === 12 && p.startsWith("9665")) ||
+      (p.length === 13 && p.startsWith("009665"));
+
+    if (!looksOk) {
+      setState({ ok: false, message: t.phoneInvalid });
+      return;
+    }
+
+    if (!a) {
+      setState({ ok: false, message: t.agreeReq });
+      return;
+    }
+
+    setBusy(true);
+    setState(null);
 
     try {
-      const { cleaned } = normalizePhone(phone);
-
-      const res = await fetch("/api/provider-signup", {
+      const res = await fetch("/api/providers/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: name.trim(),
-          phone: cleaned,
-          city,
-          serviceType,
+          locale,
+          name: n,
+          phone: p,
+          service_type: s,
+          city: c,
         }),
       });
 
-      const data = await res.json().catch(() => null);
+      const data = (await res.json().catch(() => null)) as any;
 
-      if (!res.ok || !data?.id) {
-        const msg =
-          typeof data?.error === "string" && data.error.trim() ? data.error.trim() : ui.errGeneric;
-        throw new Error(msg);
+      if (!res.ok || !data?.ok) {
+        const rawMsg = data?.message ?? data?.error ?? "";
+        const msg = friendlyServerMessage(rawMsg);
+        setState({ ok: false, message: msg || t.serverError });
+        setBusy(false);
+        return;
       }
 
-      const ref = String(data.id);
-      router.replace(`/${locale}/providers/success?ref=${encodeURIComponent(ref)}`);
-    } catch (err: any) {
-      const msg =
-        typeof err?.message === "string" && err.message.trim() ? err.message.trim() : ui.errGeneric;
-      setState({ loading: false, error: msg });
+      const ref = String(data?.ref || data?.request_id || data?.id || "").trim();
+      setState({ ok: true, message: t.success, ref });
+
+      const to = `/${locale}/providers/success${ref ? `?ref=${encodeURIComponent(ref)}` : ""}`;
+      window.location.href = to;
+    } catch {
+      setState({ ok: false, message: t.serverError });
+      setBusy(false);
     }
   }
 
   return (
-    <>
-      <form
-        onSubmit={handleSubmit}
-        className="lk-form"
-        style={{
-          width: "100%",
-          maxWidth: 520,
-          margin: "0 auto",
-          background: "rgba(255,255,255,0.88)",
-          padding: 16, // ✅ أقل قليلًا
-          borderRadius: 18,
-          border: "1px solid rgba(0,0,0,0.10)",
-          boxShadow: "0 12px 28px rgba(0,0,0,0.10)",
-        }}
-      >
-        <h2
-          className="lk-form-title"
-          style={{
-            margin: "0 0 6px", // ✅ أقل
-            fontSize: 20,
-            fontWeight: 900,
-            textAlign: "center",
+    <form className="lk-form" dir={isAr ? "rtl" : "ltr"} onSubmit={onSubmit} noValidate>
+      <h1>{t.title}</h1>
+      <p className="lk-hint">{t.hint}</p>
+
+      <div className="lk-field">
+        <label htmlFor="lk-name">{t.name}</label>
+        <input
+          id="lk-name"
+          name="provider_name"
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+            if (state) setState(null);
           }}
-        >
-          {ui.h2}
-        </h2>
+          autoComplete="name"
+          placeholder={isAr ? "مثال: خالد" : "e.g. Khalid"}
+          required
+        />
+      </div>
 
-        <div
-          className="lk-form-hint"
-          style={{
-            textAlign: "center",
-            fontSize: 13,
-            opacity: 0.72,
-            marginBottom: 10, // ✅ أقل
-            lineHeight: 1.25, // ✅ يقلل الارتفاع
+      <div className="lk-field">
+        <label htmlFor="lk-phone">{t.phone}</label>
+        <input
+          id="lk-phone"
+          name="provider_phone"
+          value={phone}
+          onChange={(e) => {
+            setPhone(e.target.value);
+            if (state) setState(null);
           }}
+          inputMode="tel"
+          autoComplete="tel"
+          placeholder={isAr ? "05xxxxxxxx" : "05xxxxxxxx"}
+          required
+        />
+      </div>
+
+      <div className="lk-field">
+        <label htmlFor="lk-service">{t.service}</label>
+        <select
+          id="lk-service"
+          name="service_type"
+          value={serviceType}
+          onChange={(e) => {
+            setServiceType(e.target.value);
+            if (state) setState(null);
+          }}
+          aria-label={t.service}
+          required
         >
-          {ui.hint}
-        </div>
+          <option value="" disabled hidden>
+            {t.pickService}
+          </option>
+          {serviceOptions.map((x) => (
+            <option key={x} value={x}>
+              {x}
+            </option>
+          ))}
+        </select>
+      </div>
 
-        <div className="lk-form-grid" style={{ display: "grid", gap: 9 }}>
-          <div>
-            <div style={labelStyle}>{ui.name}</div>
+      <div className="lk-field">
+        <label htmlFor="lk-city">{t.city}</label>
+        <select
+          id="lk-city"
+          name="city"
+          value={city}
+          onChange={(e) => {
+            setCity(e.target.value);
+            if (state) setState(null);
+          }}
+          aria-label={t.city}
+          required
+        >
+          <option value="" disabled hidden>
+            {t.pickCity}
+          </option>
+          {cityOptions.map((x) => (
+            <option key={x} value={x}>
+              {x}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="lk-agree" aria-label={isAr ? "الموافقة على النصوص القانونية" : "Legal agreement"}>
+        <div className="lk-agree-box">
+          <label className="lk-agree-row">
             <input
-              value={name}
-              onChange={(e2) => {
-                setName(e2.target.value);
-                if (fieldErrors.name) setFieldErrors((p) => ({ ...p, name: undefined }));
+              type="checkbox"
+              name="agree"
+              checked={agree}
+              onChange={(e) => {
+                setAgree(e.target.checked);
+                if (state) setState(null);
               }}
-              style={inputStyle()}
-              disabled={state.loading}
+              aria-label={isAr ? "موافقة" : "Agree"}
             />
-            {fieldErrors.name && <div style={errStyle}>{fieldErrors.name}</div>}
-          </div>
+            <span className="lk-agree-text">{t.agree}</span>
+          </label>
 
-          <div>
-            <div style={labelStyle}>{ui.phone}</div>
-            <input
-              value={phone}
-              onChange={(e2) => {
-                const v = e2.target.value.replace(/[^\d+]/g, "");
-                setPhone(v);
-                if (fieldErrors.phone) setFieldErrors((p) => ({ ...p, phone: undefined }));
-              }}
-              inputMode="tel"
-              style={inputStyle()}
-              disabled={state.loading}
-            />
-            {fieldErrors.phone && <div style={errStyle}>{fieldErrors.phone}</div>}
-          </div>
-
-          <div>
-            <div style={labelStyle}>{ui.service}</div>
-            <select
-              value={serviceType}
-              onChange={(e2) => {
-                setServiceType(e2.target.value);
-                if (fieldErrors.serviceType) setFieldErrors((p) => ({ ...p, serviceType: undefined }));
-              }}
-              style={inputStyle()}
-              disabled={state.loading}
-            >
-              <option value="">{ui.service}</option>
-              {services.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-            {fieldErrors.serviceType && <div style={errStyle}>{fieldErrors.serviceType}</div>}
-          </div>
-
-          <div>
-            <div style={labelStyle}>{ui.city}</div>
-            <select
-              value={city}
-              onChange={(e2) => {
-                setCity(e2.target.value);
-                if (fieldErrors.city) setFieldErrors((p) => ({ ...p, city: undefined }));
-              }}
-              style={inputStyle()}
-              disabled={state.loading}
-            >
-              <option value="">{ui.city}</option>
-              {cities.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-            {fieldErrors.city && <div style={errStyle}>{fieldErrors.city}</div>}
-          </div>
-
-          {/* ✅ الإقرار: خفيف + مضغوط */}
-          <div
-            className="lk-legal"
-            style={{
-              marginTop: 3, // ✅ أقل
-              padding: 8,
-              borderRadius: 12,
-              background: "rgba(255,255,255,0.55)",
-              border: "1px solid rgba(0,0,0,0.08)",
-              textAlign: isAr ? "right" : "left",
-            }}
-          >
-            <label
-              style={{
-                display: "flex",
-                gap: 8,
-                alignItems: "flex-start",
-                flexDirection: isAr ? "row-reverse" : "row",
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={agree}
-                onChange={(e2) => {
-                  setAgree(e2.target.checked);
-                  if (fieldErrors.agree) setFieldErrors((p) => ({ ...p, agree: undefined }));
-                }}
-                style={{
-                  width: 16,
-                  height: 16,
-                  flex: "0 0 16px",
-                  marginTop: 2,
-                }}
-                disabled={state.loading}
-              />
-
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontWeight: 900, fontSize: 13, lineHeight: 1.2 }}>
-                  {ui.legalAgree}
-                </div>
-
-                <div style={{ fontSize: 12, opacity: 0.72, marginTop: 2, lineHeight: 1.2 }}>
-                  {ui.legalHint}
-                </div>
-
-                <a
-                  href={`/${locale}/legal`}
-                  style={{
-                    display: "inline-block",
-                    marginTop: 4,
-                    fontSize: 12,
-                    fontWeight: 900,
-                    textDecoration: "underline",
-                    color: "#111",
-                    opacity: 0.9,
-                  }}
-                >
-                  {ui.legalLink}
-                </a>
-
-                {fieldErrors.agree && <div style={{ ...errStyle, marginTop: 6 }}>{fieldErrors.agree}</div>}
-              </div>
-            </label>
-          </div>
-
-          {state.error && <div style={{ ...errStyle, marginTop: 4 }}>{state.error}</div>}
-
-          <button
-            type="submit"
-            disabled={state.loading}
-            className="lk-submit"
-            style={{
-              width: "100%",
-              padding: 12,
-              minHeight: 46, // ✅ لمس
-              borderRadius: 14,
-              border: "none",
-              background: "#000",
-              color: "#fff",
-              fontWeight: 900,
-              cursor: state.loading ? "not-allowed" : "pointer",
-              opacity: state.loading ? 0.88 : 1,
-              marginTop: 1, // ✅ يقرب الزر بصريًا
-            }}
-          >
-            {state.loading ? ui.sending : ui.submit}
-          </button>
+          <Link href={`/${locale}/legal`} className="lk-legal-link">
+            {t.read}
+          </Link>
         </div>
-      </form>
+      </div>
 
-      {/* ✅ Mobile-First: ضغط الفراغات العمودية على الجوال فقط */}
+      {state?.message ? (
+        <div className={`lk-msg ${state.ok ? "ok" : "bad"}`} role="status" aria-live="polite">
+          {state.message}
+        </div>
+      ) : null}
+
+      <button type="submit" className="lk-submit" disabled={busy}>
+        {busy ? t.sending : t.submit}
+      </button>
+
       <style
         dangerouslySetInnerHTML={{
           __html: `
-          @media (max-width: 520px) {
-            .lk-form {
-              max-width: 460px !important;
-              padding: 13px !important;
-              border-radius: 16px !important;
-              box-shadow: 0 10px 22px rgba(0,0,0,0.10) !important;
-              background: rgba(255,255,255,0.86) !important;
-            }
-            .lk-form-title {
-              font-size: 18px !important;
-              margin-bottom: 5px !important;
-            }
-            .lk-form-hint {
-              margin-bottom: 8px !important;
-              font-size: 12.5px !important;
-            }
-            .lk-form-grid {
-              gap: 8px !important;
-            }
-            .lk-legal {
-              padding: 7px !important;
-              border-radius: 10px !important;
-              margin-top: 2px !important;
-            }
+          :root{
+            --lk-h: 44px;
+            --lk-r: 12px;
+            --lk-b: rgba(0,0,0,.18);
+            --lk-bf: rgba(0,0,0,.38);
+            --lk-bg: rgba(255,255,255,0.96);
+          }
+
+          .lk-form{
+            box-sizing:border-box;
+            width:100%;
+            background:rgba(255,255,255,0.90);
+            border:1px solid rgba(0,0,0,0.08);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            padding:16px;
+            border-radius:18px;
+            box-shadow:0 12px 28px rgba(0,0,0,0.10);
+          }
+
+          .lk-form *{ box-sizing:border-box; }
+
+          .lk-form h1{
+            margin:0 0 6px;
+            font-size:18px;
+            font-weight:900;
+            text-align:center;
+          }
+
+          .lk-hint{
+            margin:0 0 14px;
+            font-size:12px;
+            opacity:.78;
+            text-align:center;
+            line-height: 1.7;
+          }
+
+          .lk-field{ margin-top:12px; }
+
+          .lk-field label{
+            font-size:12px;
+            font-weight:900;
+            display:block;
+            margin:0 0 6px;
+            opacity: .92;
+          }
+
+          .lk-form input:not([type="checkbox"]),
+          .lk-form select{
+            width:100%;
+            height:var(--lk-h);
+            padding:0 14px;
+            border-radius:var(--lk-r);
+            border:1px solid var(--lk-b);
+            background:var(--lk-bg);
+            outline:none;
+            font-size:14px;
+            line-height: var(--lk-h);
+          }
+
+          .lk-form input:not([type="checkbox"])::placeholder{
+            opacity: .55;
+          }
+
+          .lk-form input:not([type="checkbox"]):focus,
+          .lk-form select:focus{
+            border-color: var(--lk-bf);
+          }
+
+          /* توحيد select وراحة السهم بدون كسر RTL/LTR */
+          .lk-form select{
+            appearance:none;
+            -webkit-appearance:none;
+            -moz-appearance:none;
+            padding-inline-end: 40px;
+            background-image:
+              linear-gradient(45deg, transparent 50%, rgba(0,0,0,.55) 50%),
+              linear-gradient(135deg, rgba(0,0,0,.55) 50%, transparent 50%);
+            background-position:
+              calc(100% - 18px) calc(50% + 2px),
+              calc(100% - 12px) calc(50% + 2px);
+            background-size: 6px 6px, 6px 6px;
+            background-repeat:no-repeat;
+          }
+
+          .lk-form[dir="rtl"] select{
+            background-position:
+              18px calc(50% + 2px),
+              12px calc(50% + 2px);
+            padding-inline-end: 14px;
+            padding-inline-start: 40px;
+          }
+
+          .lk-agree{ margin-top: 14px; }
+
+          .lk-agree-box{
+            width:100%;
+            border-radius: 14px;
+            border:1px solid rgba(0,0,0,0.10);
+            background: rgba(255,255,255,0.88);
+            padding:10px 12px;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:10px;
+          }
+
+          .lk-agree-row{
+            display:inline-flex;
+            align-items:center;
+            gap:10px;
+            font-size:13px;
+            font-weight:900;
+            cursor:pointer;
+            user-select:none;
+            -webkit-tap-highlight-color: transparent;
+            margin:0;
+          }
+
+          .lk-agree-row input[type="checkbox"]{
+            width:18px;
+            height:18px;
+            margin:0;
+            flex:0 0 auto;
+            cursor:pointer;
+          }
+
+          .lk-agree-text{ line-height: 18px; }
+
+          .lk-legal-link{
+            flex:0 0 auto;
+            font-size:12px;
+            font-weight:900;
+            opacity:.78;
+            text-decoration:underline;
+            white-space: nowrap;
+          }
+
+          .lk-msg{
+            margin-top:12px;
+            padding:10px 12px;
+            border-radius:12px;
+            font-size:12px;
+            font-weight:900;
+            border:1px solid rgba(0,0,0,0.10);
+            background: rgba(255,255,255,0.90);
+            line-height: 1.7;
+          }
+          .lk-msg.bad{ border-color: rgba(239,68,68,0.35); }
+          .lk-msg.ok{ border-color: rgba(34,197,94,0.35); }
+
+          .lk-submit{
+            margin-top:12px;
+            width:100%;
+            height:46px;
+            border-radius:14px;
+            border:0;
+            background:#000;
+            color:#fff;
+            font-weight:900;
+            cursor:pointer;
+            opacity:1;
+          }
+          .lk-submit:disabled{
+            opacity:.65;
+            cursor:not-allowed;
           }
         `,
         }}
       />
-    </>
+    </form>
   );
 }

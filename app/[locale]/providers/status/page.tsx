@@ -8,6 +8,13 @@ function asLocale(v: any): Locale {
   return String(v || "").trim().toLowerCase() === "en" ? "en" : "ar";
 }
 
+/** للعرض فقط (لا يغيّر قيمة ref المرسلة بالـ query) */
+function shortRef(raw: string) {
+  const s = String(raw || "").trim();
+  if (!s) return "";
+  return `LK-${s.slice(0, 8).toUpperCase()}`;
+}
+
 export default async function ProviderStatusPage({
   params,
   searchParams,
@@ -21,189 +28,191 @@ export default async function ProviderStatusPage({
   const locale: Locale = asLocale(p?.locale);
   const isAr = locale === "ar";
 
-  const ref = String(sp?.ref || "").trim();
+  const refRaw = String(sp?.ref || "").trim();
   const phone = String(sp?.phone || "").trim();
 
-  const t = {
-    title: isAr ? "متابعة حالة الطلب" : "Track request",
-    hint: isAr ? "اكتب رقم الطلب ورقم الجوال." : "Enter request number and mobile.",
-    ref: isAr ? "رقم الطلب" : "Request number",
-    phone: isAr ? "رقم الجوال" : "Mobile number",
-    submit: isAr ? "متابعة" : "Track",
-    back: isAr ? "العودة للرئيسية" : "Back to home",
-    status: isAr ? "الحالة" : "Status",
-    pending: isAr ? "قيد الانتظار" : "Pending",
-    resultTitle: isAr ? "نتيجة المتابعة" : "Result",
-  };
+  const displayRef = refRaw ? shortRef(refRaw) : "";
+
+  const fieldMax = 240;
 
   return (
     <section
       dir={isAr ? "rtl" : "ltr"}
       style={{
         width: "100%",
-        paddingTop: 6,
-        paddingBottom: 10,
+        display: "flex",
+        justifyContent: "center",
+        padding: 12,
       }}
     >
-      {/* طبقة واحدة فقط */}
-      <div style={{ width: "100%", maxWidth: 560, marginInline: "auto", paddingInline: 12 }}>
-        <div
-          className="card status-card"
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 360,
+          background: "#fff",
+          borderRadius: 18,
+          padding: 16,
+          boxShadow: "0 12px 28px rgba(0,0,0,.08)",
+        }}
+      >
+        <h1
           style={{
-            background: "rgba(255,255,255,0.85)", // ✅ طبقة واحدة
-            textAlign: isAr ? "right" : "left",
+            margin: "0 0 6px",
+            fontSize: 18,
+            fontWeight: 900,
+            textAlign: "center",
           }}
         >
-          <h1
-            className="status-title"
-            style={{
-              margin: "0 0 6px",
-              fontSize: 22,
-              fontWeight: 900,
-              textAlign: "center",
-            }}
-          >
-            {t.title}
-          </h1>
+          متابعة حالة الطلب
+        </h1>
 
-          <p
-            className="status-hint"
-            style={{
-              margin: "0 0 10px",
-              fontSize: 13,
-              opacity: 0.75,
-              textAlign: "center",
-              lineHeight: 1.25,
-            }}
-          >
-            {t.hint}
-          </p>
+        <p
+          style={{
+            margin: "0 auto 14px",
+            fontSize: 12,
+            opacity: 0.7,
+            textAlign: "center",
+            maxWidth: fieldMax,
+            lineHeight: 1.5,
+          }}
+        >
+          اكتب رقم الطلب ورقم الجوال ثم اضغط متابعة.
+        </p>
 
-          {/* الحقول */}
-          <div className="status-grid" style={{ display: "grid", gap: 9 }}>
-            <div>
-              <label style={{ fontSize: 13, fontWeight: 900 }}>{t.ref}</label>
-              <input
-                defaultValue={ref}
-                style={{
-                  width: "100%",
-                  minHeight: 48, // ✅ لمس ثابت
-                  marginTop: 5, // ✅ أقل
-                  padding: "10px 12px",
-                  borderRadius: 12,
-                  border: "1px solid rgba(0,0,0,0.18)",
-                }}
-              />
-            </div>
+        {/* ✅ GET form لتحديث الصفحة بنفس query (ref + phone) */}
+        <form
+          method="get"
+          style={{
+            width: "100%",
+            maxWidth: fieldMax,
+            margin: "0 auto",
+            display: "grid",
+            gap: 12,
+          }}
+        >
+          <div style={{ textAlign: "center" }}>
+            <label
+              htmlFor="lk-ref"
+              style={{
+                fontSize: 11,
+                fontWeight: 800,
+                opacity: 0.8,
+                display: "block",
+                marginBottom: 4,
+              }}
+            >
+              رقم الطلب
+            </label>
 
-            <div>
-              <label style={{ fontSize: 13, fontWeight: 900 }}>{t.phone}</label>
-              <input
-                defaultValue={phone}
-                inputMode="tel"
-                style={{
-                  width: "100%",
-                  minHeight: 48, // ✅ لمس ثابت
-                  marginTop: 5, // ✅ أقل
-                  padding: "10px 12px",
-                  borderRadius: 12,
-                  border: "1px solid rgba(0,0,0,0.18)",
-                }}
-              />
-            </div>
-
-            <button
+            <input
+              id="lk-ref"
+              name="ref"
+              defaultValue={refRaw}
+              inputMode="text"
+              placeholder={isAr ? "اكتب رقم الطلب" : "Enter request number"}
               style={{
                 width: "100%",
-                minHeight: 48, // ✅ لمس ثابت
-                borderRadius: 14,
-                border: "1px solid #000",
-                background: "#000",
-                color: "#fff",
+                height: 38,
+                padding: "0 10px",
+                boxSizing: "border-box",
+                borderRadius: 10,
+                border: "1px solid rgba(0,0,0,.18)",
+                fontSize: 13,
                 fontWeight: 900,
-                cursor: "pointer",
-                marginTop: 1, // ✅ يقرب الزر بصريًا
+                textAlign: "center",
+                outline: "none",
+                background: "#fff",
               }}
-            >
-              {t.submit}
-            </button>
+            />
           </div>
 
-          {/* نتيجة الطلب — منظمة وواضحة */}
-          {ref && (
-            <div
-              className="status-result"
+          <div style={{ textAlign: "center" }}>
+            <label
+              htmlFor="lk-phone"
               style={{
-                marginTop: 12,
-                paddingTop: 10,
-                borderTop: "1px solid rgba(0,0,0,0.12)",
+                fontSize: 11,
+                fontWeight: 800,
+                opacity: 0.8,
+                display: "block",
+                marginBottom: 4,
               }}
             >
-              <div
-                style={{
-                  fontWeight: 900,
-                  fontSize: 13,
-                  opacity: 0.8,
-                  marginBottom: 8,
-                  textAlign: "center",
-                }}
-              >
-                {t.resultTitle}
-              </div>
+              رقم الجوال
+            </label>
 
-              <div
-                style={{
-                  display: "grid",
-                  gap: 8,
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "baseline",
-                    fontWeight: 900,
-                  }}
-                >
-                  <span style={{ opacity: 0.75, fontSize: 13 }}>{t.ref}</span>
-                  <span style={{ fontSize: 16, letterSpacing: 0.3, wordBreak: "break-word" }}>{ref}</span>
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "baseline",
-                    fontWeight: 900,
-                  }}
-                >
-                  <span style={{ opacity: 0.75, fontSize: 13 }}>{t.status}</span>
-                  <span style={{ fontSize: 14 }}>{t.pending}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div style={{ marginTop: 12, textAlign: "center" }}>
-            <Link href={`/${locale}`} style={{ fontWeight: 900, textDecoration: "underline", color: "#111" }}>
-              {t.back}
-            </Link>
+            <input
+              id="lk-phone"
+              name="phone"
+              defaultValue={phone}
+              inputMode="tel"
+              placeholder="05xxxxxxxx"
+              style={{
+                width: "100%",
+                height: 38,
+                padding: "0 10px",
+                boxSizing: "border-box",
+                borderRadius: 10,
+                border: "1px solid rgba(0,0,0,.18)",
+                fontSize: 13,
+                textAlign: "center",
+                outline: "none",
+                background: "#fff",
+              }}
+            />
           </div>
 
-          {/* Mobile-first tightening (status page only) */}
-          <style
-            dangerouslySetInnerHTML={{
-              __html: `
-              .status-card { padding: 14px; }
-              .status-title { font-size: 20px; }
-              @media (min-width: 768px) {
-                .status-card { padding: 18px; }
-                .status-title { font-size: 22px; }
-                .status-grid { gap: 10px; }
-              }
-            `,
+          <button
+            type="submit"
+            style={{
+              width: "100%",
+              height: 40,
+              borderRadius: 12,
+              border: 0,
+              background: "#000",
+              color: "#fff",
+              fontWeight: 900,
+              fontSize: 13,
+              cursor: "pointer",
+              marginTop: 2,
             }}
-          />
+          >
+            متابعة
+          </button>
+        </form>
+
+        {/* result */}
+        {refRaw && (
+          <div
+            style={{
+              maxWidth: fieldMax,
+              margin: "18px auto 0",
+              paddingTop: 12,
+              borderTop: "1px solid rgba(0,0,0,.12)",
+              textAlign: "center",
+            }}
+          >
+            <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 4 }}>
+              نتيجة المتابعة
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 900 }}>
+              {displayRef || "-"}
+            </div>
+            <div style={{ fontSize: 12, marginTop: 2 }}>قيد الانتظار</div>
+          </div>
+        )}
+
+        <div style={{ marginTop: 14, textAlign: "center" }}>
+          <Link
+            href={`/${locale}`}
+            style={{
+              fontSize: 12,
+              fontWeight: 800,
+              textDecoration: "underline",
+              color: "#111",
+            }}
+          >
+            العودة للرئيسية
+          </Link>
         </div>
       </div>
     </section>

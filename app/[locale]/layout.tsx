@@ -4,6 +4,32 @@ import TopInfoBar from "@/components/TopInfoBar";
 
 type Locale = "ar" | "en";
 
+async function getWeatherText(locale: Locale) {
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/api/weather?lang=${locale}`,
+      { cache: "no-store" }
+    );
+
+    if (!res.ok) return null;
+
+    const data = await res.json();
+
+    // نتوقع API يرجع: city, temp, description
+    const city = String(data?.city || "").trim();
+    const temp = typeof data?.temp === "number" ? Math.round(data.temp) : null;
+    const desc = String(data?.description || "").trim();
+
+    if (!city || temp === null || !desc) return null;
+
+    return locale === "ar"
+      ? `${city} • ${temp}° • ${desc}`
+      : `${city} • ${temp}° • ${desc}`;
+  } catch {
+    return null;
+  }
+}
+
 export default async function LocaleLayout({
   children,
   params,
@@ -16,20 +42,21 @@ export default async function LocaleLayout({
   const dir = locale === "ar" ? "rtl" : "ltr";
   const lang = locale;
 
+  const weatherText = await getWeatherText(locale);
+
   return (
     <html lang={lang} dir={dir} suppressHydrationWarning>
       <body>
-        {/* شريط علوي خفيف (طقس/معلومة) — لا يكسر العرض */}
-        <TopInfoBar locale={locale} />
+        {/* الشريط العلوي — إعلان + طقس حقيقي */}
+        <TopInfoBar locale={locale} weatherText={weatherText ?? undefined} />
 
-        {/* الهيدر — صف واحد على الجوال */}
+        {/* الهيدر (مخفي على الجوال حسب التعديل السابق) */}
         <SiteHeader locale={locale} />
 
-        {/* الحاوية العامة لكل الصفحات */}
         <main
           className="page-container"
           style={{
-            minHeight: "calc(100vh - 120px)", // يمنع القفز ويضمن امتلاء الصفحة
+            minHeight: "calc(100vh - 120px)",
             paddingTop: 16,
             paddingBottom: 24,
           }}

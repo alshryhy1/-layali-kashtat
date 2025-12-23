@@ -23,31 +23,50 @@ export default async function ProviderSignupPage({
       style={{
         width: "100%",
         paddingInline: 12,
-        paddingTop: 6,
-        paddingBottom: 14,
+        paddingTop: 8,
+        paddingBottom: 16,
       }}
     >
       <div className="lk-signup-wrap">
         <ProviderRegisterForm locale={locale} />
       </div>
 
-      {/* Mobile First tuning */}
+      {/* ✅ Fix: mobile fields alignment + consistent card width */}
       <style
         dangerouslySetInnerHTML={{
           __html: `
           /* ===== Mobile (default) ===== */
-          .lk-signup-wrap {
-            width: 100%;
-            max-width: 480px;        /* ✅ أصغر = أخف */
-            margin-inline: auto;
-            margin-top: -6px;        /* ✅ رفع خفيف */
+          .lk-signup-wrap{
+            width:100%;
+            max-width:100%;
+            margin-inline:auto;
+          }
+
+          /* على الجوال: الكرت والحقول لازم يملون العرض بالكامل */
+          .lk-signup-wrap .lk-form{
+            width:100% !important;
+            max-width:100% !important;
+            padding:14px !important;
+            border-radius:16px !important;
+            background:rgba(255,255,255,0.88) !important;
+            box-shadow:0 12px 26px rgba(0,0,0,0.10) !important;
+          }
+
+          /* تحسين صغير جدًا للجوال الصغير */
+          @media (max-width: 380px){
+            .lk-signup-wrap .lk-form{ padding:12px !important; }
           }
 
           /* ===== Tablet / Desktop ===== */
           @media (min-width: 768px) {
-            .lk-signup-wrap {
-              max-width: 560px;
-              margin-top: 0;
+            .lk-signup-wrap{
+              max-width:560px;
+            }
+            .lk-signup-wrap .lk-form{
+              max-width:520px !important;
+              padding:18px !important;
+              border-radius:18px !important;
+              background:rgba(255,255,255,0.90) !important;
             }
           }
         `,

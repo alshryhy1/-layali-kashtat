@@ -1,15 +1,22 @@
 import { NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
+import crypto from "crypto";
 
 type Payload = {
   locale?: "ar" | "en";
-  ownerName: string;
-  ownerPhone: string;
-  workerPhone?: string;
-  city: string;
-  serviceType: string;
-  showWorkerPhoneToCustomer?: boolean;
+
+  // ✅ الشكل الجديد (الواجهة الحالية)
+  name?: string;
+  phone?: string;
+  service_type?: string;
+
+  // ✅ الشكل القديم (لو موجود بأي مكان)
+  ownerName?: string;
+  ownerPhone?: string;
+  serviceType?: string;
+
+  city?: string;
 };
 
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -24,40 +31,59 @@ async function ensureFile() {
   }
 }
 
+function pickString(v: any) {
+  return String(v ?? "").trim();
+}
+
 export async function POST(req: Request) {
   try {
-    const body = (await req.json()) as Payload;
+    const body = (await req.json().catch(() => null)) as Payload | null;
 
-    if (
-      !body.ownerName ||
-      !body.ownerPhone ||
-      !body.city ||
-      !body.serviceType
-    ) {
+    if (!body) {
+      return NextResponse.json({ ok: false, error: "missing_fields" }, { status: 400 });
+    }
+
+    // ✅ توحيد المفاتيح (يدعم الشكلين)
+    const locale = body.locale === "en" ? "en" : "ar";
+    const name = pickString(body.name || body.ownerName);
+    const phone = pickString(body.phone || body.ownerPhone);
+    const city = pickString(body.city);
+    const serviceType = pickString(body.service_type || body.serviceType);
+
+    if (!name || !phone || !city || !serviceType) {
       return NextResponse.json({ ok: false, error: "missing_fields" }, { status: 400 });
     }
 
     await ensureFile();
-    const raw = await fs.readFile(FILE_PATH, "utf8");
-    const list = JSON.parse(raw) as any[];
+
+    const raw = await fs.readFile(FILE_PATH, "utf8").catch(() => "[]");
+    const list = (raw ? JSON.parse(raw) : []) as any[];
+
+    const id = crypto.randomUUID();
 
     const item = {
-      id: crypto.randomUUID(),
+      id,
       createdAt: new Date().toISOString(),
-      locale: body.locale ?? "ar",
-      ownerName: body.ownerName.trim(),
-      ownerPhone: String(body.ownerPhone).trim(),
-      workerPhone: String(body.workerPhone ?? "").trim(),
-      city: body.city.trim(),
-      serviceType: body.serviceType.trim(),
-      showWorkerPhoneToCustomer: Boolean(body.showWorkerPhoneToCustomer),
+      locale,
+
+      // ✅ نخزن بصيغة موحّدة
+      name,
+      phone,
+      city,
+      serviceType,
+
+      // ✅ حقول توافق (لو احتجتها قدّام)
+      ownerName: name,
+      ownerPhone: phone,
+      service_type: serviceType,
     };
 
     list.push(item);
     await fs.writeFile(FILE_PATH, JSON.stringify(list, null, 2), "utf8");
 
-    return NextResponse.json({ ok: true, id: item.id });
+    // ✅ مهم: نخلي الواجهة تستقبل ref
+    return NextResponse.json({ ok: true, ref: id, id });
   } catch {
-    return NextResponse.json({ ok: false }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "server_error" }, { status: 500 });
   }
 }

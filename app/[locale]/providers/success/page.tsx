@@ -8,6 +8,23 @@ function asLocale(v: any): Locale {
   return String(v || "").trim().toLowerCase() === "en" ? "en" : "ar";
 }
 
+/** رقم مختصر للعرض فقط (لا يغيّر التخزين ولا الرابط) */
+function shortRef(raw: string) {
+  const u = String(raw || "").trim();
+  if (!u) return "";
+
+  const lower = u.toLowerCase();
+  const isUuid =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(lower);
+
+  const core = isUuid
+    ? lower.slice(0, 8)
+    : lower.replace(/[^0-9a-z]/g, "").slice(0, 10);
+
+  if (!core) return "";
+  return `LK-${core.toUpperCase()}`;
+}
+
 export default async function ProviderSuccessPage({
   params,
   searchParams,
@@ -22,6 +39,7 @@ export default async function ProviderSuccessPage({
   const isAr = locale === "ar";
 
   const ref = String(sp?.ref || "").trim();
+  const displayRef = ref ? shortRef(ref) : "";
 
   const t = {
     title: isAr ? "تم استلام طلبك بنجاح" : "Request received",
@@ -32,137 +50,144 @@ export default async function ProviderSuccessPage({
     track: isAr ? "متابعة حالة الطلب" : "Track status",
   };
 
-  const btnBase: React.CSSProperties = {
-    width: "100%",
-    minHeight: 48, // ✅ لمس ثابت
-    padding: "12px 14px",
-    borderRadius: 14,
-    fontWeight: 900,
-    textDecoration: "none",
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-  };
-
-  const btnPrimary: React.CSSProperties = {
-    ...btnBase,
-    border: "1px solid #111",
-    background: "#111",
-    color: "#fff",
-  };
-
-  const btnGhost: React.CSSProperties = {
-    ...btnBase,
-    border: "1px solid #d0d0d0",
-    background: "#fff",
-    color: "#111",
-  };
-
   return (
-    <section
-      dir={isAr ? "rtl" : "ltr"}
-      style={{
-        width: "100%",
-        paddingTop: 6,
-        paddingBottom: 10,
-      }}
-    >
-      <div style={{ width: "100%", maxWidth: 560, marginInline: "auto", paddingInline: 12 }}>
-        <div className="card success-card" style={{ textAlign: "center" }}>
-          <h1 className="success-title" style={{ margin: 0, fontSize: 22, fontWeight: 900 }}>
-            {t.title}
-          </h1>
+    <section dir={isAr ? "rtl" : "ltr"} className="lk-success">
+      <div className="lk-wrap">
+        <div className="lk-card" style={{ textAlign: "center" }}>
+          <h1 className="lk-title">{t.title}</h1>
 
-          <p
-            className="success-desc"
-            style={{
-              marginTop: 8,
-              marginBottom: 6,
-              opacity: 0.84,
-              lineHeight: 1.25,
-            }}
-          >
-            {t.desc}
-          </p>
+          <p className="lk-desc">{t.desc}</p>
 
-          <p
-            className="success-note"
-            style={{
-              marginTop: 0,
-              marginBottom: 10,
-              opacity: 0.78,
-              fontSize: 13,
-              lineHeight: 1.25,
-            }}
-          >
-            {t.note}
-          </p>
+          <p className="lk-note">{t.note}</p>
 
-          <div
-            className="success-ref"
-            style={{
-              margin: "0 auto 10px",
-              maxWidth: 520,
-              border: "1px dashed rgba(0,0,0,0.22)",
-              borderRadius: 14,
-              padding: 10,
-              background: "rgba(255,255,255,0.70)",
-            }}
-          >
-            <div style={{ fontWeight: 900, marginBottom: 4, fontSize: 13 }}>{t.refLabel}</div>
-            <div
-              style={{
-                fontWeight: 900,
-                fontSize: 18,
-                letterSpacing: 0.4,
-                wordBreak: "break-word",
-                lineHeight: 1.15,
-              }}
-            >
-              {ref ? ref : "-"}
-            </div>
+          <div className="lk-ref">
+            <div className="lk-ref-label">{t.refLabel}</div>
+            <div className="lk-ref-value">{displayRef || "-"}</div>
           </div>
 
-          <div
-            className="success-actions"
-            style={{
-              display: "grid",
-              gap: 10,
-              gridTemplateColumns: "1fr",
-              marginTop: 4,
-            }}
-          >
-            <Link href={`/${locale}`} style={btnPrimary}>
+          <div className="lk-actions">
+            <Link href={`/${locale}`} className="lk-btn lk-btn-primary">
               {t.back}
             </Link>
 
             <Link
               href={`/${locale}/providers/status${ref ? `?ref=${encodeURIComponent(ref)}` : ""}`}
-              style={btnGhost}
+              className="lk-btn lk-btn-ghost"
             >
               {t.track}
             </Link>
           </div>
-
-          <style
-            dangerouslySetInnerHTML={{
-              __html: `
-              /* Mobile-first tightening (Success page only) */
-              .success-card { padding: 14px; }
-              .success-title { font-size: 20px; }
-
-              @media (min-width: 768px) {
-                .success-card { padding: 18px; }
-                .success-title { font-size: 22px; }
-                .success-actions {
-                  grid-template-columns: 1fr 1fr;
-                }
-              }
-            `,
-            }}
-          />
         </div>
       </div>
+
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+          .lk-success{
+            width:100%;
+            padding: 14px 0 18px;
+          }
+
+          .lk-wrap{
+            width:100%;
+            max-width: 560px;
+            margin-inline:auto;
+            padding-inline: 12px;
+          }
+
+          .lk-card{
+            background: rgba(255,255,255,0.92);
+            border: 1px solid rgba(0,0,0,0.08);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border-radius: 18px;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.10);
+            padding: 16px;
+          }
+
+          .lk-title{
+            margin:0;
+            font-size: 18px;
+            font-weight: 900;
+            line-height: 1.25;
+          }
+
+          .lk-desc{
+            margin: 10px 0 6px;
+            font-size: 12.8px;
+            opacity:.86;
+            line-height: 1.65;
+          }
+
+          .lk-note{
+            margin: 0 0 12px;
+            font-size: 12.2px;
+            opacity:.78;
+            line-height: 1.65;
+          }
+
+          .lk-ref{
+            margin: 0 auto 14px;
+            border: 1px solid rgba(0,0,0,0.12);
+            border-radius: 16px;
+            padding: 12px 12px;
+            background: rgba(255,255,255,0.88);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+          }
+
+          .lk-ref-label{
+            font-size: 11.5px;
+            font-weight: 900;
+            opacity: .78;
+            margin-bottom: 6px;
+          }
+
+          .lk-ref-value{
+            font-size: 16px;
+            font-weight: 900;
+            letter-spacing: .35px;
+          }
+
+          .lk-actions{
+            display:flex;
+            flex-direction: column;
+            gap: 10px;
+          }
+
+          .lk-btn{
+            height: 42px;
+            padding: 8px 12px;
+            border-radius: 14px;
+            font-size: 13px;
+            font-weight: 900;
+            text-decoration:none;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            box-sizing: border-box;
+          }
+
+          .lk-btn-primary{
+            background:#111;
+            color:#fff;
+            border:1px solid #111;
+          }
+
+          .lk-btn-ghost{
+            background:#fff;
+            color:#111;
+            border:1px solid rgba(0,0,0,.16);
+          }
+
+          @media (min-width:768px){
+            .lk-card{ padding: 20px; }
+            .lk-title{ font-size: 20px; }
+            .lk-actions{ flex-direction: row; }
+            .lk-btn{ height:44px; }
+          }
+        `,
+        }}
+      />
     </section>
   );
 }

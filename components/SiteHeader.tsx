@@ -7,9 +7,9 @@ export default function SiteHeader({ locale }: { locale: Locale }) {
 
   return (
     <header
+      className="lk-site-header"
       style={{
         width: "100%",
-        /* ✅ لا بار أبيض كامل */
         background: "transparent",
         borderBottom: "none",
       }}
@@ -20,20 +20,14 @@ export default function SiteHeader({ locale }: { locale: Locale }) {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-
-          /* عربي: الشعار يمين – اللغة يسار */
           flexDirection: isAr ? "row-reverse" : "row",
-
           gap: 12,
           paddingTop: 8,
           paddingBottom: 8,
-
-          /* ✅ سطر واحد بدون لف */
           flexWrap: "nowrap",
           overflow: "hidden",
         }}
       >
-        {/* الشعار — نص فقط */}
         <strong
           style={{
             fontSize: 16,
@@ -49,7 +43,6 @@ export default function SiteHeader({ locale }: { locale: Locale }) {
           {isAr ? "ليالي كشتات" : "Layali Kashtat"}
         </strong>
 
-        {/* اللغة — (نضبطها بالملف التالي إذا تبي نص AR/EN بدل الرموز) */}
         <div
           style={{
             display: "inline-flex",
@@ -62,6 +55,17 @@ export default function SiteHeader({ locale }: { locale: Locale }) {
           <LanguageSwitcher />
         </div>
       </div>
+
+      {/* ✅ Mobile-First: إخفاء البنر الأبيض على الجوال فقط */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            @media (max-width: 767.98px) {
+              .lk-site-header { display: none !important; }
+            }
+          `,
+        }}
+      />
     </header>
   );
 }

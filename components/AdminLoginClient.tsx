@@ -43,7 +43,6 @@ export default function AdminLoginClient(props: { locale: Locale; next: string }
   }, [isLocked]);
 
   React.useEffect(() => {
-    // إذا انتهى القفل، نظّف الرسالة الخاصة بالقفل فقط
     if (lockedUntilMs && lockedUntilMs <= Date.now()) {
       setLockedUntilMs(0);
     }
@@ -60,12 +59,9 @@ export default function AdminLoginClient(props: { locale: Locale; next: string }
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    // لو مقفول: لا ترسل أي طلب (نهائيًا)
     if (isLocked) {
       const remain = lockedUntilMs - Date.now();
-      setMsg(
-        `${t.lockedTitle} — ${t.lockedLeft} ${formatRemaining(remain)}. ${t.lockedTryLater}`
-      );
+      setMsg(`${t.lockedTitle} — ${t.lockedLeft} ${formatRemaining(remain)}. ${t.lockedTryLater}`);
       return;
     }
 
@@ -90,7 +86,6 @@ export default function AdminLoginClient(props: { locale: Locale; next: string }
 
       const json = await res.json().catch(() => null);
 
-      // ✅ قفل (429)
       if (res.status === 429 && json?.error === "locked") {
         const retryAfterSec = Number(json?.retryAfterSec || 0);
         const until = Date.now() + Math.max(1, retryAfterSec) * 1000;
@@ -108,7 +103,6 @@ export default function AdminLoginClient(props: { locale: Locale; next: string }
         return;
       }
 
-      // ❌ فشل دخول عادي
       if (!res.ok || !json?.ok) {
         if (res.status === 401) {
           setMsg(t.errInvalid);
@@ -119,10 +113,8 @@ export default function AdminLoginClient(props: { locale: Locale; next: string }
         return;
       }
 
-      // ✅ نجاح: نظّف القفل (إن كان موجود)
       setLockedUntilMs(0);
 
-      // ✅ نجاح: روح للصفحة المطلوبة
       router.replace(props.next || `/${locale}/admin/requests`);
       router.refresh();
     } catch {
@@ -131,7 +123,6 @@ export default function AdminLoginClient(props: { locale: Locale; next: string }
     }
   }
 
-  // تحديث رسالة العدّاد تلقائيًا أثناء القفل (بدون إرسال طلبات)
   React.useEffect(() => {
     if (!isLocked) return;
 
@@ -148,112 +139,187 @@ export default function AdminLoginClient(props: { locale: Locale; next: string }
         minHeight: "calc(100vh - 70px)",
         display: "grid",
         placeItems: "center",
-        padding: 16,
+        padding: 12,
       }}
     >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 460,
-          background: "rgba(255,255,255,0.85)",
-          border: "1px solid #e7e7e7",
-          borderRadius: 16,
-          boxShadow: "0 10px 26px rgba(0,0,0,0.06)",
-          padding: 18,
-        }}
-      >
-        <h1 style={{ margin: 0, fontSize: 26, fontWeight: 900, textAlign: "center" }}>
-          {t.title}
-        </h1>
-        <p style={{ margin: "10px 0 14px", textAlign: "center", color: "#555", fontSize: 14 }}>
-          {t.hint}
-        </p>
+      <div className="lk-admin-login-card">
+        <h1 className="lk-admin-login-title">{t.title}</h1>
+        <p className="lk-admin-login-hint">{t.hint}</p>
 
-        <form onSubmit={onSubmit} style={{ display: "grid", gap: 10 }}>
-          <label style={labelStyle}>
-            <span style={labelText}>{t.username}</span>
+        <form onSubmit={onSubmit} className="lk-admin-login-form">
+          <label className="lk-admin-login-label">
+            <span className="lk-admin-login-labelText">{t.username}</span>
             <input
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder={t.username}
               autoComplete="username"
               inputMode="text"
-              style={inputStyle}
+              className="lk-admin-login-input"
               disabled={loading || isLocked}
             />
           </label>
 
-          <label style={labelStyle}>
-            <span style={labelText}>{t.password}</span>
+          <label className="lk-admin-login-label">
+            <span className="lk-admin-login-labelText">{t.password}</span>
             <input
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={t.password}
               type="password"
               autoComplete="current-password"
-              style={inputStyle}
+              className="lk-admin-login-input"
               disabled={loading || isLocked}
             />
           </label>
 
           {msg ? (
             <div
-              style={{
-                padding: "10px 12px",
-                borderRadius: 12,
-                border: "1px solid rgba(176,0,0,0.20)",
-                background: "rgba(176,0,0,0.06)",
-                color: "#b00",
-                fontWeight: 900,
-                fontSize: 13,
-                textAlign: "center",
-                lineHeight: 1.6,
-              }}
+              className={`lk-admin-login-msg ${isLocked ? "locked" : "bad"}`}
+              role="status"
+              aria-live="polite"
             >
               {msg}
             </div>
           ) : null}
 
-          <button
-            type="submit"
-            disabled={loading || isLocked}
-            style={{
-              marginTop: 4,
-              padding: "10px 12px",
-              borderRadius: 12,
-              border: "1px solid #111",
-              background: "#111",
-              color: "#fff",
-              fontWeight: 900,
-              cursor: loading || isLocked ? "not-allowed" : "pointer",
-              opacity: loading || isLocked ? 0.75 : 1,
-            }}
-          >
+          <button type="submit" disabled={loading || isLocked} className="lk-admin-login-btn">
             {loading ? t.loading : isLocked ? (isAr ? "مقفل مؤقتًا" : "Locked") : t.login}
           </button>
         </form>
       </div>
+
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+          :root{
+            --lk-card-r: 18px;
+            --lk-in-r: 14px;
+            --lk-h: 44px;
+            --lk-b: rgba(0,0,0,0.14);
+            --lk-bf: rgba(0,0,0,0.38);
+            --lk-bg: rgba(255,255,255,0.92);
+          }
+
+          .lk-admin-login-card{
+            width:100%;
+            max-width: 380px;
+            background: var(--lk-bg);
+            border: 1px solid rgba(0,0,0,0.08);
+            border-radius: var(--lk-card-r);
+            box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+            padding: 14px;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+          }
+
+          .lk-admin-login-title{
+            margin:0;
+            font-size: 20px;
+            font-weight: 900;
+            text-align:center;
+            line-height: 1.25;
+          }
+
+          .lk-admin-login-hint{
+            margin: 8px 0 14px;
+            text-align:center;
+            color:#555;
+            font-size: 12.5px;
+            line-height: 1.7;
+            opacity: .88;
+          }
+
+          .lk-admin-login-form{
+            display:grid;
+            gap: 10px;
+          }
+
+          .lk-admin-login-label{
+            display:grid;
+            gap: 6px;
+          }
+
+          .lk-admin-login-labelText{
+            font-weight: 900;
+            font-size: 12px;
+            color:#111;
+            opacity: .92;
+          }
+
+          .lk-admin-login-input{
+            width:100%;
+            height: var(--lk-h);
+            padding: 0 12px;
+            border-radius: var(--lk-in-r);
+            border: 1px solid var(--lk-b);
+            outline: none;
+            font-size: 14px;
+            background:#fff;
+            line-height: var(--lk-h);
+            box-sizing: border-box;
+          }
+
+          .lk-admin-login-input::placeholder{
+            opacity: .55;
+          }
+
+          .lk-admin-login-input:focus{
+            border-color: var(--lk-bf);
+          }
+
+          .lk-admin-login-msg{
+            padding: 10px 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(176,0,0,0.18);
+            background: rgba(176,0,0,0.06);
+            color: #b00;
+            font-weight: 900;
+            font-size: 12.5px;
+            text-align: center;
+            line-height: 1.7;
+          }
+
+          .lk-admin-login-msg.locked{
+            border-color: rgba(0,0,0,0.14);
+            background: rgba(0,0,0,0.04);
+            color: #111;
+          }
+
+          .lk-admin-login-btn{
+            margin-top: 2px;
+            height: 46px;
+            border-radius: 14px;
+            border: 1px solid #111;
+            background: #111;
+            color:#fff;
+            font-weight: 900;
+            cursor: pointer;
+            opacity: 1;
+            font-size: 13.5px;
+          }
+
+          .lk-admin-login-btn:disabled{
+            opacity: .75;
+            cursor: not-allowed;
+          }
+
+          @media (min-width: 768px){
+            .lk-admin-login-card{
+              max-width: 460px;
+              padding: 18px;
+            }
+            .lk-admin-login-title{
+              font-size: 26px;
+            }
+            .lk-admin-login-hint{
+              font-size: 14px;
+              margin: 10px 0 14px;
+            }
+          }
+        `,
+        }}
+      />
     </main>
   );
 }
-
-const labelStyle: React.CSSProperties = {
-  display: "grid",
-  gap: 6,
-};
-
-const labelText: React.CSSProperties = {
-  fontWeight: 900,
-  fontSize: 13,
-  color: "#111",
-};
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "10px 12px",
-  borderRadius: 12,
-  border: "1px solid #ccc",
-  outline: "none",
-  fontSize: 14,
-  background: "#fff",
-};

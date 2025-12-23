@@ -10,14 +10,22 @@ type Props = {
   weatherText?: string;
 };
 
-export default function TopInfoBar({ locale, text, weatherText }: Props) {
-  const isAr = locale === "ar";
+type WeatherApiOk = {
+  ok: true;
+  text?: string;
+};
+type WeatherApi = WeatherApiOk | { ok: false; error?: string };
 
+function formatTime(isAr: boolean) {
   const now = new Date();
-  const time = now.toLocaleTimeString(isAr ? "ar-SA" : "en-US", {
+  return now.toLocaleTimeString(isAr ? "ar-SA" : "en-US", {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+export default function TopInfoBar({ locale, text, weatherText }: Props) {
+  const isAr = locale === "ar";
 
   const fallbackText = isAr
     ? "قريبًا: إعلانات وخدمات جديدة — تابع آخر الأخبار هنا"
@@ -25,8 +33,67 @@ export default function TopInfoBar({ locale, text, weatherText }: Props) {
 
   const msg = String(text || fallbackText);
 
-  const w = String(weatherText || (isAr ? "☀️ الطقس: سماء صافية" : "☀️ Weather: Clear sky"));
+  const [weather, setWeather] = React.useState<string>(() =>
+    String(
+      weatherText ||
+        (isAr ? "🌤️ الطقس: جاري التحديث..." : "🌤️ Weather: updating...")
+    )
+  );
 
+  React.useEffect(() => {
+    if (typeof weatherText === "string" && weatherText.trim()) {
+      setWeather(weatherText.trim());
+    }
+  }, [weatherText]);
+
+  React.useEffect(() => {
+    if (typeof weatherText === "string" && weatherText.trim()) return;
+
+    let alive = true;
+    const ctrl = new AbortController();
+
+    async function load() {
+      try {
+        const r = await fetch(`/api/weather?lang=${isAr ? "ar" : "en"}`, {
+          signal: ctrl.signal,
+        });
+        const data = (await r.json().catch(() => null)) as WeatherApi | null;
+
+        if (!alive) return;
+
+        if (r.ok && data && (data as any).ok) {
+          const txt = String((data as WeatherApiOk).text || "").trim();
+          if (txt) {
+            setWeather(txt);
+            return;
+          }
+        }
+
+        setWeather(isAr ? "🌤️ الطقس: غير متاح حاليًا" : "🌤️ Weather: unavailable");
+      } catch {
+        if (!alive) return;
+        setWeather(isAr ? "🌤️ الطقس: غير متاح حاليًا" : "🌤️ Weather: unavailable");
+      }
+    }
+
+    load();
+    const id = window.setInterval(load, 10 * 60 * 1000);
+
+    return () => {
+      alive = false;
+      ctrl.abort();
+      window.clearInterval(id);
+    };
+  }, [isAr, weatherText]);
+
+  const [time, setTime] = React.useState(() => formatTime(isAr));
+  React.useEffect(() => {
+    setTime(formatTime(isAr));
+    const id = window.setInterval(() => setTime(formatTime(isAr)), 60 * 1000);
+    return () => window.clearInterval(id);
+  }, [isAr]);
+
+  // ===== Styles =====
   const barStyle: React.CSSProperties = {
     width: "100%",
     background: "rgba(0,0,0,0.92)",
@@ -35,7 +102,6 @@ export default function TopInfoBar({ locale, text, weatherText }: Props) {
     overflow: "hidden",
   };
 
-  // ✅ Desktop/Tablet: keep same behavior (scrollable row)
   const rowStyle: React.CSSProperties = {
     display: "flex",
     alignItems: "center",
@@ -72,35 +138,52 @@ export default function TopInfoBar({ locale, text, weatherText }: Props) {
     flexShrink: 0,
   };
 
-  // ✅ Mobile: weather at edge + time opposite + centered ad pill ثابت (النص فقط يتحرك)
+  // ===== Mobile (نسق موحّد) =====
+  const H = 28; // ارتفاع موحّد لكل الكبسولات
+
   const mobileWrapStyle: React.CSSProperties = {
     width: "100%",
     overflow: "hidden",
-    paddingTop: 8,
-    paddingBottom: 8,
+    paddingTop: 6,
+    paddingBottom: 6,
   };
 
   const mobileLineStyle: React.CSSProperties = {
     display: "flex",
     alignItems: "center",
-    gap: 10,
+    justifyContent: "space-between",
+    gap: 8,
     width: "100%",
     direction: isAr ? "rtl" : "ltr",
   };
 
-  const mobileSideBadge: React.CSSProperties = {
+  const mobileSideBadgeBase: React.CSSProperties = {
+    height: H,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "6px 10px",
+    padding: "0 10px",
+    boxSizing: "border-box",
     borderRadius: 999,
     background: "rgba(255,255,255,0.10)",
     border: "1px solid rgba(255,255,255,0.16)",
     whiteSpace: "nowrap",
     fontSize: 11,
-    lineHeight: "14px",
-    fontWeight: 800,
+    lineHeight: `${H}px`,
+    fontWeight: 900,
     flexShrink: 0,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  };
+
+  const mobileWeatherBadge: React.CSSProperties = {
+    ...mobileSideBadgeBase,
+    maxWidth: "34%",
+  };
+
+  const mobileTimeBadge: React.CSSProperties = {
+    ...mobileSideBadgeBase,
+    maxWidth: "22%",
   };
 
   const mobileDot: React.CSSProperties = {
@@ -109,24 +192,26 @@ export default function TopInfoBar({ locale, text, weatherText }: Props) {
     borderRadius: 999,
     background: "rgba(255,255,255,0.55)",
     flexShrink: 0,
+    alignSelf: "center",
   };
 
-  // ✅ كبسولة الإعلان ثابتة (الخلفية ثابتة) — النص فقط اللي يتحرك بالداخل
   const mobileAdPill: React.CSSProperties = {
     flex: 1,
     minWidth: 0,
+    height: H,
     display: "flex",
     alignItems: "center",
-    padding: "6px 10px",
+    padding: "0 10px",
+    boxSizing: "border-box",
     borderRadius: 999,
     background: "rgba(34,197,94,0.16)",
     border: "1px solid rgba(34,197,94,0.30)",
-    overflow: "hidden", // مهم عشان النص يمشي داخلها فقط
+    overflow: "hidden",
   };
 
   const mobileAdText: React.CSSProperties = {
     fontSize: 11,
-    lineHeight: "14px",
+    lineHeight: `${H}px`,
     fontWeight: 900,
     whiteSpace: "nowrap",
   };
@@ -134,15 +219,15 @@ export default function TopInfoBar({ locale, text, weatherText }: Props) {
   return (
     <div style={barStyle}>
       <div className="page-container">
-        {/* ✅ Mobile */}
+        {/* Mobile */}
         <div className="topbar-mobile" style={mobileWrapStyle}>
           <div className="topbar-mobile-line" style={mobileLineStyle}>
-            {/* طرف 1: الطقس */}
-            <span style={mobileSideBadge}>{w}</span>
+            <span style={mobileWeatherBadge} title={weather}>
+              {weather}
+            </span>
 
             <span style={mobileDot} />
 
-            {/* الوسط: كبسولة ثابتة — النص فقط يتحرك */}
             <div
               className={`ad-pill ${isAr ? "dir-rtl" : "dir-ltr"}`}
               style={mobileAdPill}
@@ -158,15 +243,16 @@ export default function TopInfoBar({ locale, text, weatherText }: Props) {
 
             <span style={mobileDot} />
 
-            {/* طرف 2: الساعة */}
-            <span style={mobileSideBadge}>{`🕒 ${time}`}</span>
+            <span style={mobileTimeBadge} title={`🕒 ${time}`}>
+              {`🕒 ${time}`}
+            </span>
           </div>
         </div>
 
-        {/* ✅ Desktop/Tablet (unchanged) */}
+        {/* Desktop/Tablet */}
         <div className="topbar-desktop">
           <div className="topbar-row" style={rowStyle}>
-            <span style={badgeStyle}>{w}</span>
+            <span style={badgeStyle}>{weather}</span>
             <span style={dotStyle} />
             <span
               style={{
@@ -189,7 +275,6 @@ export default function TopInfoBar({ locale, text, weatherText }: Props) {
           __html: `
           .topbar-row::-webkit-scrollbar { display: none; }
 
-          /* Mobile vs Desktop split */
           .topbar-mobile { display: block; }
           .topbar-desktop { display: none; }
 
@@ -198,11 +283,13 @@ export default function TopInfoBar({ locale, text, weatherText }: Props) {
             .topbar-desktop { display: block; }
           }
 
-          /* ✅ Ticker: النص فقط يتحرك داخل الكبسولة الثابتة */
           .ticker-viewport {
             position: relative;
             overflow: hidden;
             width: 100%;
+            height: ${H}px;
+            display: flex;
+            align-items: center;
           }
 
           .ticker-text {
@@ -210,7 +297,6 @@ export default function TopInfoBar({ locale, text, weatherText }: Props) {
             will-change: transform;
           }
 
-          /* حركة بطيئة وناعمة (مناسبة للإعلانات) */
           .dir-ltr .ticker-text {
             padding-left: 100%;
             animation: lk-marquee-ltr 18s linear infinite;
@@ -231,7 +317,6 @@ export default function TopInfoBar({ locale, text, weatherText }: Props) {
             100% { transform: translateX(100%); }
           }
 
-          /* Respect reduced motion */
           @media (prefers-reduced-motion: reduce) {
             .ticker-text { animation: none !important; padding: 0 !important; }
           }

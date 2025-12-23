@@ -1,3 +1,5 @@
+import * as React from "react";
+
 export const dynamic = "force-dynamic";
 
 type Locale = "ar" | "en";
@@ -35,26 +37,36 @@ export default async function LegalPage({
         ],
   };
 
+  // Mobile-first: أزرار أخف + أقل ضخامة
   const btnBase: React.CSSProperties = {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
     padding: "10px 14px",
     borderRadius: 12,
-    border: "1px solid #111",
+    border: "1px solid rgba(0,0,0,0.16)",
     background: "#fff",
     color: "#111",
     fontWeight: 900,
     textDecoration: "none",
-    minHeight: 46, // ✅ لمس للجوال
+    minHeight: 44,
     width: "100%",
     textAlign: "center",
+    boxSizing: "border-box",
   };
 
   const btnPrimary: React.CSSProperties = {
     ...btnBase,
+    border: "1px solid #111",
     background: "#111",
     color: "#fff",
+    minHeight: 46,
+  };
+
+  const btnLight: React.CSSProperties = {
+    ...btnBase,
+    fontWeight: 850,
+    minHeight: 42,
   };
 
   return (
@@ -64,41 +76,63 @@ export default async function LegalPage({
         minHeight: "calc(100vh - 70px)",
         display: "grid",
         placeItems: "center",
-        padding: 12, // ✅ أقل على الجوال
+        padding: 12,
       }}
     >
       <div
         className="legal-card"
         style={{
           width: "100%",
-          maxWidth: 640, // ✅ تقليل كبير (كان 900)
-          background: "rgba(255,255,255,0.90)",
-          borderRadius: 16, // ✅ أقل
-          padding: 16, // ✅ أقل
+          maxWidth: 520,
+          background: "rgba(255,255,255,0.92)",
+          borderRadius: 18,
+          padding: 16,
           border: "1px solid rgba(0,0,0,0.08)",
-          boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
+          boxShadow: "0 12px 28px rgba(0,0,0,0.08)",
         }}
       >
         <h1
           className="legal-title"
-          style={{ margin: 0, fontSize: 22, fontWeight: 900, textAlign: "center" }}
+          style={{
+            margin: 0,
+            fontSize: 20,
+            fontWeight: 900,
+            textAlign: "center",
+          }}
         >
           {t.title}
         </h1>
 
+        <div
+          className="legal-divider"
+          style={{
+            width: 44,
+            height: 4,
+            borderRadius: 999,
+            margin: "10px auto 12px",
+            background: "rgba(0,0,0,0.12)",
+          }}
+        />
+
         <ul
           className="legal-list"
           style={{
-            marginTop: 10,
-            marginBottom: 0,
-            lineHeight: 1.6, // ✅ أقل
+            margin: 0,
             opacity: 0.92,
-            paddingInlineStart: isAr ? 18 : 18,
+            listStylePosition: "outside",
+            paddingInlineStart: isAr ? 20 : 20,
+            lineHeight: "1.95",
+            fontSize: 14,
           }}
         >
           {t.body.map((x, i) => (
-            <li key={i} style={{ marginBottom: 6 }}>
-              {x}
+            <li
+              key={i}
+              style={{
+                marginBottom: 10,
+              }}
+            >
+              <span className="legal-item">{x}</span>
             </li>
           ))}
         </ul>
@@ -106,7 +140,7 @@ export default async function LegalPage({
         <div
           className="legal-actions"
           style={{
-            marginTop: 12, // ✅ أقل
+            marginTop: 14,
             display: "grid",
             gap: 10,
           }}
@@ -115,27 +149,27 @@ export default async function LegalPage({
             {t.goSignup}
           </a>
 
-          <a href={`/${locale}/providers/status`} style={btnBase}>
+          <a href={`/${locale}/providers/status`} style={btnLight}>
             {t.goStatus}
           </a>
 
-          <a href={`/${locale}`} style={btnBase}>
+          <a href={`/${locale}`} style={btnLight}>
             {t.backHome}
           </a>
         </div>
 
-        {/* Mobile-first + Desktop refinement */}
         <style
           dangerouslySetInnerHTML={{
             __html: `
+            /* تحسين قراءة العناصر داخل القائمة، خصوصاً RTL */
+            .legal-list li { padding-inline-start: 2px; }
+            .legal-item { display: inline; }
+
             @media (min-width: 768px) {
-              .legal-card { padding: 18px; max-width: 720px; }
+              .legal-card { padding: 20px; max-width: 720px; }
               .legal-title { font-size: 24px; }
-              .legal-list { line-height: 1.75; }
-              .legal-actions {
-                grid-template-columns: 1fr 1fr 1fr;
-                gap: 10px;
-              }
+              .legal-list { line-height: 1.9; font-size: 15px; }
+              .legal-actions { grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
             }
           `,
           }}
