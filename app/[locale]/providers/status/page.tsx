@@ -12,7 +12,6 @@ function normalizePhone(raw: string) {
   if (s.startsWith("966")) s = s.replace(/^966/, "");
 
   if (s.length === 9 && s.startsWith("5")) s = `0${s}`;
-
   return s;
 }
 
@@ -38,7 +37,6 @@ export default function ProviderStatusPage({
     track: isAr ? "متابعة" : "Track",
     home: isAr ? "العودة للرئيسية" : "Back to home",
 
-    // رسائل
     required: isAr ? "يرجى إدخال رقم الطلب ورقم الجوال." : "Please enter request number and mobile.",
     refInvalid: isAr ? "رقم الطلب غير صحيح (أرقام فقط)." : "Invalid request number (digits only).",
     phoneInvalid: isAr ? "رقم الجوال غير صحيح." : "Invalid mobile number.",
@@ -48,8 +46,8 @@ export default function ProviderStatusPage({
 
     result: isAr ? "نتيجة المتابعة" : "Result",
     statusPending: isAr ? "قيد الانتظار" : "Pending",
-    statusApproved: isAr ? "تم القبول" : "Approved",
-    statusRejected: isAr ? "تم الرفض" : "Rejected",
+    statusApproved: isAr ? "مقبول" : "Approved",
+    statusRejected: isAr ? "مرفوض" : "Rejected",
   };
 
   const [refInput, setRefInput] = React.useState("");
@@ -63,18 +61,14 @@ export default function ProviderStatusPage({
     status: "pending" | "approved" | "rejected";
   } | null>(null);
 
-  // ✅ تهيئة من الـ URL لو موجودة (مع تنظيف صارم)
   React.useEffect(() => {
     try {
       const url = new URL(window.location.href);
       const refQ = digitsOnly(url.searchParams.get("ref") || "");
       const phoneQ = normalizePhone(url.searchParams.get("phone") || "");
-
       if (refQ) setRefInput(refQ);
       if (phoneQ) setPhoneInput(phoneQ);
-    } catch {
-      // ignore
-    }
+    } catch {}
   }, []);
 
   function statusLabel(s: "pending" | "approved" | "rejected") {
@@ -98,13 +92,11 @@ export default function ProviderStatusPage({
       return;
     }
 
-    // ref أرقام فقط (إلزامي)
     if (!/^\d+$/.test(refDigits) || Number(refDigits) <= 0) {
       setMsg(t.refInvalid);
       return;
     }
 
-    // جوال سعودي بصيغة 05xxxxxxxx
     if (!/^05\d{8}$/.test(phoneNorm)) {
       setMsg(t.phoneInvalid);
       return;
@@ -113,15 +105,12 @@ export default function ProviderStatusPage({
     setLoading(true);
 
     try {
-      // ✅ نكتب القيم النظيفة في URL (بدون إفساد الصفحة)
       try {
         const url = new URL(window.location.href);
         url.searchParams.set("ref", refDigits);
         url.searchParams.set("phone", phoneNorm);
         window.history.replaceState({}, "", url.toString());
-      } catch {
-        // ignore
-      }
+      } catch {}
 
       const res = await fetch(
         `/api/providers/status?ref=${encodeURIComponent(refDigits)}&phone=${encodeURIComponent(phoneNorm)}`,
@@ -133,16 +122,12 @@ export default function ProviderStatusPage({
       if (!res.ok || !data?.ok) {
         const err = String(data?.error || data?.message || "").toLowerCase();
 
-        if (res.status === 404 || err.includes("not found")) {
-          setMsg(t.notFound);
-        } else if (res.status === 403 || err.includes("mismatch")) {
-          setMsg(t.mismatch);
-        } else if (res.status === 400 || err.includes("invalid ref") || err.includes("invalid_phone") || err.includes("phone")) {
-          // 400 ممكن ref/phone غير صالح — نعطي رسالة مناسبة حسب التحقق عندنا
-          setMsg(err.includes("ref") ? t.refInvalid : t.phoneInvalid);
-        } else {
-          setMsg(t.serverError);
-        }
+        if (res.status === 404 || err.includes("not found")) setMsg(t.notFound);
+        else if (res.status === 403 || err.includes("mismatch")) setMsg(t.mismatch);
+        else if (res.status === 400) {
+          if (err.includes("ref")) setMsg(t.refInvalid);
+          else setMsg(t.phoneInvalid);
+        } else setMsg(t.serverError);
 
         setLoading(false);
         return;
@@ -160,6 +145,10 @@ export default function ProviderStatusPage({
     }
   }
 
+  // ✅ Mobile-first sizes
+  const cardMax = 520;
+  const inputH = 46;
+
   return (
     <main
       dir={isAr ? "rtl" : "ltr"}
@@ -167,13 +156,13 @@ export default function ProviderStatusPage({
         minHeight: "calc(100vh - 120px)",
         display: "grid",
         placeItems: "center",
-        padding: 16,
+        padding: 14,
       }}
     >
       <div
         style={{
           width: "100%",
-          maxWidth: 520,
+          maxWidth: cardMax,
           background: "rgba(255,255,255,0.92)",
           border: "1px solid rgba(0,0,0,0.08)",
           borderRadius: 18,
@@ -182,10 +171,26 @@ export default function ProviderStatusPage({
           boxSizing: "border-box",
         }}
       >
-        <h1 style={{ margin: "0 0 6px", fontSize: 18, fontWeight: 900, textAlign: "center" }}>
+        <h1
+          style={{
+            margin: "0 0 6px",
+            fontSize: "clamp(18px, 4.6vw, 20px)",
+            fontWeight: 900,
+            textAlign: "center",
+          }}
+        >
           {t.title}
         </h1>
-        <p style={{ margin: "0 0 14px", fontSize: 12, opacity: 0.78, textAlign: "center", lineHeight: 1.7 }}>
+
+        <p
+          style={{
+            margin: "0 0 14px",
+            fontSize: "clamp(12px, 3.4vw, 13px)",
+            opacity: 0.78,
+            textAlign: "center",
+            lineHeight: 1.7,
+          }}
+        >
           {t.hint}
         </p>
 
@@ -197,7 +202,6 @@ export default function ProviderStatusPage({
             <input
               value={refInput}
               onChange={(e) => {
-                // ✅ يمنع الأحرف مباشرة (أرقام فقط)
                 const v = digitsOnly(e.target.value);
                 setRefInput(v);
                 if (msg) setMsg(null);
@@ -205,16 +209,16 @@ export default function ProviderStatusPage({
               }}
               inputMode="numeric"
               autoComplete="off"
-              placeholder={isAr ? "مثال: 50" : "e.g. 50"}
+              placeholder={isAr ? "مثال: 58" : "e.g. 58"}
               style={{
                 width: "100%",
-                height: 44,
+                height: inputH,
                 padding: "0 14px",
                 borderRadius: 12,
                 border: "1px solid rgba(0,0,0,.18)",
                 background: "rgba(255,255,255,0.96)",
                 outline: "none",
-                fontSize: 14,
+                fontSize: 15,
                 boxSizing: "border-box",
                 textAlign: "center",
                 fontWeight: 900,
@@ -234,18 +238,19 @@ export default function ProviderStatusPage({
                 if (msg) setMsg(null);
                 if (result) setResult(null);
               }}
+              onBlur={() => setPhoneInput((v) => normalizePhone(v))}
               inputMode="tel"
               autoComplete="tel"
               placeholder="05xxxxxxxx"
               style={{
                 width: "100%",
-                height: 44,
+                height: inputH,
                 padding: "0 14px",
                 borderRadius: 12,
                 border: "1px solid rgba(0,0,0,.18)",
                 background: "rgba(255,255,255,0.96)",
                 outline: "none",
-                fontSize: 14,
+                fontSize: 15,
                 boxSizing: "border-box",
                 textAlign: "center",
                 fontWeight: 900,
@@ -260,12 +265,13 @@ export default function ProviderStatusPage({
             style={{
               marginTop: 12,
               width: "100%",
-              height: 46,
+              height: 48,
               borderRadius: 14,
               border: 0,
               background: "#000",
               color: "#fff",
               fontWeight: 900,
+              fontSize: 14,
               cursor: loading ? "not-allowed" : "pointer",
               opacity: loading ? 0.65 : 1,
             }}
@@ -295,14 +301,23 @@ export default function ProviderStatusPage({
         ) : null}
 
         {result ? (
-          <div style={{ marginTop: 16, textAlign: "center" }}>
+          <div
+            style={{
+              marginTop: 16,
+              textAlign: "center",
+              padding: "12px 10px",
+              borderRadius: 14,
+              border: "1px solid rgba(0,0,0,0.10)",
+              background: "rgba(255,255,255,0.88)",
+            }}
+          >
             <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 6, fontWeight: 900 }}>{t.result}</div>
             <div style={{ fontSize: 16, fontWeight: 900, marginBottom: 4 }}>{result.ref}</div>
             <div style={{ fontSize: 13, fontWeight: 900 }}>{statusLabel(result.status)}</div>
           </div>
         ) : null}
 
-        <div style={{ marginTop: 16, textAlign: "center" }}>
+        <div style={{ marginTop: 14, textAlign: "center" }}>
           <Link href={`/${locale}`} style={{ fontSize: 12, fontWeight: 900, textDecoration: "underline" }}>
             {t.home}
           </Link>
