@@ -98,13 +98,15 @@ export async function POST(req: Request) {
     // - status نرسله صراحة (حتى لو فيه default)
     // - ip نرسله إذا توفر، وإذا ما توفر نخليه null (وقاعدة البيانات لازم تتقبل)
     const insertPayload: Record<string, any> = {
-      name,
-      phone,
-      service_type,
-      city,
-      status: "pending",
-      ip: ip ?? null,
-    };
+  name,
+  phone,
+  service_type,
+  city,
+  status: "pending",
+  accepted,          // ✅ هذا السطر
+  ip: ip ?? null,
+};
+};
 
     const { data, error } = await supabase
       .from("provider_requests")
