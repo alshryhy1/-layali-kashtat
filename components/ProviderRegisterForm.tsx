@@ -14,8 +14,17 @@ type State =
   | { ok: true; message: string; ref?: string };
 
 function normalizePhone(raw: string) {
-  const s = String(raw || "").trim();
-  return s.replace(/[^\d]/g, "");
+  let s = String(raw || "").trim().replace(/[^\d]/g, "");
+
+  // 00966xxxxxxxxx -> 5xxxxxxxx
+  if (s.startsWith("00966")) s = s.replace(/^00966/, "");
+  // 966xxxxxxxxx -> 5xxxxxxxx
+  if (s.startsWith("966")) s = s.replace(/^966/, "");
+
+  // 5xxxxxxxx -> 05xxxxxxxx
+  if (s.length === 9 && s.startsWith("5")) s = `0${s}`;
+
+  return s;
 }
 
 export default function ProviderRegisterForm({ locale }: Props) {
@@ -33,11 +42,11 @@ export default function ProviderRegisterForm({ locale }: Props) {
     agree: isAr ? "موافق" : "I agree",
     read: isAr ? "قراءة النصوص القانونية" : "Read legal texts",
     submit: isAr ? "إرسال طلب التسجيل" : "Submit signup request",
-    sending: isAr ? "جاري الإرسال..." : "Sending...",
-    required: isAr ? "أكمل جميع الحقول المطلوبة." : "Please complete all required fields.",
-    agreeReq: isAr ? "يلزم الموافقة على النصوص القانونية." : "You must agree to the legal texts.",
+    sending: isAr ? "جارٍ الإرسال..." : "Sending...",
+    required: isAr ? "اكمل جميع الحقول المطلوبة." : "Please complete all required fields.",
+    agreeReq: isAr ? "يلزم الموافقة على الشروط قبل الإرسال." : "You must agree to the legal texts.",
     phoneInvalid: isAr ? "رقم الجوال غير صحيح." : "Invalid mobile number.",
-    serverError: isAr ? "حدث خطأ. حاول مرة أخرى." : "Something went wrong. Please try again.",
+    serverError: isAr ? "تعذر إرسال الطلب الآن. حاول لاحقًا." : "Something went wrong. Please try again.",
     success: isAr ? "تم إرسال طلبك بنجاح." : "Your request was sent successfully.",
     pickService: isAr ? "اختر نوع الخدمة" : "Select service type",
     pickCity: isAr ? "اختر المدينة" : "Select city",
@@ -124,18 +133,18 @@ export default function ProviderRegisterForm({ locale }: Props) {
   function friendlyServerMessage(raw: any) {
     const s = String(raw || "").trim();
     if (!s) return "";
-
     const key = s.toLowerCase();
+
     if (key === "missing_fields") return t.required;
     if (key === "invalid_phone") return t.phoneInvalid;
-    if (key === "must_agree") return t.agreeReq;
+    if (key === "must_agree" || key === "must_accept") return t.agreeReq;
 
     return s;
   }
 
   function missingMessage(missing: string[]) {
     if (missing.length === 0) return t.required;
-    if (isAr) return `أكمل الحقول التالية: ${missing.join("، ")}`;
+    if (isAr) return `اكمل الحقول التالية: ${missing.join("، ")}`;
     return `Please complete: ${missing.join(", ")}`;
   }
 
@@ -170,13 +179,8 @@ export default function ProviderRegisterForm({ locale }: Props) {
       return;
     }
 
-    const looksOk =
-      (p.length === 10 && p.startsWith("05")) ||
-      (p.length === 9 && p.startsWith("5")) ||
-      (p.length === 12 && p.startsWith("9665")) ||
-      (p.length === 13 && p.startsWith("009665"));
-
-    if (!looksOk) {
+    // لازم يصير 05xxxxxxxx بعد normalize
+    if (!/^05\d{8}$/.test(p)) {
       setState({ ok: false, message: t.phoneInvalid });
       return;
     }
@@ -199,7 +203,7 @@ export default function ProviderRegisterForm({ locale }: Props) {
           phone: p,
           service_type: s,
           city: c,
-          accepted: a,
+          accepted: a, // ✅ لازم تنرسل للسيرفر
         }),
       });
 
@@ -213,7 +217,7 @@ export default function ProviderRegisterForm({ locale }: Props) {
         return;
       }
 
-      const ref = String(data?.ref || data?.request_id || data?.id || "").trim();
+      const ref = String(data?.ref || data?.ref_code || data?.request_id || data?.id || "").trim();
       setState({ ok: true, message: t.success, ref });
 
       const to = `/${locale}/providers/success${ref ? `?ref=${encodeURIComponent(ref)}` : ""}`;
@@ -414,7 +418,6 @@ export default function ProviderRegisterForm({ locale }: Props) {
             border-color: var(--lk-bf);
           }
 
-          /* توحيد select وراحة السهم بدون كسر RTL/LTR */
           .lk-form select{
             appearance:none;
             -webkit-appearance:none;

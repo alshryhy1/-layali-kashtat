@@ -5,24 +5,22 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type Body = {
+  locale?: "ar" | "en" | string;
   name?: string;
   phone?: string;
-  serviceType?: string; // من الفورم
-  service_type?: string; // احتياط لو جت بهذا الاسم
+  serviceType?: string;
+  service_type?: string;
   city?: string;
   accepted?: boolean;
 };
 
 function pickFirstIp(v: string | null): string | null {
   if (!v) return null;
-  // x-forwarded-for قد يحتوي عدة IPs
   const first = v.split(",")[0]?.trim();
-  if (!first) return null;
-  return first;
+  return first || null;
 }
 
 function getClientIp(req: Request): string | null {
-  // أكثر الهيدرز شيوعًا في Vercel/Cloudflare/Proxy
   const xff = pickFirstIp(req.headers.get("x-forwarded-for"));
   if (xff) return xff;
 
@@ -36,10 +34,17 @@ function getClientIp(req: Request): string | null {
 }
 
 function jsonError(status: number, error: string, message: string, extra?: Record<string, unknown>) {
-  return NextResponse.json(
-    { ok: false, error, message, ...(extra || {}) },
-    { status }
-  );
+  return NextResponse.json({ ok: false, error, message, ...(extra || {}) }, { status });
+}
+
+function normalizeToSaudi05(raw: string) {
+  let s = String(raw || "").trim().replace(/[^\d]/g, "");
+
+  if (s.startsWith("00966")) s = s.replace(/^00966/, "");
+  if (s.startsWith("966")) s = s.replace(/^966/, "");
+
+  if (s.length === 9 && s.startsWith("5")) s = `0${s}`;
+  return s;
 }
 
 export async function POST(req: Request) {
@@ -49,7 +54,6 @@ export async function POST(req: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY ||
       process.env.SUPABASE_SERVICE_KEY ||
       "";
-
     const ANON =
       process.env.SUPABASE_ANON_KEY ||
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
@@ -59,7 +63,6 @@ export async function POST(req: Request) {
       return jsonError(500, "missing_env", "Missing env: SUPABASE_URL / NEXT_PUBLIC_SUPABASE_URL");
     }
 
-    // الأفضل دائمًا Service Role داخل Route (عشان RLS ما يكسر التسجيل)
     const supabaseKey = SERVICE_ROLE || ANON;
     if (!supabaseKey) {
       return jsonError(
@@ -75,16 +78,17 @@ export async function POST(req: Request) {
 
     const body = (await req.json().catch(() => null)) as Body | null;
 
+    const localeRaw = String(body?.locale || "").trim();
+    const locale = localeRaw === "en" ? "en" : "ar";
+
     const name = String(body?.name || "").trim();
-    const phone = String(body?.phone || "").trim();
+    const phone = normalizeToSaudi05(String(body?.phone || ""));
     const service_type = String(body?.serviceType || body?.service_type || "").trim();
     const city = String(body?.city || "").trim();
     const accepted = Boolean(body?.accepted);
 
-    // تحقق نهائي (لا يعتمد على الواجهة)
     if (!name) return jsonError(400, "invalid_name", "يرجى إدخال اسم مقدم الخدمة.");
     if (!phone) return jsonError(400, "invalid_phone", "يرجى إدخال رقم الجوال.");
-    // رقم سعودي 10 أرقام يبدأ بـ 05
     if (!/^05\d{8}$/.test(phone)) {
       return jsonError(400, "invalid_phone", "رقم الجوال غير صحيح. مثال: 05xxxxxxxx");
     }
@@ -92,39 +96,38 @@ export async function POST(req: Request) {
     if (!city) return jsonError(400, "invalid_city", "يرجى اختيار المدينة من القائمة.");
     if (!accepted) return jsonError(400, "must_accept", "يلزم الموافقة على الشروط قبل الإرسال.");
 
-    const ip = getClientIp(req); // ممكن تكون null (وهذا طبيعي)
+    const ip = getClientIp(req);
 
-    // إدخال ثابت:
-    // - status نرسله صراحة (حتى لو فيه default)
-    // - ip نرسله إذا توفر، وإذا ما توفر نخليه null (وقاعدة البيانات لازم تتقبل)
     const insertPayload: Record<string, any> = {
-  name,
-  phone,
-  service_type,
-  city,
-  status: "pending",
-  accepted,          // ✅ هذا السطر
-  ip: ip ?? null,
-};
-};
+      locale,
+      name,
+      phone,
+      service_type,
+      city,
+      status: "pending",
+      accepted, // ✅ حفظ الموافقة في الجدول
+      ip: ip ?? null, // ✅ إذا ما توفر نخليه null
+    };
 
     const { data, error } = await supabase
       .from("provider_requests")
       .insert(insertPayload)
-      .select("id")
+      .select("id, ref_code")
       .single();
 
     if (error) {
-      // نرجّع سبب مفهوم بدل server_error
-      // ونضيف تفاصيل تقنية بسيطة للمساعدة (بدون بيانات حساسة)
       return jsonError(500, "db_insert_failed", "تعذر حفظ الطلب بسبب خطأ في قاعدة البيانات.", {
-        db_code: error.code || null,
-        db_message: error.message || null,
-        db_details: error.details || null,
+        db_code: (error as any)?.code || null,
+        db_message: (error as any)?.message || null,
+        db_details: (error as any)?.details || null,
       });
     }
 
-    return NextResponse.json({ ok: true, id: data?.id || null });
+    return NextResponse.json({
+      ok: true,
+      id: data?.id ?? null,
+      ref: data?.ref_code ?? null,
+    });
   } catch (e: any) {
     return jsonError(500, "server_error", "تعذر إرسال الطلب الآن. حاول لاحقًا.", {
       hint: String(e?.message || e || ""),
