@@ -85,7 +85,9 @@ export async function POST(req: Request) {
     const phone = normalizeToSaudi05(String(body?.phone || ""));
     const service_type = String(body?.serviceType || body?.service_type || "").trim();
     const city = String(body?.city || "").trim();
-    const accepted = Boolean(body?.accepted);
+   const accepted = body?.accepted === true || body?.accepted === "true" || body?.accepted === "on";
+const accepted = body?.accepted === true || body?.accepted === "true" || body?.accepted === "on";
+
 
     if (!name) return jsonError(400, "invalid_name", "يرجى إدخال اسم مقدم الخدمة.");
     if (!phone) return jsonError(400, "invalid_phone", "يرجى إدخال رقم الجوال.");
