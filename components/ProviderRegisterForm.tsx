@@ -127,6 +127,19 @@ export default function ProviderRegisterForm({ locale }: Props) {
   const [city, setCity] = React.useState("");
   const [agree, setAgree] = React.useState(false);
 
+  // ✅ (طقس فقط) لو فيه مدينة محفوظة مسبقًا نخليها الافتراضية في صفحة التسجيل
+  React.useEffect(() => {
+    try {
+      const saved = String(window.localStorage.getItem("lk_city") || "").trim();
+      if (!saved) return;
+      if (city) return;
+      if (cityOptions.includes(saved)) setCity(saved);
+    } catch {
+      // ignore
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAr]);
+
   const [busy, setBusy] = React.useState(false);
   const [state, setState] = React.useState<State | null>(null);
 
@@ -297,7 +310,16 @@ export default function ProviderRegisterForm({ locale }: Props) {
           name="city"
           value={city}
           onChange={(e) => {
-            setCity(e.target.value);
+            const v = e.target.value;
+            setCity(v);
+
+            // ✅ (طقس فقط) حفظ المدينة المختارة لاستخدامها في TopInfoBar للطقس
+            try {
+              window.localStorage.setItem("lk_city", v);
+            } catch {
+              // ignore
+            }
+
             if (state) setState(null);
           }}
           aria-label={t.city}
