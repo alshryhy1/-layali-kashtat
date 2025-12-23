@@ -43,9 +43,6 @@ export async function POST(req: Request) {
         "يجب الموافقة على الشروط والأحكام."
       );
 
-    const ip =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
-
     const insertPayload: Record<string, any> = {
       name,
       phone,
@@ -53,7 +50,6 @@ export async function POST(req: Request) {
       city,
       status: "pending",
       accepted, // ✅ محفوظ صراحة
-      ip,
     };
 
     const { data, error } = await supabase
