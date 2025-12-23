@@ -22,37 +22,37 @@ export default function ProviderRegisterForm({ locale }: Props) {
   const isAr = locale === "ar";
 
   const t = {
-    title: isAr ? "ط§ظ„طھط³ط¬ظٹظ„ ظƒظ…ظ‚ط¯ظ… ط®ط¯ظ…ط©" : "Provider Signup",
+    title: isAr ? "التسجيل كمقدم خدمة" : "Provider Signup",
     hint: isAr
-      ? "ط£ط¯ط®ظ„ ط¨ظٹط§ظ†ط§طھظƒ ط¨ط¯ظ‚ط© â€” ط§ظ„ظ…ط¯ظٹظ†ط© ظˆظ†ظˆط¹ ط§ظ„ط®ط¯ظ…ط© ظ…ظ† ط§ظ„ظ‚ط§ط¦ظ…ط© ظپظ‚ط·."
-      : "Enter your details carefully â€” city and service from the list only.",
-    name: isAr ? "ط§ط³ظ… ظ…ظ‚ط¯ظ… ط§ظ„ط®ط¯ظ…ط©" : "Provider name",
-    phone: isAr ? "ط±ظ‚ظ… ط§ظ„ط¬ظˆط§ظ„" : "Mobile number",
-    service: isAr ? "ظ†ظˆط¹ ط§ظ„ط®ط¯ظ…ط©" : "Service type",
-    city: isAr ? "ط§ظ„ظ…ط¯ظٹظ†ط©" : "City",
-    agree: isAr ? "ظ…ظˆط§ظپظ‚" : "I agree",
-    read: isAr ? "ظ‚ط±ط§ط،ط© ط§ظ„ظ†طµظˆطµ ط§ظ„ظ‚ط§ظ†ظˆظ†ظٹط©" : "Read legal texts",
-    submit: isAr ? "ط¥ط±ط³ط§ظ„ ط·ظ„ط¨ ط§ظ„طھط³ط¬ظٹظ„" : "Submit signup request",
-    sending: isAr ? "ط¬ط§ط±ظچ ط§ظ„ط¥ط±ط³ط§ظ„..." : "Sending...",
-    required: isAr ? "ط§ظƒظ…ظ„ ط¬ظ…ظٹط¹ ط§ظ„ط­ظ‚ظˆظ„ ط§ظ„ظ…ط·ظ„ظˆط¨ط©." : "Please complete all required fields.",
-    agreeReq: isAr ? "ظٹظ„ط²ظ… ط§ظ„ظ…ظˆط§ظپظ‚ط© ط¹ظ„ظ‰ ط§ظ„ظ†طµظˆطµ ط§ظ„ظ‚ط§ظ†ظˆظ†ظٹط©." : "You must agree to the legal texts.",
-    phoneInvalid: isAr ? "ط±ظ‚ظ… ط§ظ„ط¬ظˆط§ظ„ ط؛ظٹط± طµط­ظٹط­." : "Invalid mobile number.",
-    serverError: isAr ? "ط­ط¯ط« ط®ط·ط£. ط­ط§ظˆظ„ ظ…ط±ط© ط£ط®ط±ظ‰." : "Something went wrong. Please try again.",
-    success: isAr ? "طھظ… ط¥ط±ط³ط§ظ„ ط·ظ„ط¨ظƒ ط¨ظ†ط¬ط§ط­." : "Your request was sent successfully.",
-    pickService: isAr ? "ط§ط®طھط± ظ†ظˆط¹ ط§ظ„ط®ط¯ظ…ط©" : "Select service type",
-    pickCity: isAr ? "ط§ط®طھط± ط§ظ„ظ…ط¯ظٹظ†ط©" : "Select city",
+      ? "أدخل بياناتك بدقة — المدينة ونوع الخدمة من القائمة فقط."
+      : "Enter your details carefully — city and service from the list only.",
+    name: isAr ? "اسم مقدم الخدمة" : "Provider name",
+    phone: isAr ? "رقم الجوال" : "Mobile number",
+    service: isAr ? "نوع الخدمة" : "Service type",
+    city: isAr ? "المدينة" : "City",
+    agree: isAr ? "موافق" : "I agree",
+    read: isAr ? "قراءة النصوص القانونية" : "Read legal texts",
+    submit: isAr ? "إرسال طلب التسجيل" : "Submit signup request",
+    sending: isAr ? "جاري الإرسال..." : "Sending...",
+    required: isAr ? "أكمل جميع الحقول المطلوبة." : "Please complete all required fields.",
+    agreeReq: isAr ? "يلزم الموافقة على النصوص القانونية." : "You must agree to the legal texts.",
+    phoneInvalid: isAr ? "رقم الجوال غير صحيح." : "Invalid mobile number.",
+    serverError: isAr ? "حدث خطأ. حاول مرة أخرى." : "Something went wrong. Please try again.",
+    success: isAr ? "تم إرسال طلبك بنجاح." : "Your request was sent successfully.",
+    pickService: isAr ? "اختر نوع الخدمة" : "Select service type",
+    pickCity: isAr ? "اختر المدينة" : "Select city",
   };
 
   const servicesAr = [
-    "ظƒط´طھط§طھ ط¨ط±ظٹط©",
-    "ظƒط´طھط§طھ ط³ط§ط­ظ„ظٹط©",
-    "ظƒط´طھط§طھ ط¬ط¨ظ„ظٹط©",
-    "ظƒط´طھط§طھ ط±ظ…ظ„ظٹط©",
-    "ظ…ظ†طھط¬ط¹",
-    "ط´ط§ظ„ظٹظ‡",
-    "ظ…ط®ظٹظ…",
-    "ط§ط³طھط±ط§ط­ط©",
-    "ظ…ط²ط±ط¹ط©",
+    "كشتات برية",
+    "كشتات ساحلية",
+    "كشتات جبلية",
+    "كشتات رملية",
+    "منتجع",
+    "شاليه",
+    "مخيم",
+    "استراحة",
+    "مزرعة",
   ];
 
   const servicesEn = [
@@ -68,24 +68,24 @@ export default function ProviderRegisterForm({ locale }: Props) {
   ];
 
   const citiesAr = [
-    "ظ…ظƒط© ط§ظ„ظ…ظƒط±ظ…ط©",
-    "ط§ظ„ظ…ط¯ظٹظ†ط© ط§ظ„ظ…ظ†ظˆط±ط©",
-    "ط§ظ„ط±ظٹط§ط¶",
-    "ط¬ط¯ظ‡",
-    "ط§ظ„ط¯ظ…ط§ظ…",
-    "ط§ظ„ظ‚طµظٹظ…",
-    "ط­ط§ط¦ظ„",
-    "ط¹ط±ط¹ط±",
-    "ط·ط±ظٹظپ",
-    "ط§ظ„ظ‚ط±ظٹط§طھ",
-    "ط·ط¨ط±ط¬ظ„",
-    "ط§ظ„ط¬ظˆظپ",
-    "ط³ظƒط§ظƒط§",
-    "طھط¨ظˆظƒ",
-    "ط§ظ„ط¹ظ„ط§",
-    "ظٹظ†ط¨ط¹",
-    "ط§ظ…ظ„ط¬",
-    "ط­ظ‚ظ„",
+    "مكة المكرمة",
+    "المدينة المنورة",
+    "الرياض",
+    "جدة",
+    "الدمام",
+    "القصيم",
+    "حائل",
+    "عرعر",
+    "طريف",
+    "القريات",
+    "طبرجل",
+    "الجوف",
+    "سكاكا",
+    "تبوك",
+    "العلا",
+    "ينبع",
+    "أملج",
+    "حقل",
   ];
 
   const citiesEn = [
@@ -135,7 +135,7 @@ export default function ProviderRegisterForm({ locale }: Props) {
 
   function missingMessage(missing: string[]) {
     if (missing.length === 0) return t.required;
-    if (isAr) return `ط§ظƒظ…ظ„ ط§ظ„ط­ظ‚ظˆظ„ ط§ظ„طھط§ظ„ظٹط©: ${missing.join("طŒ ")}`;
+    if (isAr) return `أكمل الحقول التالية: ${missing.join("، ")}`;
     return `Please complete: ${missing.join(", ")}`;
   }
 
@@ -199,7 +199,7 @@ export default function ProviderRegisterForm({ locale }: Props) {
           phone: p,
           service_type: s,
           city: c,
-          accepted: a, // ✅ هذا هو الإصلاح الوحيد
+          accepted: a,
         }),
       });
 
@@ -240,7 +240,7 @@ export default function ProviderRegisterForm({ locale }: Props) {
             if (state) setState(null);
           }}
           autoComplete="name"
-          placeholder={isAr ? "ظ…ط«ط§ظ„: ط®ط§ظ„ط¯" : "e.g. Khalid"}
+          placeholder={isAr ? "مثال: خالد" : "e.g. Khalid"}
           required
         />
       </div>
@@ -257,7 +257,7 @@ export default function ProviderRegisterForm({ locale }: Props) {
           }}
           inputMode="tel"
           autoComplete="tel"
-          placeholder={isAr ? "05xxxxxxxx" : "05xxxxxxxx"}
+          placeholder="05xxxxxxxx"
           required
         />
       </div>
@@ -310,7 +310,7 @@ export default function ProviderRegisterForm({ locale }: Props) {
         </select>
       </div>
 
-      <div className="lk-agree" aria-label={isAr ? "ط§ظ„ظ…ظˆط§ظپظ‚ط© ط¹ظ„ظ‰ ط§ظ„ظ†طµظˆطµ ط§ظ„ظ‚ط§ظ†ظˆظ†ظٹط©" : "Legal agreement"}>
+      <div className="lk-agree" aria-label={isAr ? "الموافقة على النصوص القانونية" : "Legal agreement"}>
         <div className="lk-agree-box">
           <label className="lk-agree-row">
             <input
@@ -321,7 +321,7 @@ export default function ProviderRegisterForm({ locale }: Props) {
                 setAgree(e.target.checked);
                 if (state) setState(null);
               }}
-              aria-label={isAr ? "ظ…ظˆط§ظپظ‚ط©" : "Agree"}
+              aria-label={isAr ? "موافق" : "Agree"}
             />
             <span className="lk-agree-text">{t.agree}</span>
           </label>
@@ -414,7 +414,7 @@ export default function ProviderRegisterForm({ locale }: Props) {
             border-color: var(--lk-bf);
           }
 
-          /* طھظˆط­ظٹط¯ select ظˆط±ط§ط­ط© ط§ظ„ط³ظ‡ظ… ط¨ط¯ظˆظ† ظƒط³ط± RTL/LTR */
+          /* توحيد select وراحة السهم بدون كسر RTL/LTR */
           .lk-form select{
             appearance:none;
             -webkit-appearance:none;
