@@ -68,24 +68,22 @@ export default function ProviderSignupFormAction({
   const services =
     locale === "ar"
       ? [
-          "كشتات برية",
-          "كشتات ساحلية",
-          "كشتات جبلية",
-          "منتجع",
-          "شاليه",
+          "كشته بريه رمليه",
+          "كشته بريه ساحليه",
+          "كشته بريه جبليه",
           "مخيم",
-          "استراحة",
+          "شاليه",
           "مزرعة",
+          "استراحة",
         ]
       : [
-          "Desert trips",
-          "Coastal trips",
-          "Mountain trips",
-          "Resort",
-          "Chalet",
+          "Desert (sandy)",
+          "Desert (coastal)",
+          "Desert (mountain)",
           "Camp",
-          "Rest house",
+          "Chalet",
           "Farm",
+          "Rest area",
         ];
 
   const cities =

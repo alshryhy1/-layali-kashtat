@@ -22,7 +22,9 @@ export default async function Home({
     desc: isEn
       ? "A simple platform to organize requests and connect service providers with customers."
       : "منصة تقنية بسيطة لتنظيم الطلبات والتواصل بين مقدمي الخدمات والعملاء.",
+    request: isEn ? "Request Service (Customers)" : "طلب خدمة (للعملاء)",
     signup: isEn ? "Provider Signup" : "تسجيل مقدم خدمة",
+    providerDashboard: isEn ? "Provider Dashboard" : "لوحة إدارة مقدم الخدمة",
     status: isEn ? "Track Request" : "متابعة الطلب",
     legal: isEn ? "Legal Texts" : "النصوص القانونية",
   };
@@ -89,6 +91,10 @@ export default async function Home({
               {t.title}
             </h1>
 
+            
+
+            
+
             <p
               style={{
                 margin: "10px 0 16px",
@@ -109,8 +115,16 @@ export default async function Home({
                 marginTop: 6,
               }}
             >
-              <a href={`/${locale}/providers/signup`} style={btnPrimary}>
+              <a href={`/${locale}/request`} style={btnPrimary}>
+                {t.request}
+              </a>
+
+              <a href={`/${locale}/providers/signup`} style={btnGhost}>
                 {t.signup}
+              </a>
+
+              <a href={`/${locale}/providers/dashboard`} style={btnGhost}>
+                {t.providerDashboard}
               </a>
 
               <a href={`/${locale}/providers/status`} style={btnGhost}>
@@ -129,10 +143,10 @@ export default async function Home({
               /* Mobile-first: بطاقة أضيق وتوازن مسافات */
               .home-card { box-shadow: 0 12px 28px rgba(0,0,0,.08); }
 
-              /* Desktop: 3 أعمدة كما كان */
+              /* Tablet/Desktop: 2×2 عشان 4 أزرار */
               @media (min-width: 768px) {
                 .home-card { padding: 22px 18px; }
-                .home-actions { grid-template-columns: 1fr 1fr 1fr; }
+                .home-actions { grid-template-columns: 1fr 1fr; }
               }
             `,
             }}

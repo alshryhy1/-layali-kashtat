@@ -1,5 +1,9 @@
-import { createClient } from "@supabase/supabase-js";
-import RequestsTable from "@/components/RequestsTable";
+import { db } from "@/lib/db";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import crypto from "crypto";
+import AdminLogoutButton from "@/components/AdminLogoutButton";
+import AdminStatusButtons from "@/components/AdminStatusButtons";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,48 +21,38 @@ type Row = {
 export default async function RequestsPage({
   params,
 }: {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }) {
-  const locale = params?.locale === "en" ? "en" : "ar";
+  const p = await params;
+  const locale = p?.locale === "en" ? "en" : "ar";
   const isAr = locale === "ar";
 
-  const SUPABASE_URL = process.env.SUPABASE_URL;
-  const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
-    return (
-      <main style={pageStyle}>
-        <div style={cardStyle}>
-          <h1 style={h1Style}>{isAr ? "طلبات مقدّمي الخدمة" : "Provider Requests"}</h1>
-          <p style={mutedStyle}>
-            {isAr
-              ? "مشكلة إعدادات: متغيرات Supabase غير موجودة على السيرفر."
-              : "Config error: Supabase env vars are missing on the server."}
-          </p>
-        </div>
-      </main>
-    );
+  const SECRET = String(process.env.ADMIN_SESSION_SECRET || "").trim();
+  const mustAuth = process.env.NODE_ENV === "production" && SECRET.length > 0;
+  if (mustAuth) {
+    const token = (await cookies()).get("kashtat_admin")?.value;
+    if (!verifyAdminSession(token)) redirect(`/${locale}/admin/login`);
   }
 
-  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-    auth: { persistSession: false },
-  });
+  let rows: Row[] = [];
+  let loadError: any = null;
+  try {
+    const r = await db.query(
+      "SELECT id::text as id,name,phone,service_type,city,status,created_at FROM provider_requests ORDER BY created_at DESC LIMIT 200"
+    );
+    rows = (r.rows ?? []) as Row[];
+  } catch (e: any) {
+    loadError = e;
+  }
 
-  const { data, error } = await supabase
-    .from("provider_requests")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(200);
-
-  const rows = ((data ?? []) as any[]).map((r) => ({
-    id: String(r.id ?? ""),
-    name: r.name ?? null,
-    phone: r.phone ?? null,
-    service_type: r.service_type ?? null,
-    city: r.city ?? null,
-    status: r.status ?? null,
-    created_at: r.created_at ?? null,
-  })) as Row[];
+  async function updateStatus(formData: FormData) {
+    "use server";
+    const id = String(formData.get("id") || "");
+    const status = String(formData.get("status") || "");
+    if (!id) return;
+    if (!["approved", "rejected", "pending"].includes(status)) return;
+    await db.query("UPDATE provider_requests SET status = $2 WHERE id = $1::bigint", [id, status]);
+  }
 
   return (
     <main style={pageStyle}>
@@ -71,22 +65,98 @@ export default async function RequestsPage({
             </p>
           </div>
 
-          <a href={`/${locale}/provider-signup`} style={btnStyle}>
-            {isAr ? "فتح صفحة التسجيل" : "Open Signup"}
-          </a>
+          <div style={{ display: "flex", gap: 8 }}>
+            <a href={`/${locale}/providers/signup`} style={btnStyle}>
+              {isAr ? "فتح صفحة التسجيل" : "Open Signup"}
+            </a>
+            <AdminLogoutButton locale={locale as any} />
+          </div>
         </div>
 
-        {error ? (
+        {loadError ? (
           <div style={cardStyle}>
             <h2 style={h2Style}>{isAr ? "خطأ" : "Error"}</h2>
-            <pre style={preStyle}>{String(error.message || error)}</pre>
+            <pre style={preStyle}>{String(loadError.message || loadError)}</pre>
           </div>
         ) : (
-          <RequestsTable locale={locale} rows={rows} />
+          <div style={cardStyle}>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 980 }}>
+                <thead>
+                  <tr>
+                    <th style={thStyle}>{isAr ? "الاسم" : "Name"}</th>
+                    <th style={thStyle}>{isAr ? "الجوال" : "Phone"}</th>
+                    <th style={thStyle}>{isAr ? "الخدمة" : "Service"}</th>
+                    <th style={thStyle}>{isAr ? "المدينة" : "City"}</th>
+                    <th style={thStyle}>{isAr ? "الحالة" : "Status"}</th>
+                    <th style={thStyle}>{isAr ? "تغيير" : "Change"}</th>
+                    <th style={thStyle}>{isAr ? "التاريخ" : "Date"}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((r) => (
+                    <tr key={r.id}>
+                      <td style={tdStyle}>{r.name}</td>
+                      <td style={{ ...tdStyle, direction: "ltr" }}>{r.phone}</td>
+                      <td style={tdStyle}>{r.service_type}</td>
+                      <td style={tdStyle}>{r.city}</td>
+                      <td style={tdStyle}>{statusBadge(locale, r.status || "")}</td>
+                      <td style={tdStyle}>
+                        <AdminStatusButtons
+                          locale={locale as any}
+                          id={r.id}
+                          currentStatus={r.status || "pending"}
+                          action={updateStatus}
+                        />
+                      </td>
+                      <td style={tdStyle}>{fmt(locale, r.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         )}
       </div>
     </main>
   );
+}
+
+function sign(payload: string, secret: string) {
+  return crypto.createHmac("sha256", secret).update(payload).digest("hex");
+}
+function verifyAdminSession(token: string | undefined | null): boolean {
+  if (!token) return false;
+  const SECRET = process.env.ADMIN_SESSION_SECRET || "";
+  if (!SECRET) return false;
+  try {
+    const raw = Buffer.from(token, "base64url").toString("utf8");
+    const i = raw.lastIndexOf(".");
+    if (i <= 0) return false;
+    const payload = raw.slice(0, i);
+    const sig = raw.slice(i + 1);
+    if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(sign(payload, SECRET)))) return false;
+    const obj = JSON.parse(payload);
+    return Date.now() <= obj.exp;
+  } catch {
+    return false;
+  }
+}
+
+function statusBadge(locale: "ar" | "en", s: string) {
+  const v = (s || "pending").toLowerCase();
+  const label =
+    locale === "ar" ? (v === "approved" ? "مقبول" : v === "rejected" ? "مرفوض" : "انتظار") : v;
+  return label;
+}
+
+function fmt(locale: "ar" | "en", v: string | null) {
+  if (!v) return "—";
+  try {
+    return new Date(v).toLocaleString(locale === "ar" ? "ar-SA" : "en-US");
+  } catch {
+    return v;
+  }
 }
 
 const pageStyle: React.CSSProperties = {
@@ -158,4 +228,20 @@ const preStyle: React.CSSProperties = {
   overflowX: "auto",
   fontSize: 12,
   lineHeight: 1.6,
+};
+
+const thStyle: React.CSSProperties = {
+  textAlign: "right",
+  padding: 10,
+  borderBottom: "1px solid #ddd",
+  background: "#fafafa",
+  fontWeight: 900,
+  fontSize: 13,
+};
+
+const tdStyle: React.CSSProperties = {
+  padding: 10,
+  borderBottom: "1px solid #eee",
+  fontSize: 13,
+  verticalAlign: "top",
 };

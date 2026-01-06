@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import ProviderRequestNotifier from "@/components/ProviderRequestNotifier";
 
 type Locale = "ar" | "en";
 
@@ -36,6 +37,8 @@ export default function ProviderRegisterForm({ locale }: Props) {
       ? "أدخل بياناتك بدقة — المدينة ونوع الخدمة من القائمة فقط."
       : "Enter your details carefully — city and service from the list only.",
     name: isAr ? "اسم مقدم الخدمة" : "Provider name",
+    email: isAr ? "البريد الإلكتروني" : "Email",
+    password: isAr ? "كلمة المرور" : "Password",
     phone: isAr ? "رقم الجوال" : "Mobile number",
     service: isAr ? "نوع الخدمة" : "Service type",
     city: isAr ? "المدينة" : "City",
@@ -46,6 +49,7 @@ export default function ProviderRegisterForm({ locale }: Props) {
     required: isAr ? "اكمل جميع الحقول المطلوبة." : "Please complete all required fields.",
     agreeReq: isAr ? "يلزم الموافقة على الشروط قبل الإرسال." : "You must agree to the legal texts.",
     phoneInvalid: isAr ? "رقم الجوال غير صحيح." : "Invalid mobile number.",
+    emailInvalid: isAr ? "البريد الإلكتروني غير صحيح." : "Invalid email address.",
     serverError: isAr ? "تعذر إرسال الطلب الآن. حاول لاحقًا." : "Something went wrong. Please try again.",
     success: isAr ? "تم إرسال طلبك بنجاح." : "Your request was sent successfully.",
     pickService: isAr ? "اختر نوع الخدمة" : "Select service type",
@@ -53,27 +57,23 @@ export default function ProviderRegisterForm({ locale }: Props) {
   };
 
   const servicesAr = [
-    "كشتات برية",
-    "كشتات ساحلية",
-    "كشتات جبلية",
-    "كشتات رملية",
-    "منتجع",
-    "شاليه",
+    "كشته بريه رمليه",
+    "كشته بريه ساحليه",
+    "كشته بريه جبليه",
     "مخيم",
-    "استراحة",
+    "شاليه",
     "مزرعة",
+    "استراحة",
   ];
 
   const servicesEn = [
-    "Desert trips",
-    "Coastal trips",
-    "Mountain trips",
-    "Sandy trips",
-    "Resort",
-    "Chalet",
+    "Desert (sandy)",
+    "Desert (coastal)",
+    "Desert (mountain)",
     "Camp",
-    "Rest house",
+    "Chalet",
     "Farm",
+    "Rest area",
   ];
 
   const citiesAr = [
@@ -122,8 +122,32 @@ export default function ProviderRegisterForm({ locale }: Props) {
   const cityOptions = isAr ? citiesAr : citiesEn;
 
   const [name, setName] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
   const [phone, setPhone] = React.useState("");
-  const [serviceType, setServiceType] = React.useState("");
+  const [serviceTypes, setServiceTypes] = React.useState<string[]>([]);
+  const [serviceMenuOpen, setServiceMenuOpen] = React.useState(false);
+  const menuRef = React.useRef<HTMLDivElement | null>(null);
+  const btnRef = React.useRef<HTMLButtonElement | null>(null);
+
+  React.useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      const t = e.target as Node | null;
+      if (!serviceMenuOpen) return;
+      if (menuRef.current && menuRef.current.contains(t)) return;
+      if (btnRef.current && btnRef.current.contains(t)) return;
+      setServiceMenuOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setServiceMenuOpen(false);
+    }
+    document.addEventListener("click", onDocClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("click", onDocClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [serviceMenuOpen]);
   const [city, setCity] = React.useState("");
   const [agree, setAgree] = React.useState(false);
 
@@ -176,15 +200,19 @@ export default function ProviderRegisterForm({ locale }: Props) {
     const fd = new FormData(form);
 
     const n = String(fd.get("provider_name") ?? "").trim();
+    const emRaw = String(fd.get("provider_email") ?? "").trim();
+    const pwd = String(fd.get("provider_password") ?? "").trim();
     const p = normalizePhone(String(fd.get("provider_phone") ?? ""));
-    const s = String(fd.get("service_type") ?? "").trim();
+    const sAll = serviceTypes.slice();
     const c = String(fd.get("city") ?? "").trim();
     const a = fd.get("agree") === "on";
 
     const missing: string[] = [];
     if (!n) missing.push(t.name);
+    if (!emRaw) missing.push(t.email);
+    if (!pwd || pwd.length < 6) missing.push(t.password);
     if (!p) missing.push(t.phone);
-    if (!s) missing.push(t.service);
+    if (sAll.length === 0) missing.push(t.service);
     if (!c) missing.push(t.city);
 
     if (missing.length > 0) {
@@ -198,8 +226,19 @@ export default function ProviderRegisterForm({ locale }: Props) {
       return;
     }
 
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emRaw.toLowerCase());
+    if (!emailValid) {
+      setState({ ok: false, message: t.emailInvalid });
+      return;
+    }
+
     if (!a) {
       setState({ ok: false, message: t.agreeReq });
+      return;
+    }
+
+    if (sAll.length > 3) {
+      setState({ ok: false, message: isAr ? "يمكنك اختيار ثلاثة أنواع كحد أقصى." : "You can select up to 3 services." });
       return;
     }
 
@@ -213,8 +252,10 @@ export default function ProviderRegisterForm({ locale }: Props) {
         body: JSON.stringify({
           locale,
           name: n,
+          email: emRaw,
+          password: pwd,
           phone: p,
-          service_type: s,
+          service_types: sAll,
           city: c,
           accepted: a, // ✅ لازم تنرسل للسيرفر
         }),
@@ -263,6 +304,40 @@ export default function ProviderRegisterForm({ locale }: Props) {
       </div>
 
       <div className="lk-field">
+        <label htmlFor="lk-email">{t.email}</label>
+        <input
+          id="lk-email"
+          name="provider_email"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (state) setState(null);
+          }}
+          inputMode="email"
+          autoComplete="email"
+          placeholder={isAr ? "example@domain.com" : "example@domain.com"}
+          required
+        />
+      </div>
+
+      <div className="lk-field">
+        <label htmlFor="lk-password">{t.password}</label>
+        <input
+          id="lk-password"
+          name="provider_password"
+          type="password"
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            if (state) setState(null);
+          }}
+          autoComplete="new-password"
+          placeholder="******"
+          required
+        />
+      </div>
+
+      <div className="lk-field">
         <label htmlFor="lk-phone">{t.phone}</label>
         <input
           id="lk-phone"
@@ -280,27 +355,69 @@ export default function ProviderRegisterForm({ locale }: Props) {
       </div>
 
       <div className="lk-field">
-        <label htmlFor="lk-service">{t.service}</label>
-        <select
-          id="lk-service"
-          name="service_type"
-          value={serviceType}
-          onChange={(e) => {
-            setServiceType(e.target.value);
-            if (state) setState(null);
-          }}
-          aria-label={t.service}
-          required
-        >
-          <option value="" disabled hidden>
-            {t.pickService}
-          </option>
-          {serviceOptions.map((x) => (
-            <option key={x} value={x}>
-              {x}
-            </option>
-          ))}
-        </select>
+        <label>{t.service}</label>
+        <div className="lk-select-wrap">
+          <button
+            type="button"
+            className="lk-select"
+            onClick={() => setServiceMenuOpen((v) => !v)}
+            ref={btnRef}
+            aria-haspopup="listbox"
+            aria-expanded={serviceMenuOpen}
+          >
+            {serviceTypes.length === 0
+              ? (isAr ? "اختر حتى 3 أنواع" : "Select up to 3")
+              : serviceTypes.join("، ").slice(0, 40) + (serviceTypes.join("، ").length > 40 ? "…" : "")}
+          </button>
+          {serviceMenuOpen ? (
+            <div className="lk-menu" ref={menuRef} role="listbox" aria-label={t.service}>
+              {serviceOptions.map((x) => {
+                const checked = serviceTypes.includes(x);
+                return (
+                  <label key={x} className={`lk-item ${checked ? "on" : ""}`}>
+                    <input
+                      type="checkbox"
+                      value={x}
+                      checked={checked}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        const on = e.target.checked;
+                        setServiceTypes((prev) => {
+                          let next = prev.slice();
+                          if (on) {
+                            if (!next.includes(v)) {
+                              if (next.length >= 3) return next; // حد أقصى 3
+                              next.push(v);
+                            }
+                          } else {
+                            next = next.filter((s) => s !== v);
+                          }
+                          return next;
+                        });
+                        if (state) setState(null);
+                      }}
+                    />
+                    <span>{x}</span>
+                  </label>
+                );
+              })}
+              <div className="lk-menu-foot">
+                <button
+                  type="button"
+                  className="lk-menu-close"
+                  onClick={() => setServiceMenuOpen(false)}
+                >
+                  {isAr ? "إغلاق" : "Close"}
+                </button>
+                <div className="lk-small">
+                  {isAr
+                    ? `مختار: ${serviceTypes.length} / 3`
+                    : `Chosen: ${serviceTypes.length} / 3`}
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
       </div>
 
       <div className="lk-field">
@@ -367,6 +484,8 @@ export default function ProviderRegisterForm({ locale }: Props) {
       <button type="submit" className="lk-submit" disabled={busy}>
         {busy ? t.sending : t.submit}
       </button>
+
+      <ProviderRequestNotifier locale={locale} initialCity={city} initialService={serviceTypes[0] || ""} />
 
       <style
         dangerouslySetInnerHTML={{
@@ -440,6 +559,69 @@ export default function ProviderRegisterForm({ locale }: Props) {
             border-color: var(--lk-bf);
           }
 
+          .lk-select-wrap{ position:relative; }
+          .lk-select{
+            width:100%;
+            height:var(--lk-h);
+            padding:0 14px;
+            border-radius:var(--lk-r);
+            border:1px solid var(--lk-b);
+            background:var(--lk-bg);
+            font-size:14px;
+            font-weight:900;
+            text-align:start;
+            cursor:pointer;
+          }
+          .lk-menu{
+            position:absolute;
+            z-index:50;
+            inset-inline:0;
+            top:calc(100% + 6px);
+            background:#fff;
+            border:1px solid rgba(0,0,0,0.12);
+            border-radius:12px;
+            box-shadow:0 10px 22px rgba(0,0,0,0.12);
+            padding:8px;
+            max-height:240px;
+            overflow:auto;
+          }
+          .lk-item{
+            display:flex;
+            align-items:center;
+            gap:8px;
+            padding:6px 8px;
+            border-radius:8px;
+            cursor:pointer;
+          }
+          .lk-item.on{
+            background:rgba(0,0,0,0.04);
+          }
+          .lk-item input{
+            width:16px;
+            height:16px;
+            margin:0;
+          }
+          .lk-menu-foot{
+            margin-top:6px;
+            padding-top:6px;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            border-top:1px solid rgba(0,0,0,0.08);
+          }
+          .lk-menu-close{
+            padding:6px 10px;
+            border-radius:8px;
+            border:1px solid rgba(0,0,0,0.18);
+            background:#fff;
+            font-weight:900;
+            cursor:pointer;
+          }
+          .lk-small{
+            margin-top:6px;
+            font-size:11px;
+            opacity:.7;
+          }
           .lk-form select{
             appearance:none;
             -webkit-appearance:none;

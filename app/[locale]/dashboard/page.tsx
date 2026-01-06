@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
 export const runtime = "nodejs";
@@ -14,22 +14,14 @@ type Row = {
   created_at: string | null;
 };
 
-function sbAdmin() {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) {
-    throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
-  }
-  return createClient(url, key, { auth: { persistSession: false } });
-}
-
 export default async function DashboardPage({
   params,
 }: {
   params: { locale: string };
 }) {
   const locale = params?.locale === "en" ? "en" : "ar";
-  const supabase = sbAdmin();
+  let rows: Row[] = [];
+  let error: any = null;
 
   async function updateStatus(formData: FormData) {
     "use server";
@@ -40,19 +32,19 @@ export default async function DashboardPage({
     if (!id) return;
     if (!["approved", "rejected", "pending"].includes(status)) return;
 
-    const admin = sbAdmin();
-    await admin.from("provider_requests").update({ status }).eq("id", id);
+    await db.query("UPDATE provider_requests SET status = $2 WHERE id = $1::bigint", [id, status]);
 
     revalidatePath(`/${locale}/dashboard`);
   }
 
-  const { data, error } = await supabase
-    .from("provider_requests")
-    .select("id,name,phone,service_type,city,status,created_at")
-    .order("created_at", { ascending: false })
-    .limit(200);
-
-  const rows = (data ?? []) as Row[];
+  try {
+    const r = await db.query(
+      "SELECT id::text as id,name,phone,service_type,city,status,created_at FROM provider_requests ORDER BY created_at DESC LIMIT 200"
+    );
+    rows = (r.rows ?? []) as Row[];
+  } catch (e: any) {
+    error = e;
+  }
 
   return (
     <main style={pageStyle}>
@@ -69,7 +61,7 @@ export default async function DashboardPage({
             {error ? <div style={err}>{String(error.message || error)}</div> : null}
           </div>
 
-          <a href={`/${locale}/provider-signup`} style={btnLink}>
+          <a href={`/${locale}/providers/signup`} style={btnLink}>
             فتح صفحة التسجيل
           </a>
         </div>

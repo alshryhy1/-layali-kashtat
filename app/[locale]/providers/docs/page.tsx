@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ProviderRequestNotifier from "@/components/ProviderRequestNotifier";
 
 type PageProps = {
   params: { locale: "ar" | "en" };
@@ -54,6 +55,8 @@ export default function ProviderDocsPage({ params }: PageProps) {
           ? "سيتم فتح التسجيل تدريجيًا بعد اكتمال مرحلة الإطلاق الأولى."
           : "Provider onboarding will be enabled gradually after the initial launch phase."}
       </p>
+
+      <ProviderRequestNotifier locale={params.locale} />
     </main>
   );
 }

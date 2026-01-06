@@ -4,10 +4,12 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import crypto from "crypto";
+import { db } from "@/lib/db";
 
 import AdminRefSearchBox from "@/components/AdminRefSearchBox";
 import AdminLogoutButton from "@/components/AdminLogoutButton";
 import AdminStatusButtons from "@/components/AdminStatusButtons";
+import AdminNewRequestNotifier from "@/components/AdminNewRequestNotifier";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,7 +21,10 @@ type Row = {
   service_type: string | null;
   city: string | null;
   status: string | null;
+  ref: string | null;
   created_at: string | null;
+  mail_ok: boolean | null;
+  mail_error: string | null;
 };
 
 type Locale = "ar" | "en";
@@ -62,9 +67,8 @@ function verifyAdminSession(token: string | undefined | null): boolean {
   }
 }
 
-function toRef(id: string) {
-  const s = String(id || "");
-  return `LK-${s.replace(/[^0-9A-Za-z]/g, "").slice(0, 6)}`;
+function toRef(ref: string | null) {
+  return String(ref || "—");
 }
 
 function statusLabel(locale: Locale, s: string) {
@@ -97,22 +101,26 @@ export default async function AdminRequestsPage({
   const token = (await cookies()).get("kashtat_admin")?.value;
   if (!verifyAdminSession(token)) redirect(`/${locale}/admin/login`);
 
-  const supabase = sbAdmin();
-
-  const { data } = await supabase
-    .from("provider_requests")
-    .select("id,name,phone,service_type,city,status,created_at")
-    .order("created_at", { ascending: false })
-    .limit(200);
-
-  const rows = (data ?? []) as Row[];
+  // عرض طلبات العملاء (customer_requests)
+  let rows: Row[] = [];
+  try {
+    const r = await db.query(
+      "SELECT id::text as id, name, phone, service_type, city, status, ref, created_at," +
+        " (SELECT ok FROM mail_logs WHERE ref = customer_requests.ref ORDER BY created_at DESC LIMIT 1) as mail_ok," +
+        " (SELECT error FROM mail_logs WHERE ref = customer_requests.ref ORDER BY created_at DESC LIMIT 1) as mail_error" +
+        " FROM customer_requests ORDER BY created_at DESC LIMIT 200"
+    );
+    rows = r.rows as Row[];
+  } catch {
+    rows = [];
+  }
 
   async function updateStatus(formData: FormData) {
     "use server";
     const id = String(formData.get("id") || "");
     const status = String(formData.get("status") || "");
     if (!id) return;
-    await sbAdmin().from("provider_requests").update({ status }).eq("id", id);
+    await db.query("UPDATE customer_requests SET status = $2 WHERE id = $1::bigint", [id, status]);
     revalidatePath(`/${locale}/admin/requests`);
   }
 
@@ -122,6 +130,8 @@ export default async function AdminRequestsPage({
         <h1>{isAr ? "لوحة الطلبات" : "Requests"}</h1>
         <AdminLogoutButton locale={locale} />
       </div>
+
+      <AdminNewRequestNotifier locale={locale} />
 
       <AdminRefSearchBox locale={locale} />
 
@@ -136,6 +146,7 @@ export default async function AdminRequestsPage({
               <th>المدينة</th>
               <th>الحالة</th>
               <th>المرجع</th>
+              <th>البريد</th>
               <th>تغيير</th>
               <th>التاريخ</th>
             </tr>
@@ -148,7 +159,10 @@ export default async function AdminRequestsPage({
                 <td>{r.service_type}</td>
                 <td>{r.city}</td>
                 <td>{statusLabel(locale, r.status || "")}</td>
-                <td>{toRef(r.id)}</td>
+                <td>{toRef(r.ref)}</td>
+                <td>
+                  {r.mail_ok === null ? "—" : r.mail_ok ? "نجح" : "فشل"}
+                </td>
                 <td>
                   <AdminStatusButtons
                     locale={locale}
