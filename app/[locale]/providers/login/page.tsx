@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { ArrowRight, ArrowLeft } from "lucide-react";
 
 type Locale = "ar" | "en";
 function asLocale(v: any): Locale {
@@ -42,7 +43,25 @@ export default function ProviderLoginPage({ params }: { params: Promise<{ locale
 
   return (
     <main style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f5f5f5" }} dir={isAr ? "rtl" : "ltr"}>
-      <form onSubmit={onSubmit} style={{ background: "#fff", padding: 30, borderRadius: 12, width: "100%", maxWidth: 400, boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}>
+      <form onSubmit={onSubmit} style={{ background: "#fff", padding: 30, borderRadius: 12, width: "100%", maxWidth: 400, boxShadow: "0 4px 20px rgba(0,0,0,0.08)", position: "relative" }}>
+        
+        <a 
+          href={`/${locale}`}
+          style={{ 
+            display: "inline-flex", 
+            alignItems: "center", 
+            gap: 6, 
+            textDecoration: "none", 
+            color: "#666", 
+            fontSize: 14, 
+            marginBottom: 20,
+            fontWeight: 500
+          }}
+        >
+          {isAr ? <ArrowRight size={16} /> : <ArrowLeft size={16} />}
+          <span>{isAr ? "العودة للرئيسية" : "Back to Home"}</span>
+        </a>
+
         <h1 style={{ margin: "0 0 20px", fontSize: 22, fontWeight: 800 }}>{isAr ? "دخول مقدم الخدمة" : "Provider Login"}</h1>
         
         <div style={{ marginBottom: 15 }}>

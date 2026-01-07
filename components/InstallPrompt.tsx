@@ -78,7 +78,8 @@ export default function InstallPrompt() {
   return (
     <button
       onClick={handleInstallClick}
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-black/80 hover:bg-black text-white px-6 py-3 rounded-full shadow-lg transition-all active:scale-95 backdrop-blur-sm"
+      dir="ltr"
+      className="fixed bottom-6 left-0 right-0 mx-auto w-fit z-[100] flex items-center gap-2 bg-black text-white px-6 py-3 rounded-full shadow-lg transition-all active:scale-95 backdrop-blur-sm border border-white/20"
     >
       <Download className="w-5 h-5" />
       <span className="font-medium">تثبيت التطبيق</span>
