@@ -211,7 +211,7 @@ export async function POST(req: Request) {
               : "",
             ...providers.rows.map((p: any) => {
               const base =
-                String(process.env.PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || "").trim();
+                String(process.env.NEXT_PUBLIC_BASE_URL || process.env.PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || "").trim();
               const path = `/ar/providers/accept?ref=${encodeURIComponent(row.ref)}&provider_id=${encodeURIComponent(p.id)}`;
               const url = base ? `${base}${path}` : path;
               return `قبول بواسطة ${p.name}: ${url}`;
@@ -242,7 +242,7 @@ export async function POST(req: Request) {
               "",
               `للاستجابة لهذا الطلب (قبول/رفض)، يرجى الدخول للوحة التحكم:`,
               (() => {
-                const base = String(process.env.PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || "").trim();
+                const base = String(process.env.NEXT_PUBLIC_BASE_URL || process.env.PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || "").trim();
                 const path = `/ar/providers/dashboard`;
                 const url = base ? `${base}${path}` : path;
                 return url;
