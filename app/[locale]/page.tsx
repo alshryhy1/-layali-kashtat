@@ -70,12 +70,12 @@ export default async function Home({
       style={{
         width: "100%",
         minHeight: "100vh",
-        paddingTop: 40,
+        paddingTop: 120,
         paddingBottom: 40,
         paddingInline: 16,
         background: "linear-gradient(135deg, #fdfbf7 0%, #e6d0b8 100%)",
         display: "flex",
-        alignItems: "center",
+        alignItems: "flex-start",
         justifyContent: "center",
       }}
     >
