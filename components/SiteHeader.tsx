@@ -56,8 +56,8 @@ export default function SiteHeader({ locale }: { locale: Locale }) {
         </div>
       </div>
 
-      {/* ✅ Mobile-First: إخفاء البنر الأبيض على الجوال فقط */}
-      <style
+      {/* ✅ Mobile-First: إخفاء البنر الأبيض على الجوال فقط -> REMOVED to show language switcher on mobile */}
+      {/* <style
         dangerouslySetInnerHTML={{
           __html: `
             @media (max-width: 767.98px) {
@@ -65,7 +65,7 @@ export default function SiteHeader({ locale }: { locale: Locale }) {
             }
           `,
         }}
-      />
+      /> */}
     </header>
   );
 }

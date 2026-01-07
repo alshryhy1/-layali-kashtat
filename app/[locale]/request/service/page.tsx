@@ -111,8 +111,8 @@ export default function ServiceStepPage({
   ];
 
   // نوع الخدمة
-  const servicesAr = ["كشته بريه رمليه", "كشته بريه ساحليه", "كشته بريه جبليه", "مخيم", "شاليه", "مزرعة", "استراحة"];
-  const servicesEn = ["Desert (sandy)", "Desert (coastal)", "Desert (mountain)", "Camp", "Chalet", "Farm", "Rest area"];
+  const servicesAr = ["كشته بريه رمليه", "كشته بريه ساحليه", "كشته بريه جبليه", "مخيم", "شاليه", "منتجع", "مزرعة", "استراحة"];
+  const servicesEn = ["Desert (sandy)", "Desert (coastal)", "Desert (mountain)", "Camp", "Chalet", "Resort", "Farm", "Rest area"];
 
   // نوع الحضور
   const groupsAr = ["شباب", "عوائل", "نساء"];

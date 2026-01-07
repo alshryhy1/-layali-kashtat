@@ -3,8 +3,10 @@ import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import crypto from "crypto";
 import { db } from "@/lib/db";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 import AdminRefSearchBox from "@/components/AdminRefSearchBox";
 import AdminLogoutButton from "@/components/AdminLogoutButton";
@@ -125,10 +127,19 @@ export default async function AdminRequestsPage({
   }
 
   return (
-    <main className="admin-page">
-      <div className="top">
+    <main className="admin-page" style={{ padding: 20 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+        <Link href={`/${locale}/admin/portal`} style={{ fontSize: 14, color: "#666", textDecoration: "none" }}>
+          ← {isAr ? "العودة للقائمة الرئيسية" : "Back to Portal"}
+        </Link>
+        <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+          <LanguageSwitcher locale={locale} />
+          <AdminLogoutButton locale={locale} />
+        </div>
+      </div>
+
+      <div className="top" style={{ marginBottom: 32 }}>
         <h1>{isAr ? "لوحة الطلبات" : "Requests"}</h1>
-        <AdminLogoutButton locale={locale} />
       </div>
 
       <AdminNewRequestNotifier locale={locale} />

@@ -1,4 +1,5 @@
 import ProviderRegisterForm from "@/components/ProviderRegisterForm";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,21 @@ export default async function ProviderSignupPage({
       }}
     >
       <div className="lk-signup-wrap">
+        <div style={{ marginBottom: 16, textAlign: isAr ? "right" : "left" }}>
+          <Link
+            href={`/${locale}`}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              fontSize: 14,
+              color: "#666",
+              textDecoration: "none",
+              fontWeight: 700,
+            }}
+          >
+            {isAr ? "← العودة للرئيسية" : "← Back to Home"}
+          </Link>
+        </div>
         <ProviderRegisterForm locale={locale} />
       </div>
 

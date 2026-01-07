@@ -1,4 +1,5 @@
 import * as React from "react";
+import InstallPrompt from "@/components/InstallPrompt";
 
 export const dynamic = "force-dynamic";
 
@@ -152,6 +153,7 @@ export default async function Home({
             }}
           />
         </div>
+        <InstallPrompt />
       </div>
     </section>
   );

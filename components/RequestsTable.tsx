@@ -64,11 +64,13 @@ export default function RequestsTable({
   rows,
   busyId,
   onUpdateStatus,
+  renderActions,
 }: {
   locale: Locale;
   rows: Row[];
   busyId?: string | null;
   onUpdateStatus?: (id: string, status: Status) => void;
+  renderActions?: (row: Row) => React.ReactNode;
 }) {
   const isAr = locale === "ar";
   const canAction = typeof onUpdateStatus === "function";
@@ -141,7 +143,9 @@ export default function RequestsTable({
                     <td style={tdStyle}>{fmtDate(locale, r.created_at)}</td>
 
                     <td style={tdStyle}>
-                      {canAction ? (
+                      {renderActions ? (
+                        renderActions(r)
+                      ) : canAction ? (
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                           <button
                             type="button"

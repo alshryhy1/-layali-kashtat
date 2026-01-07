@@ -70,6 +70,21 @@ export default function ChangePasswordPage({ params }: { params: Promise<{ local
           />
         </div>
 
+        <div style={{ textAlign: "end", marginTop: -10, marginBottom: 15 }}>
+          <button
+            type="button"
+            onClick={() => {
+               if (confirm(isAr ? "لإعادة تعيين كلمة المرور، يجب تسجيل الخروج واستخدام خيار 'نسيت كلمة المرور' في صفحة الدخول.\n\nهل تريد تسجيل الخروج الآن؟" : "To reset password, you must logout and use 'Forgot Password' on login page.\n\nLogout now?")) {
+                 document.cookie = "kashtat_provider_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                 window.location.href = `/${locale}/providers/login`;
+               }
+            }}
+            style={{ background: "none", border: "none", padding: 0, color: "#666", fontSize: 12, textDecoration: "underline", cursor: "pointer" }}
+          >
+            {isAr ? "نسيت كلمة المرور الحالية؟" : "Forgot current password?"}
+          </button>
+        </div>
+
         <div style={{ marginBottom: 20 }}>
           <label style={{ display: "block", marginBottom: 6, fontSize: 14 }}>{isAr ? "كلمة المرور الجديدة" : "New Password"}</label>
           <input 

@@ -275,35 +275,41 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ lo
   return (
     <main style={{ padding: 20, minHeight: "100vh", background: "#f9f9f9" }} dir={isAr ? "rtl" : "ltr"}>
       <div style={{ maxWidth: 1000, margin: "0 auto" }}>
-        <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 30 }}>
+        <header style={{ 
+          display: "flex", 
+          flexWrap: "wrap", 
+          justifyContent: "space-between", 
+          alignItems: "center", 
+          gap: 16, 
+          marginBottom: 24, 
+          paddingBottom: 16, 
+          borderBottom: "1px solid #eee" 
+        }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: 24 }}>{isAr ? "لوحة تحكم مقدم الخدمة" : "Provider Dashboard"}</h1>
-            <div style={{ fontSize: 14, color: "#666", marginTop: 5 }}>
-              {isAr ? `مرحباً، ${provider.name}` : `Welcome, ${provider.name}`} | {provider.city}
+            <h1 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>{isAr ? "لوحة تحكم مقدم الخدمة" : "Provider Dashboard"}</h1>
+            <div style={{ fontSize: 13, color: "#666", marginTop: 4 }}>
+              {isAr ? `مرحباً، ${provider.name}` : `Welcome, ${provider.name}`} <span style={{ margin: "0 4px", opacity: 0.3 }}>|</span> {provider.city}
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
             <Link 
               href={`/${locale}/providers/change-password`}
               style={{ 
-                padding: "8px 16px", 
-                background: "#fff", 
-                border: "1px solid #ddd", 
-                borderRadius: 6, 
-                textDecoration: "none", 
+                fontSize: 13, 
+                fontWeight: 600, 
                 color: "#111", 
-                fontSize: 14,
-                display: "inline-flex",
-                alignItems: "center"
+                textDecoration: "none",
+                borderBottom: "1px dotted #111"
               }}
             >
               {isAr ? "تغيير كلمة المرور" : "Change Password"}
             </Link>
+            <div style={{ width: 1, height: 16, background: "#ddd" }}></div>
             <button onClick={() => {
                document.cookie = "kashtat_provider_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
                window.location.href = `/${locale}/providers/login`;
-            }} style={{ padding: "8px 16px", background: "#eee", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 14 }}>
-              {isAr ? "خروج" : "Logout"}
+            }} style={{ background: "none", border: "none", padding: 0, fontSize: 13, fontWeight: 600, color: "#d32f2f", cursor: "pointer" }}>
+              {isAr ? "تسجيل خروج" : "Logout"}
             </button>
           </div>
         </header>

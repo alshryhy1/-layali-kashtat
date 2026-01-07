@@ -62,6 +62,7 @@ export default function ProviderRegisterForm({ locale }: Props) {
     "كشته بريه جبليه",
     "مخيم",
     "شاليه",
+    "منتجع",
     "مزرعة",
     "استراحة",
   ];
@@ -72,6 +73,7 @@ export default function ProviderRegisterForm({ locale }: Props) {
     "Desert (mountain)",
     "Camp",
     "Chalet",
+    "Resort",
     "Farm",
     "Rest area",
   ];

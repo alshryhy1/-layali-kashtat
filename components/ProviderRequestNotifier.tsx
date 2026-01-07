@@ -119,23 +119,23 @@ export default function ProviderRequestNotifier({ locale, pollMs = 25000, initia
                 new Notification(title, { body });
               } else {
                 setFlash(`${title} — ${body}`);
-                window.setTimeout(() => setFlash(""), 5000);
+                setTimeout(() => setFlash(""), 5000);
               }
             } else {
               setFlash(`${title} — ${body}`);
-              window.setTimeout(() => setFlash(""), 5000);
+              setTimeout(() => setFlash(""), 5000);
             }
           } catch {
             setFlash(`${title} — ${body}`);
-            window.setTimeout(() => setFlash(""), 5000);
+            setTimeout(() => setFlash(""), 5000);
           }
         }
       } catch {}
     };
     tick();
-    timer.current = window.setInterval(tick, pollMs) as any;
+    timer.current = setInterval(tick, pollMs) as any;
     return () => {
-      if (timer.current) window.clearInterval(timer.current);
+      if (timer.current) clearInterval(timer.current);
       timer.current = null;
     };
   }, [enabled, city, service, isAr, pollMs]);

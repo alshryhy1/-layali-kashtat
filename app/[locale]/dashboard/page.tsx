@@ -1,5 +1,10 @@
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { verifyAdminSession } from "@/lib/auth-admin";
+import Link from "next/link"; // For the back button
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,9 +22,16 @@ type Row = {
 export default async function DashboardPage({
   params,
 }: {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }) {
-  const locale = params?.locale === "en" ? "en" : "ar";
+  const p = await params;
+  const locale = p?.locale === "en" ? "en" : "ar";
+  
+  const token = (await cookies()).get("kashtat_admin")?.value;
+  if (!verifyAdminSession(token)) {
+    redirect(`/${locale}/admin/login?next=/${locale}/dashboard`);
+  }
+
   let rows: Row[] = [];
   let error: any = null;
 
@@ -49,12 +61,15 @@ export default async function DashboardPage({
   return (
     <main style={pageStyle}>
       <div style={{ maxWidth: 1100, width: "100%" }}>
-        {/* ✅ علامة إثبات أن هذا الملف هو الذي يعمل على الإنتاج */}
-        <div style={testBanner}>TEST-OK (dashboard page.tsx)</div>
-
         <div style={topRow}>
-          <div>
-            <h1 style={h1}>لوحة الطلبات</h1>
+        <div>
+          <div style={{ marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Link href={`/${locale}/admin/portal`} style={{ fontSize: 14, color: "#666", textDecoration: "none" }}>
+              ← {locale === "ar" ? "العودة للقائمة الرئيسية" : "Back to Portal"}
+            </Link>
+            <LanguageSwitcher locale={locale} />
+          </div>
+          <h1 style={h1}>لوحة الطلبات</h1>
             <div style={sub}>
               عرض آخر 200 طلب من <code>provider_requests</code>
             </div>
@@ -154,16 +169,6 @@ const pageStyle: React.CSSProperties = {
   background: "#f6f7f9",
   display: "flex",
   justifyContent: "center",
-};
-
-const testBanner: React.CSSProperties = {
-  background: "#111",
-  color: "#fff",
-  padding: "10px 12px",
-  borderRadius: 12,
-  fontWeight: 900,
-  marginBottom: 12,
-  textAlign: "center",
 };
 
 const topRow: React.CSSProperties = {

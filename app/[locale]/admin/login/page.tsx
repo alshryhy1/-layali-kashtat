@@ -10,7 +10,8 @@ export default function AdminLoginPage({
   searchParams?: { next?: string };
 }) {
   const locale = params?.locale === "en" ? "en" : "ar";
-  const next = searchParams?.next || `/${locale}/admin/requests`;
+  // Change default redirect to the new portal
+  const next = searchParams?.next || `/${locale}/admin/portal`;
 
   return <AdminLoginClient locale={locale} next={next} />;
 }

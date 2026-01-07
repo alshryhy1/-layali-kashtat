@@ -290,6 +290,43 @@ export async function POST(req: Request) {
           } catch (logErr) {
             console.error("mail log insert failed:", logErr);
           }
+
+          // ---------------------------------------------------------
+          // إشعار العميل (Confirmation Email)
+          // ---------------------------------------------------------
+          if (isValidEmail(email)) {
+             const customerSubject = `تم استلام طلبك بنجاح: ${city} / ${service_type} (Ref ${row.ref})`;
+             const customerText = [
+               `مرحباً ${name}،`,
+               "",
+               `تم استلام طلبك بنجاح وسيتم إشعار مقدمي الخدمة المناسبين.`,
+               `رقم الطلب: ${row.ref}`,
+               `المدينة: ${city}`,
+               `الخدمة: ${service_type}`,
+               "",
+               `سنقوم بإشعارك عبر البريد الإلكتروني فور قبول أحد مقدمي الخدمة لطلبك.`,
+               "",
+               `شكراً لاستخدامك ليالي كشتات.`
+             ].join("\n");
+
+             try {
+               await transporter.sendMail({
+                 from,
+                 to: email,
+                 subject: customerSubject,
+                 text: customerText,
+               });
+               // log
+               try {
+                  await db.query("INSERT INTO mail_logs (ref, kind, ok, error) VALUES ($1,$2,$3,$4)", [row.ref, "customer_confirmation", true, ""]);
+               } catch {}
+             } catch (custErr: any) {
+               console.error("customer confirmation email failed:", custErr);
+               try {
+                  await db.query("INSERT INTO mail_logs (ref, kind, ok, error) VALUES ($1,$2,$3,$4)", [row.ref, "customer_confirmation", false, String(custErr?.message || custErr)]);
+               } catch {}
+             }
+          }
         } else {
           console.error("dispatch email missing envs: SMTP/Mail config not complete");
           try {

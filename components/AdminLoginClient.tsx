@@ -115,7 +115,9 @@ export default function AdminLoginClient(props: { locale: Locale; next: string }
 
       setLockedUntilMs(0);
 
-      router.replace(props.next || `/${locale}/admin/requests`);
+      // Redirect to the portal by default unless 'next' is explicitly set
+      const dest = props.next && props.next.length > 3 ? props.next : `/${locale}/admin/portal`;
+      router.replace(dest);
       router.refresh();
     } catch {
       setMsg(t.errServer);
