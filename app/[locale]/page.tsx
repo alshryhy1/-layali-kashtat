@@ -1,5 +1,6 @@
 import * as React from "react";
 import InstallPrompt from "@/components/InstallPrompt";
+import { Plus, UserPlus, LayoutDashboard, Search, FileText } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,7 @@ export default async function Home({
 
   const btnBase: React.CSSProperties = {
     width: "100%",
-    minHeight: 44,
+    minHeight: 48,
     padding: "10px 14px",
     borderRadius: 12,
     fontWeight: 900,
@@ -40,8 +41,10 @@ export default async function Home({
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
+    gap: 8,
     textAlign: "center",
     boxSizing: "border-box",
+    fontSize: 15,
   };
 
   const btnPrimary: React.CSSProperties = {
@@ -53,9 +56,9 @@ export default async function Home({
 
   const btnGhost: React.CSSProperties = {
     ...btnBase,
-    minHeight: 42,
-    fontWeight: 850,
-    border: "1px solid rgba(0,0,0,0.16)",
+    minHeight: 46,
+    fontWeight: 700,
+    border: "1px solid rgba(0,0,0,0.12)",
     background: "#fff",
     color: "#111",
   };
@@ -65,43 +68,42 @@ export default async function Home({
       dir={isEn ? "ltr" : "rtl"}
       style={{
         width: "100%",
-        paddingTop: 14,
-        paddingBottom: 14,
-        paddingInline: 12,
+        paddingTop: 20,
+        paddingBottom: 20,
+        paddingInline: 16,
       }}
     >
-      <div style={{ width: "100%", maxWidth: 720, marginInline: "auto" }}>
+      <div style={{ width: "100%", maxWidth: 600, marginInline: "auto" }}>
         <div
           className="card home-card"
           style={{
             textAlign: "center",
-            padding: "18px 14px",
-            borderRadius: 18,
+            padding: "24px 20px",
+            borderRadius: 24,
+            backgroundColor: "#fff",
           }}
         >
-          <div style={{ width: "100%", maxWidth: 420, marginInline: "auto" }}>
+          <div style={{ width: "100%", marginInline: "auto" }}>
             <h1
               style={{
                 margin: 0,
-                fontSize: 26,
+                fontSize: 28,
                 fontWeight: 900,
-                lineHeight: "32px",
-                letterSpacing: isEn ? 0 : "-0.2px",
+                lineHeight: "1.2",
+                letterSpacing: isEn ? -0.5 : 0,
               }}
             >
               {t.title}
             </h1>
 
-            
-
-            
-
             <p
               style={{
-                margin: "10px 0 16px",
-                opacity: 0.78,
-                fontSize: 13,
-                lineHeight: "20px",
+                margin: "12px 0 24px",
+                opacity: 0.7,
+                fontSize: 15,
+                lineHeight: "1.5",
+                maxWidth: 400,
+                marginInline: "auto",
               }}
             >
               {t.desc}
@@ -110,45 +112,46 @@ export default async function Home({
             <div
               className="home-actions"
               style={{
-                display: "grid",
-                gap: 10,
-                gridTemplateColumns: "1fr",
-                marginTop: 6,
+                display: "flex",
+                flexDirection: "column",
+                gap: 12,
               }}
             >
               <a href={`/${locale}/request`} style={btnPrimary}>
-                {t.request}
+                <Plus size={20} strokeWidth={2.5} />
+                <span>{t.request}</span>
               </a>
 
-              <a href={`/${locale}/providers/signup`} style={btnGhost}>
-                {t.signup}
-              </a>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <a href={`/${locale}/providers/signup`} style={btnGhost}>
+                  <UserPlus size={18} />
+                  <span>{t.signup}</span>
+                </a>
 
-              <a href={`/${locale}/providers/dashboard`} style={btnGhost}>
-                {t.providerDashboard}
-              </a>
+                <a href={`/${locale}/providers/dashboard`} style={btnGhost}>
+                  <LayoutDashboard size={18} />
+                  <span>{t.providerDashboard}</span>
+                </a>
+              </div>
 
-              <a href={`/${locale}/providers/status`} style={btnGhost}>
-                {t.status}
-              </a>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <a href={`/${locale}/providers/status`} style={btnGhost}>
+                  <Search size={18} />
+                  <span>{t.status}</span>
+                </a>
 
-              <a href={`/${locale}/legal`} style={btnGhost}>
-                {t.legal}
-              </a>
+                <a href={`/${locale}/legal`} style={btnGhost}>
+                  <FileText size={18} />
+                  <span>{t.legal}</span>
+                </a>
+              </div>
             </div>
           </div>
 
           <style
             dangerouslySetInnerHTML={{
               __html: `
-              /* Mobile-first: بطاقة أضيق وتوازن مسافات */
-              .home-card { box-shadow: 0 12px 28px rgba(0,0,0,.08); }
-
-              /* Tablet/Desktop: 2×2 عشان 4 أزرار */
-              @media (min-width: 768px) {
-                .home-card { padding: 22px 18px; }
-                .home-actions { grid-template-columns: 1fr 1fr; }
-              }
+              .home-card { box-shadow: 0 12px 32px rgba(0,0,0,.06); }
             `,
             }}
           />
