@@ -223,6 +223,15 @@ export async function POST(req: Request) {
     if (!accepted)
       return jsonError(400, "terms_not_accepted", "يجب الموافقة على الشروط والأحكام.");
 
+    // ✅ التحقق من التكرار (الإيميل أو الجوال)
+    const existing = await db.query(
+      "SELECT id FROM provider_requests WHERE email = $1 OR phone = $2 LIMIT 1",
+      [email, phone]
+    );
+    if (existing.rows.length > 0) {
+      return jsonError(400, "duplicate_entry", "عفواً، البريد الإلكتروني أو رقم الجوال مسجل مسبقاً.");
+    }
+
     let insertedId: number | null = null;
     try {
       await db.query("ALTER TABLE provider_requests ADD COLUMN IF NOT EXISTS email text");

@@ -73,6 +73,20 @@ export async function POST(req: Request) {
       );
     }
 
+    // ✅ التحقق من التكرار (رقم الجوال)
+    const { data: duplicates } = await supabase
+      .from("provider_requests")
+      .select("id")
+      .eq("phone", phone)
+      .limit(1);
+
+    if (duplicates && duplicates.length > 0) {
+      return NextResponse.json(
+        { ok: false, error: "duplicate_entry", message: "رقم الجوال مسجل مسبقاً" },
+        { status: 400 }
+      );
+    }
+
     const { data, error } = await supabase
       .from("provider_requests")
       .insert({

@@ -115,14 +115,7 @@ export async function POST(req: Request) {
     );
     const active = check.rows[0];
     if (active?.ref) {
-      return NextResponse.json({
-        ok: true,
-        created: false,
-        ref: active.ref,
-        status: active.status,
-        completed: active.completed,
-        reason: "active_request_exists",
-      });
+      return jsonError(400, "active_request_exists", `عفواً، لديك طلب سابق قيد المعالجة (Ref: ${active.ref}). يرجى انتظار اكتماله قبل إرسال طلب جديد.`);
     }
   } catch {
     return jsonError(500, "db_active_check_failed", "تعذر التحقق من الطلبات الحالية.");
