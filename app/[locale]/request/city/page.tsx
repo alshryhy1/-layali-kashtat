@@ -92,22 +92,23 @@ export default function CityStepPage({
     padding: "24px 16px",
     display: "flex",
     justifyContent: "center",
-    background: "#f6f3ee",
+    background: "linear-gradient(135deg, #fdfbf7 0%, #d4c5b0 100%)",
   };
 
   const cardStyle: React.CSSProperties = {
-    background: "#fff",
-    border: "1px solid #e7e0d6",
-    borderRadius: 16,
-    padding: 18,
-    boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
+    background: "rgba(255, 255, 255, 0.85)",
+    backdropFilter: "blur(12px)",
+    border: "1px solid rgba(255,255,255,0.6)",
+    borderRadius: 24,
+    padding: 24,
+    boxShadow: "0 20px 40px rgba(0,0,0,0.08)",
   };
 
   const optionStyle = (active: boolean): React.CSSProperties => ({
     height: 44,
     borderRadius: 12,
-    border: active ? "2px solid #111" : "1px solid rgba(0,0,0,0.16)",
-    background: active ? "#111" : "#fff",
+    border: active ? "2px solid #92400e" : "1px solid rgba(0,0,0,0.16)",
+    background: active ? "#92400e" : "#fff",
     color: active ? "#fff" : "#111",
     fontWeight: 900,
     fontSize: 13,
@@ -147,13 +148,14 @@ export default function CityStepPage({
               style={{
                 height: 44,
                 borderRadius: 12,
-                border: "1px solid #111",
-                background: "#111",
+                border: "1px solid #92400e",
+                background: "#92400e",
                 color: "#fff",
                 fontWeight: 900,
                 fontSize: 13,
                 opacity: city ? 1 : 0.5,
                 cursor: city ? "pointer" : "not-allowed",
+                boxShadow: "0 4px 12px rgba(146, 64, 14, 0.3)",
               }}
             >
               {t.next}

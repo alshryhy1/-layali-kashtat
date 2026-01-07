@@ -70,10 +70,10 @@ export default async function Home({
       style={{
         width: "100%",
         minHeight: "100vh",
-        paddingTop: 120,
+        paddingTop: 80,
         paddingBottom: 40,
         paddingInline: 16,
-        background: "linear-gradient(135deg, #fdfbf7 0%, #e6d0b8 100%)",
+        background: "linear-gradient(135deg, #fdfbf7 0%, #d4c5b0 100%)",
         display: "flex",
         alignItems: "flex-start",
         justifyContent: "center",

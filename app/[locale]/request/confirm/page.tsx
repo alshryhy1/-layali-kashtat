@@ -203,15 +203,16 @@ export default function ConfirmPage({
     padding: "24px 16px",
     display: "flex",
     justifyContent: "center",
-    background: "#f6f3ee",
+    background: "linear-gradient(135deg, #fdfbf7 0%, #d4c5b0 100%)",
   };
 
   const cardStyle: React.CSSProperties = {
-    background: "#fff",
-    border: "1px solid #e7e0d6",
-    borderRadius: 16,
-    padding: 16,
-    boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
+    background: "rgba(255, 255, 255, 0.85)",
+    backdropFilter: "blur(12px)",
+    border: "1px solid rgba(255,255,255,0.6)",
+    borderRadius: 24,
+    padding: 24,
+    boxShadow: "0 20px 40px rgba(0,0,0,0.08)",
   };
 
   const titleStyle: React.CSSProperties = {
@@ -270,12 +271,13 @@ export default function ConfirmPage({
     width: "100%",
     height: 44,
     borderRadius: 12,
-    border: "1px solid #111",
-    background: "#111",
+    border: "1px solid #92400e",
+    background: "#92400e",
     color: "#fff",
     fontWeight: 900,
     fontSize: 13,
     cursor: "pointer",
+    boxShadow: "0 4px 12px rgba(146, 64, 14, 0.3)",
   };
 
   const alertErr: React.CSSProperties = {

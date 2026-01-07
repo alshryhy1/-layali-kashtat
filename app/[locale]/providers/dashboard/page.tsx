@@ -114,6 +114,40 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ lo
       });
   }, [locale]);
 
+  React.useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      if (Notification.permission === "default") {
+        Notification.requestPermission();
+      }
+    }
+  }, []);
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      fetch("/api/providers/dashboard")
+        .then((r) => r.json())
+        .then((d) => {
+          if (d && d.ok) {
+            setData((prev: any) => {
+              const prevCount = prev?.requests?.length || 0;
+              const newCount = d.requests?.length || 0;
+              
+              if (newCount > prevCount && prev !== null) {
+                 if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+                    new Notification(isAr ? "طلب جديد!" : "New Request!", {
+                       body: isAr ? "وصلك طلب خدمة جديد مطابق لتخصصك." : "You have a new service request.",
+                    });
+                 }
+              }
+              return d;
+            });
+          }
+        })
+        .catch(() => {});
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [isAr]);
+
   const openRequest = (req: any) => {
     setSelectedRequest(req);
     setView("details");
