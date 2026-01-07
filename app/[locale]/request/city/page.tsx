@@ -72,6 +72,10 @@ export default function CityStepPage({
   function goNext() {
     if (!city) return;
 
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("lk_city", city);
+    }
+
     const q = new URLSearchParams();
     q.set("name", name);
     q.set("phone", phone);

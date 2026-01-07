@@ -49,9 +49,10 @@ export default async function Home({
 
   const btnPrimary: React.CSSProperties = {
     ...btnBase,
-    border: "1px solid #111",
-    background: "#111",
+    border: "1px solid #92400e",
+    background: "#92400e",
     color: "#fff",
+    boxShadow: "0 4px 12px rgba(146, 64, 14, 0.3)",
   };
 
   const btnGhost: React.CSSProperties = {
@@ -68,9 +69,14 @@ export default async function Home({
       dir={isEn ? "ltr" : "rtl"}
       style={{
         width: "100%",
-        paddingTop: 20,
-        paddingBottom: 20,
+        minHeight: "100vh",
+        paddingTop: 40,
+        paddingBottom: 40,
         paddingInline: 16,
+        background: "linear-gradient(135deg, #fdfbf7 0%, #e6d0b8 100%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
       }}
     >
       <div style={{ width: "100%", maxWidth: 600, marginInline: "auto" }}>
@@ -78,9 +84,11 @@ export default async function Home({
           className="card home-card"
           style={{
             textAlign: "center",
-            padding: "24px 20px",
-            borderRadius: 24,
-            backgroundColor: "#fff",
+            padding: "32px 24px",
+            borderRadius: 32,
+            backgroundColor: "rgba(255, 255, 255, 0.85)",
+            backdropFilter: "blur(12px)",
+            border: "1px solid rgba(255,255,255,0.6)",
           }}
         >
           <div style={{ width: "100%", marginInline: "auto" }}>
@@ -151,7 +159,7 @@ export default async function Home({
           <style
             dangerouslySetInnerHTML={{
               __html: `
-              .home-card { box-shadow: 0 12px 32px rgba(0,0,0,.06); }
+              .home-card { box-shadow: 0 20px 40px rgba(0,0,0,0.08); }
             `,
             }}
           />
