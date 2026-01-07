@@ -156,6 +156,12 @@ export default async function Home({
             }}
           />
         </div>
+        
+        {/* Version Marker for Verification */}
+        <div style={{ marginTop: 20, textAlign: "center", opacity: 0.3, fontSize: 10 }}>
+          v2.1
+        </div>
+
         <InstallPrompt />
       </div>
     </section>
