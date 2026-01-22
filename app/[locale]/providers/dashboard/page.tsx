@@ -2,6 +2,11 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { LifeBuoy } from "lucide-react";
+import ChatWidget from "../../../../components/ChatWidget";
+import LiveMap from "../../../../components/LiveMap";
+import SupportModal from "../../../../components/SupportModal";
+import { supabase } from "../../../../lib/supabaseClient";
 
 type Locale = "ar" | "en";
 function asLocale(v: any): Locale {
@@ -19,19 +24,7 @@ function mobileMapUrl(loc: string) {
   return isIOS ? `maps://?q=${encodeURIComponent(s)}` : `geo:0,0?q=${encodeURIComponent(s)}`;
 }
 
-function normalizePhoneForLinks(input: string) {
-  const map: Record<string, string> = { "٠":"0","١":"1","٢":"2","٣":"3","٤":"4","٥":"5","٦":"6","٧":"7","٨":"8","٩":"9" };
-  const s = String(input || "").replace(/[٠-٩]/g, (d) => map[d] ?? d).replace(/\s+/g, "");
-  const digits = s.replace(/[^0-9+]/g, "");
-  const tel = digits.replace(/\+/g, "");
-  let wa = tel;
-  if (tel.startsWith("0") && tel.length >= 9) {
-    wa = "966" + tel.slice(1);
-  } else if (tel.startsWith("+966")) {
-    wa = tel.slice(1);
-  }
-  return { tel, wa };
-}
+
 
 export default function ProviderDashboardPage({ params }: { params: Promise<{ locale: string }> }) {
   const p = React.use(params);
@@ -57,7 +50,54 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ lo
   const [rejectReason, setRejectReason] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [msg, setMsg] = React.useState("");
+  const [showSupport, setShowSupport] = React.useState(false);
+  const [isLiveTracking, setIsLiveTracking] = React.useState(false);
+
+  const trackingWatchIdRef = React.useRef<number | null>(null);
+  const trackingRefRef = React.useRef<string | null>(null);
+  const trackingStatusRef = React.useRef<string>("accepted");
+  const trackingLastCoordsRef = React.useRef<{ lat: number; lng: number } | null>(null);
+  const trackingLastSentAtRef = React.useRef<number>(0);
+
+  const [routePolyline, setRoutePolyline] = React.useState<any[] | null>(null);
+  const [routeEta, setRouteEta] = React.useState<number | null>(null);
+  const [currentPos, setCurrentPos] = React.useState<{lat:number, lng:number}|null>(null);
+
+  const stopLiveTracking = React.useCallback(() => {
+    if (trackingWatchIdRef.current !== null && typeof navigator !== "undefined" && navigator.geolocation) {
+      try {
+        navigator.geolocation.clearWatch(trackingWatchIdRef.current);
+      } catch {}
+    }
+    trackingWatchIdRef.current = null;
+    trackingRefRef.current = null;
+    trackingStatusRef.current = "accepted";
+    trackingLastCoordsRef.current = null;
+    trackingLastSentAtRef.current = 0;
+    setIsLiveTracking(false);
+    setRoutePolyline(null);
+    setRouteEta(null);
+    setCurrentPos(null);
+  }, []);
+
+  React.useEffect(() => {
+    return () => stopLiveTracking();
+  }, [stopLiveTracking]);
+
+  // ✅ تحذير قبل إغلاق الصفحة أثناء التتبع
+  React.useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isLiveTracking) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isLiveTracking]);
+
   const [tab, setTab] = React.useState<"new" | "accepted" | "completed">("new");
+  const [chatRequest, setChatRequest] = React.useState<any>(null);
 
   // إضافة رابط تغيير كلمة المرور في الهيدر أو مكان مناسب
   // سنضيفه بجوار زر تسجيل الخروج أو كزر منفصل
@@ -80,6 +120,10 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ lo
     rejectReason: isAr ? "سبب الرفض (اختياري)" : "Reject Reason (Optional)",
     successAccept: isAr ? "تم قبول الطلب بنجاح!" : "Request accepted successfully!",
     successReject: isAr ? "تم رفض الطلب." : "Request rejected.",
+    startTrip: isAr ? "بدء الرحلة (في الطريق)" : "Start Trip (En Route)",
+    arrived: isAr ? "وصلت للموقع" : "Arrived",
+    tripStarted: isAr ? "تم بدء الرحلة ومشاركة موقعك مع العميل" : "Trip started, location shared",
+    locationError: isAr ? "تعذر تحديد موقعك" : "Location error",
     error: isAr ? "حدث خطأ، حاول مرة أخرى." : "Error occurred, try again.",
     back: isAr ? "إغلاق" : "Close",
     cancel: isAr ? "إلغاء" : "Cancel",
@@ -93,6 +137,8 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ lo
     tabNew: isAr ? "مطابقة جديدة" : "New Matches",
     tabAccepted: isAr ? "مقبولة" : "Accepted",
     tabCompleted: isAr ? "مكتملة" : "Completed",
+    completeTrip: isAr ? "إنهاء الرحلة" : "Complete Trip",
+    tripCompleted: isAr ? "تم إنهاء الرحلة بنجاح" : "Trip completed successfully",
   };
 
   React.useEffect(() => {
@@ -144,9 +190,97 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ lo
           }
         })
         .catch(() => {});
-    }, 15000);
+    }, 30000); // Polling reduced to 30s as backup
     return () => clearInterval(interval);
   }, [isAr]);
+
+  // ✅ Realtime Updates (Supabase)
+  React.useEffect(() => {
+    if (!data?.provider) return;
+
+    const providerCity = data.provider.city;
+    const providerServices = (data.provider.service_type || "")
+      .split(",")
+      .map((s: string) => s.trim());
+
+    const channel = supabase
+      .channel("provider_dashboard_realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "customer_requests" },
+        (payload) => {
+          const newReq = payload.new as any;
+
+          // 1. Check City
+          if (newReq.city !== providerCity) return;
+
+          // 2. Check Service
+          if (!providerServices.includes(newReq.service_type)) return;
+
+          // 3. Check Status
+          if (newReq.status !== "new" && newReq.status !== "pending") return;
+
+          setData((prev: any) => {
+            if (!prev) return prev;
+            // Deduplicate
+            if (prev.requests.some((r: any) => r.id === newReq.id)) return prev;
+
+            // Notify
+            if (
+              typeof window !== "undefined" &&
+              "Notification" in window &&
+              Notification.permission === "granted"
+            ) {
+              try {
+                new Notification(isAr ? "طلب جديد!" : "New Request!", {
+                  body: isAr
+                    ? "وصلك طلب خدمة جديد مطابق لتخصصك."
+                    : "You have a new service request.",
+                });
+                // Optional: Play sound here if we had an audio file
+              } catch (e) {
+                console.error("Notification error:", e);
+              }
+            }
+
+            return {
+              ...prev,
+              requests: [newReq, ...prev.requests],
+            };
+          });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "customer_requests" },
+        (payload) => {
+            const updatedReq = payload.new as any;
+            
+            setData((prev: any) => {
+                if (!prev) return prev;
+                
+                // If a request in our "New Requests" list is no longer new/pending (e.g. taken by someone else)
+                const existsInNew = prev.requests.some((r: any) => r.id === updatedReq.id);
+                if (existsInNew) {
+                    if (updatedReq.status !== "new" && updatedReq.status !== "pending") {
+                        // Remove it
+                        return {
+                            ...prev,
+                            requests: prev.requests.filter((r: any) => r.id !== updatedReq.id)
+                        };
+                    }
+                }
+                
+                return prev;
+            });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [data?.provider?.id, isAr]);
 
   const openRequest = (req: any) => {
     setSelectedRequest(req);
@@ -154,7 +288,7 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ lo
     setMsg("");
     setPrice("");
     setNotes("");
-    setMeetingLocation("");
+    setMeetingLocation(req.customer_location || "");
     setPaymentMethod("cash");
     setAccountName("");
     setAccountNumber("");
@@ -298,6 +432,179 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ lo
     setBusy(false);
   }
 
+  async function updateStatus(ref: string, status: string, lat?: number, lng?: number, polyline?: any[], eta?: number) {
+      try {
+        await fetch('/api/providers/track/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ref, status, lat, lng, polyline, eta })
+        });
+        // Update local state
+        setData((prev: any) => {
+            if (!prev) return null;
+            const updatedAccepted = prev.accepted.map((r: any) => {
+                if (r.ref === ref) {
+                    return { ...r, provider_status: status };
+                }
+                return r;
+            });
+            return { ...prev, accepted: updatedAccepted };
+        });
+        if (selectedRequest && selectedRequest.ref === ref) {
+            setSelectedRequest((prev: any) => ({ ...prev, provider_status: status }));
+        }
+      } catch (e) {
+        console.error("Failed to update status", e);
+      }
+  }
+
+  async function fetchRouteAndSet(ref: string, status: string, lat: number, lng: number, meetingLoc: string) {
+    if (!meetingLoc) return;
+    try {
+        const geoRes = await fetch(`/api/maps/geocode?q=${encodeURIComponent(meetingLoc)}`);
+        const geoData = await geoRes.json();
+        if (!geoData.ok) return;
+
+        const routeRes = await fetch('/api/maps/route', {
+            method: 'POST',
+            body: JSON.stringify({
+                startLat: lat,
+                startLng: lng,
+                endLat: geoData.lat,
+                endLng: geoData.lng
+            })
+        });
+        const routeData = await routeRes.json();
+        if (routeData.ok) {
+            setRoutePolyline(routeData.polyline);
+            setRouteEta(routeData.eta);
+            // Save route to DB
+            await updateStatus(ref, status, lat, lng, routeData.polyline, routeData.eta);
+        }
+    } catch (e) {
+        console.error("Route fetch error", e);
+    }
+  }
+
+  async function startLiveTrackingFor(ref: string, status: string, meetingLoc?: string) {
+    if (!navigator.geolocation) {
+      alert(t.locationError);
+      return;
+    }
+
+    stopLiveTracking();
+    trackingRefRef.current = ref;
+    trackingStatusRef.current = status;
+    setIsLiveTracking(true);
+
+    const watchId = navigator.geolocation.watchPosition(
+      async (pos) => {
+        const now = Date.now();
+        const { latitude, longitude } = pos.coords;
+        trackingLastCoordsRef.current = { lat: latitude, lng: longitude };
+        setCurrentPos({ lat: latitude, lng: longitude });
+
+        const shouldSend = now - trackingLastSentAtRef.current >= 5000;
+        if (!shouldSend) return;
+        trackingLastSentAtRef.current = now;
+
+        const activeRef = trackingRefRef.current;
+        const activeStatus = trackingStatusRef.current;
+        if (!activeRef) return;
+
+        await updateStatus(activeRef, activeStatus, latitude, longitude);
+      },
+      () => {
+        alert(t.locationError);
+        stopLiveTracking();
+      },
+      { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 }
+    );
+
+    trackingWatchIdRef.current = watchId;
+
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 });
+      });
+      const { latitude, longitude } = pos.coords;
+      trackingLastCoordsRef.current = { lat: latitude, lng: longitude };
+      setCurrentPos({ lat: latitude, lng: longitude });
+      trackingLastSentAtRef.current = Date.now();
+      await updateStatus(ref, status, latitude, longitude);
+      
+      if (status === 'en_route' && meetingLoc) {
+          fetchRouteAndSet(ref, status, latitude, longitude, meetingLoc);
+      }
+    } catch {}
+  }
+
+  function handleStartTrip(req: any) {
+    if (!navigator.geolocation) {
+        alert(t.locationError);
+        return;
+    }
+    setBusy(true);
+    startLiveTrackingFor(req.ref, "en_route", req.accepted_meeting_location)
+      .then(() => alert(t.tripStarted))
+      .finally(() => setBusy(false));
+  }
+
+  async function handleArrived(req: any) {
+    setBusy(true);
+    trackingStatusRef.current = "arrived";
+
+    const last = trackingLastCoordsRef.current;
+    const p = last
+      ? updateStatus(req.ref, "arrived", last.lat, last.lng)
+      : startLiveTrackingFor(req.ref, "arrived");
+
+    try {
+      await p;
+      alert(t.arrived);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleInTrip(req: any) {
+    setBusy(true);
+    trackingStatusRef.current = "in_trip";
+
+    const last = trackingLastCoordsRef.current;
+    const p = last
+      ? updateStatus(req.ref, "in_trip", last.lat, last.lng)
+      : startLiveTrackingFor(req.ref, "in_trip");
+
+    try {
+      await p;
+      alert(isAr ? "تم بدء الخدمة" : "Service started");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleComplete(req: any) {
+      setBusy(true);
+      await updateStatus(req.ref, 'completed');
+      stopLiveTracking();
+      alert(t.tripCompleted);
+      
+      // Move from accepted to completed list
+      setData((prev: any) => {
+          if (!prev) return null;
+          const req = prev.accepted.find((r: any) => r.ref === selectedRequest.ref);
+          if (!req) return prev;
+          return {
+              ...prev,
+              accepted: prev.accepted.filter((r: any) => r.ref !== selectedRequest.ref),
+              completed: [req, ...prev.completed]
+          };
+      });
+      closeRequest();
+      setBusy(false);
+  }
+
   if (loading) return <div style={{ padding: 40, textAlign: "center" }}>{isAr ? "جاري التحميل..." : "Loading..."}</div>;
   if (!data) return null;
 
@@ -326,6 +633,18 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ lo
             </div>
           </div>
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            <button
+              onClick={() => setShowSupport(true)}
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                display: "flex", alignItems: "center", gap: 6,
+                color: "#111", fontSize: 13, fontWeight: 600
+              }}
+            >
+              <LifeBuoy size={18} />
+              {isAr ? "الدعم" : "Support"}
+            </button>
+            <div style={{ width: 1, height: 16, background: "#ddd" }}></div>
             <Link 
               href={`/${locale}/providers/change-password`}
               style={{ 
@@ -404,43 +723,6 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ lo
                        {refCopied ? (isAr ? "نُسخ" : "Copied") : (isAr ? "نسخ المرجع" : "Copy Ref")}
                      </button>
                    </div>
-                    {tab !== "completed" && r.phone ? (
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                        <div style={{ fontWeight: 800, letterSpacing: 1, direction: "ltr" }}>{r.phone}</div>
-                        {(() => {
-                          const l = normalizePhoneForLinks(String(r.phone || ""));
-                          const msg = isAr ? `مرحباً، بخصوص الطلب ${r.ref}` : `Hello, regarding request ${r.ref}`;
-                          const waUrl = `https://wa.me/${l.wa}?text=${encodeURIComponent(msg)}`;
-                          const telUrl = `tel:${l.tel}`;
-                          const circleBase: React.CSSProperties = {
-                            width: 36,
-                            height: 36,
-                            borderRadius: 999,
-                            display: "inline-flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            textDecoration: "none",
-                            fontWeight: 900,
-                            fontSize: 16,
-                            border: "1px solid rgba(0,0,0,0.2)",
-                            background: "#fff",
-                            color: "#111",
-                          };
-                          const circleCall: React.CSSProperties = { ...circleBase };
-                          const circleWhats: React.CSSProperties = {
-                            ...circleBase,
-                            border: "1px solid #25D366",
-                            color: "#25D366",
-                          };
-                          return (
-                            <>
-                              <a href={telUrl} style={circleCall} title={isAr ? "اتصال" : "Call"} aria-label={isAr ? "اتصال" : "Call"}>📞</a>
-                              <a href={waUrl} style={circleWhats} title="WhatsApp" aria-label="WhatsApp" target="_blank" rel="noopener noreferrer">WA</a>
-                            </>
-                          );
-                        })()}
-                      </div>
-                    ) : null}
                     {tab === "completed" && typeof r.customer_rating === "number" ? (
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
                         <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minHeight: 28, padding: "0 10px", borderRadius: 999, border: "1px solid rgba(0,0,0,0.16)", background: "#fff", color: "#111", fontWeight: 800, fontSize: 12 }}>
@@ -461,20 +743,26 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ lo
                    </button>
                  ) : tab === "accepted" ? (
                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                     <button
+                       onClick={() => setChatRequest(r)}
+                       style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 36, padding: "0 12px", borderRadius: 999, border: "none", background: "#25D366", color: "#fff", fontWeight: 900, fontSize: 12, cursor: "pointer" }}
+                     >
+                        {isAr ? "المحادثة" : "Chat"}
+                     </button>
                      <a
                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(String(r.accepted_meeting_location || ""))}`}
                        target="_blank"
                        rel="noopener noreferrer"
                        style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 36, padding: "0 12px", borderRadius: 999, border: "1px solid #111", background: "#fff", color: "#111", fontWeight: 900, fontSize: 12, textDecoration: "none" }}
                      >
-                       {isAr ? "فتح الخريطة" : "Open Map"}
+                       {isAr ? "انطلق للموقع" : "Launch to Location"}
                      </a>
                      {isMobileUA() ? (
                        <a
                          href={mobileMapUrl(String(r.accepted_meeting_location || ""))}
                          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 36, padding: "0 12px", borderRadius: 999, border: "1px solid #111", background: "#fff", color: "#111", fontWeight: 900, fontSize: 12, textDecoration: "none" }}
                        >
-                         {isAr ? "فتح في تطبيق الخرائط" : "Open in Maps App"}
+                         {isAr ? "انطلق (تطبيق)" : "Launch (App)"}
                        </a>
                      ) : null}
                    </div>
@@ -507,46 +795,94 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ lo
                   <div style={{color: '#666', fontSize: 12, marginTop: 8}}>{new Date(selectedRequest.created_at).toLocaleString()}</div>
                 </div>
 
-                {selectedRequest.phone ? (
-                  <div style={{ marginBottom: 16 }}>
-                    <div style={{ fontWeight: 900, marginBottom: 6 }}>{isAr ? "جوال العميل" : "Client Phone"}</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                      <div style={{ fontWeight: 800, letterSpacing: 1, direction: "ltr" }}>{selectedRequest.phone}</div>
-                      {(() => {
-                        const l = normalizePhoneForLinks(String(selectedRequest.phone || ""));
-                        const msg = isAr ? `مرحباً، بخصوص الطلب ${selectedRequest.ref}` : `Hello, regarding request ${selectedRequest.ref}`;
-                        const waUrl = `https://wa.me/${l.wa}?text=${encodeURIComponent(msg)}`;
-                        const telUrl = `tel:${l.tel}`;
-                        const circleBase: React.CSSProperties = {
-                          width: 40,
-                          height: 40,
-                          borderRadius: 999,
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          textDecoration: "none",
-                          fontWeight: 900,
-                          fontSize: 18,
-                          border: "1px solid rgba(0,0,0,0.2)",
-                          background: "#fff",
-                          color: "#111",
-                        };
-                        const circleCall: React.CSSProperties = { ...circleBase };
-                        const circleWhats: React.CSSProperties = {
-                          ...circleBase,
-                          border: "1px solid #25D366",
-                          color: "#25D366",
-                        };
-                        return (
-                          <>
-                            <a href={telUrl} style={circleCall} title={isAr ? "اتصال" : "Call"} aria-label={isAr ? "اتصال" : "Call"}>📞</a>
-                            <a href={waUrl} style={circleWhats} title="WhatsApp" aria-label="WhatsApp" target="_blank" rel="noopener noreferrer">WA</a>
-                          </>
-                        );
-                      })()}
+                {/* Tracking Controls */}
+                {selectedRequest.accepted_provider_id === data.provider.id && !selectedRequest.completed && (
+                    <div style={{ marginBottom: 20, padding: 12, background: "#e3f2fd", borderRadius: 8 }}>
+                        <div style={{ fontWeight: 900, marginBottom: 8 }}>{isAr ? "حالة الرحلة" : "Trip Status"}: {
+                            selectedRequest.provider_status === 'en_route' ? (isAr ? "في الطريق" : "En Route") :
+                            selectedRequest.provider_status === 'arrived' ? (isAr ? "وصلت" : "Arrived") :
+                            selectedRequest.provider_status === 'in_trip' ? (isAr ? "بدأت الخدمة" : "In Trip") :
+                            selectedRequest.provider_status === 'completed' ? (isAr ? "مكتملة" : "Completed") :
+                            (isAr ? "مقبول" : "Accepted")
+                        }</div>
+                        
+                        {isLiveTracking && currentPos && (
+                            <div style={{ marginBottom: 16, height: 250, borderRadius: 8, overflow: 'hidden', border: '1px solid #ddd', position: 'relative' }}>
+                                <LiveMap
+                                    center={[currentPos.lat, currentPos.lng]}
+                                    zoom={15}
+                                    carIconUrl="https://cdn-icons-png.flaticon.com/512/3097/3097180.png"
+                                    providerPos={[currentPos.lat, currentPos.lng]}
+                                    routePoints={routePolyline || undefined}
+                                    isAr={isAr}
+                                    providerLabel={isAr ? "موقعك الحالي" : "Your Location"}
+                                />
+                                {routeEta && (
+                                     <div style={{ position: 'absolute', top: 10, right: 10, background: 'white', padding: '4px 8px', borderRadius: 4, boxShadow: '0 2px 4px rgba(0,0,0,0.2)', zIndex: 1000, fontWeight: 'bold', fontSize: 12 }}>
+                                         {isAr ? `الوصول: ${routeEta} د` : `ETA: ${routeEta} m`}
+                                     </div>
+                                )}
+                            </div>
+                        )}
+
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            {/* Navigation Button */}
+                            <a
+                                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(String(selectedRequest.accepted_meeting_location || ""))}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ 
+                                    flex: "1 1 100%",
+                                    display: "flex", 
+                                    alignItems: "center", 
+                                    justifyContent: "center", 
+                                    height: 40, 
+                                    marginBottom: 8, 
+                                    borderRadius: 8, 
+                                    border: "1px solid #111", 
+                                    background: "#fff", 
+                                    color: "#111", 
+                                    fontWeight: 900, 
+                                    fontSize: 14, 
+                                    textDecoration: "none" 
+                                }}
+                             >
+                                 {isAr ? "انطلق للموقع" : "Launch to Location"}
+                             </a>
+
+                             {selectedRequest.provider_status !== 'en_route' && selectedRequest.provider_status !== 'arrived' && selectedRequest.provider_status !== 'in_trip' && selectedRequest.provider_status !== 'completed' && (
+                                <button onClick={() => handleStartTrip(selectedRequest)} disabled={busy} style={{ flex: 1, height: 40, borderRadius: 8, background: "#1976d2", color: "#fff", border: "none", fontWeight: 700, cursor: "pointer" }}>
+                                    {t.startTrip}
+                                </button>
+                            )}
+                            {(selectedRequest.provider_status === 'en_route' || selectedRequest.provider_status === 'in_trip') && !isLiveTracking && (
+                                <button onClick={() => startLiveTrackingFor(selectedRequest.ref, selectedRequest.provider_status, selectedRequest.accepted_meeting_location)} disabled={busy} style={{ flex: 1, height: 40, borderRadius: 8, background: "#111", color: "#fff", border: "none", fontWeight: 700, cursor: "pointer" }}>
+                                    {isAr ? "استئناف التتبع" : "Resume Tracking"}
+                                </button>
+                            )}
+                            {selectedRequest.provider_status === 'en_route' && (
+                                <button onClick={() => handleArrived(selectedRequest)} disabled={busy} style={{ flex: 1, height: 40, borderRadius: 8, background: "#f57c00", color: "#fff", border: "none", fontWeight: 700, cursor: "pointer" }}>
+                                    {t.arrived}
+                                </button>
+                            )}
+                            {selectedRequest.provider_status === 'arrived' && (
+                                <button onClick={() => handleInTrip(selectedRequest)} disabled={busy} style={{ flex: 1, height: 40, borderRadius: 8, background: "#7b1fa2", color: "#fff", border: "none", fontWeight: 700, cursor: "pointer" }}>
+                                    {isAr ? "بدء الخدمة" : "Start Service"}
+                                </button>
+                            )}
+                            {(selectedRequest.provider_status === 'arrived' || selectedRequest.provider_status === 'en_route' || selectedRequest.provider_status === 'in_trip') && (
+                                <button onClick={() => handleComplete(selectedRequest)} disabled={busy} style={{ flex: 1, height: 40, borderRadius: 8, background: "#388e3c", color: "#fff", border: "none", fontWeight: 700, cursor: "pointer" }}>
+                                    {t.completeTrip}
+                                </button>
+                            )}
+                            {isLiveTracking && trackingRefRef.current === selectedRequest.ref && (
+                              <button onClick={stopLiveTracking} disabled={busy} style={{ flex: 1, height: 40, borderRadius: 8, background: "#111", color: "#fff", border: "none", fontWeight: 700, cursor: "pointer" }}>
+                                {isAr ? "إيقاف التتبع" : "Stop Tracking"}
+                              </button>
+                            )}
+                        </div>
                     </div>
-                  </div>
-                ) : null}
+                )}
 
                 {view === "details" && (
                   <div style={{ display: "flex", gap: 10 }}>
@@ -709,7 +1045,37 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ lo
             </div>
           </div>
         )}
-      </div>
-    </main>
+
+        {/* Chat Widget (Docked) */}
+        {chatRequest && (
+          <div style={{
+            position: "fixed", 
+            bottom: 20, 
+            [isAr ? "left" : "right"]: 20,
+            width: 360,
+            height: 500,
+            maxHeight: "80vh",
+            zIndex: 1100,
+            boxShadow: "0 8px 30px rgba(0,0,0,0.15)",
+            borderRadius: 16,
+            overflow: "hidden",
+            background: "#fff",
+            border: "1px solid rgba(0,0,0,0.05)"
+          }}>
+              <ChatWidget 
+                  providerId={data.provider.id} 
+                  requestId={chatRequest.id} 
+                  userRole="provider"
+                  requestRef={chatRequest.ref}
+                  onClose={() => setChatRequest(null)}
+                  fullHeight={true}
+                  counterpartName={chatRequest.name}
+              />
+          </div>
+        )}
+
+        {showSupport && <SupportModal onClose={() => setShowSupport(false)} isAr={isAr} refId={selectedRequest?.ref} />}
+       </div>
+     </main>
   );
 }

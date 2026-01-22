@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>ملف أعمال (Portfolio) - حسن الشمري</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: #f9f9f9; color: #333; padding: 40px; margin: 0; }
+        .container { max-width: 850px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h1 { color: #2c3e50; border-bottom: 3px solid #f39c12; padding-bottom: 10px; margin-bottom: 30px; font-size: 28px; }
+        h2 { color: #2980b9; margin-top: 30px; font-size: 20px; border-right: 4px solid #2980b9; padding-right: 10px; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #eee; }
+        .info-item { margin-bottom: 10px; }
+        .label { font-weight: bold; color: #7f8c8d; display: block; margin-bottom: 4px; }
+        .value { font-weight: 600; font-size: 16px; }
+        .project-card { border: 1px solid #eee; border-radius: 8px; padding: 25px; margin-top: 20px; background: #fff; }
+        .tech-tags { display: flex; gap: 8px; margin: 15px 0; flex-wrap: wrap; }
+        .tag { background: #eef2f7; color: #2980b9; padding: 4px 12px; border-radius: 15px; font-size: 13px; font-weight: 600; }
+        .placeholder-img {
+            width: 100%; height: 250px; background: #eee; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center;
+            color: #777; font-weight: bold; margin: 15px 0; border-radius: 6px; position: relative;
+        }
+        .placeholder-img::after { content: " (ضع صورة هنا)"; font-size: 14px; opacity: 0.7; }
+        ul { line-height: 1.8; color: #444; }
+        .footer { margin-top: 50px; text-align: center; color: #999; font-size: 13px; border-top: 1px solid #eee; padding-top: 20px; }
+        @media print { body { background: white; padding: 0; } .container { box-shadow: none; border: none; padding: 0; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ملف سابقة أعمال (Portfolio)</h1>
+            <p style="font-size: 16px; color: #555;">إثبات مزاولة نشاط "برمجة وتطوير المواقع الإلكترونية"</p>
+        </header>
+
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="label">اسم المطور:</span>
+                <span class="value">حسن خميس زيدان الشمري</span>
+            </div>
+            <div class="info-item">
+                <span class="label">التخصص:</span>
+                <span class="value">Full-Stack Web Developer</span>
+            </div>
+            <div class="info-item">
+                <span class="label">مجال العمل:</span>
+                <span class="value">تصميم وبرمجة المنصات التفاعلية</span>
+            </div>
+            <div class="info-item">
+                <span class="label">تاريخ إعداد الملف:</span>
+                <span class="value">2026/01/19</span>
+            </div>
+        </div>
+
+        <h2>المشروع الرئيسي: منصة ليالي كشتات (Layali Kashtat)</h2>
+        <div class="project-card">
+            <p>
+                <strong>وصف المشروع:</strong><br>
+                منصة إلكترونية متكاملة تهدف لتنظيم وحجز الرحلات البرية والمخيمات في المملكة. قمت بتطوير المشروع بالكامل من مرحلة التصميم وحتى البرمجة والربط التقني.
+            </p>
+
+            <div class="tech-tags">
+                <span class="tag">Next.js 14</span>
+                <span class="tag">React</span>
+                <span class="tag">TypeScript</span>
+                <span class="tag">Supabase (Database)</span>
+                <span class="tag">Tailwind CSS</span>
+                <span class="tag">PWA Support</span>
+            </div>
+
+            <h3>1. واجهة المستخدم الرئيسية (Front-End)</h3>
+            <p>لقطة شاشة تظهر الصفحة الرئيسية للموقع وتصميم الواجهة المتجاوب مع الجوال.</p>
+            <div style="margin: 15px 0; border: 1px solid #eee; padding: 5px; border-radius: 8px;">
+                <img src="./layali-home.png.png" alt="الصفحة الرئيسية للموقع" style="width: 100%; border-radius: 4px;">
+            </div>
+
+            <h3>2. لوحة التحكم والبرمجة الخلفية (Codebase)</h3>
+            <p>لقطة شاشة من بيئة التطوير (VS Code) تظهر هيكلية المشروع والأكواد البرمجية التي قمت بكتابتها، مما يثبت الجهد البرمجي المبذول.</p>
+            <div style="margin: 15px 0; border: 1px solid #eee; padding: 5px; border-radius: 8px;">
+                <img src="./vscode_proof.png" alt="صورة للكود من VS Code" style="width: 100%; border-radius: 4px;">
+            </div>
+
+            <h3>3. إثبات النشر والاستضافة (Deployment)</h3>
+            <p>لقطة شاشة من منصة Vercel تظهر حالة المشروع (Active) وتاريخ النشر، مما يؤكد أن العمل حقيقي ومنشور.</p>
+            <div style="margin: 15px 0; border: 1px solid #eee; padding: 5px; border-radius: 8px;">
+                <img src="./vercel_proof.png" alt="إثبات النشر على Vercel" style="width: 100%; border-radius: 4px;">
+            </div>
+
+            <h3>4. المميزات التقنية التي تم تنفيذها:</h3>
+            <ul>
+                <li><strong>نظام الحجوزات:</strong> برمجة نظام لحجز الباقات واختيار التواريخ المتاحة.</li>
+                <li><strong>قاعدة البيانات:</strong> تصميم وربط قاعدة بيانات سحابية لتخزين طلبات العملاء.</li>
+                <li><strong>لوحة تحكم (Dashboard):</strong> واجهة خاصة لإدارة الطلبات ومتابعة حالتها (مقبول/مرفوض).</li>
+                <li><strong>التوافقية:</strong> الموقع يعمل بكفاءة على جميع الأجهزة (كمبيوتر، تابلت، جوال).</li>
+            </ul>
+        </div>
+
+        <div class="footer">
+            تم إعداد هذا الملف كإثبات لمزاولة المهنة لغرض استخراج وثيقة العمل الحر.
+        </div>
+    </div>
+</body>
+</html>
+
+        <h2>رابعاً: صور توضح العمل المنفذ</h2>
+        <div class="box">
+            <p>
+                تظهر الصورة التالية الصفحة الرئيسية لموقع "ليالي كشتات" بعد النشر على النطاق
+                <span class="label">www.layalikashtat.com</span>، وتوضح واجهة الاستخدام مع الخيارات الأساسية للمستخدم.
+            </p>
+            <img src="layali-home.png.png" alt="الواجهة الرئيسية لموقع ليالي كشتات بعد النشر" class="screenshot">
+        </div>
+
+        <div class="box">
+            <p>
+                تظهر الصورة التالية صفحة تعبئة الطلب في موقع "ليالي كشتات"، حيث يتم إدخال بيانات الطلب ليتم حفظها
+                ومتابعتها من خلال المنصة.
+            </p>
+            <img src="layali-request.png.png" alt="صفحة تعبئة طلب خدمة في موقع ليالي كشتات" class="screenshot">
+        </div>
+    </div>
+</body>
+</html>

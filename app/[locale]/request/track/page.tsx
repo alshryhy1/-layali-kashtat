@@ -1,6 +1,22 @@
 "use client";
 
 import * as React from "react";
+import ChatWidget from "../../../../components/ChatWidget";
+import { SupportView } from "../../../../components/SupportModal";
+import LiveMap from "../../../../components/LiveMap";
+import { MessageCircle, Map as MapIcon, Star, CheckCircle, Headphones, Mail, Phone, Copy, Check } from "lucide-react";
+
+import "leaflet/dist/leaflet.css";
+
+// Simple WhatsApp Icon SVG
+function WhatsAppIcon({ size = 24, color = "currentColor" }: { size?: number, color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M17.472 14.382C17.112 14.382 16.392 14.382 14.232 14.382C13.872 14.382 13.512 14.742 13.512 15.102C13.512 15.462 13.872 16.902 14.232 17.262C14.592 17.622 15.312 17.622 16.392 17.622C17.472 17.622 18.192 17.622 18.192 16.542C18.192 15.462 18.192 14.382 17.472 14.382Z" fill={color} />
+      <path fillRule="evenodd" clipRule="evenodd" d="M12 0C5.373 0 0 5.373 0 12C0 14.084 0.536 16.037 1.472 17.756L0.26 22.18L4.856 21.03C6.486 21.866 8.324 22.308 10.224 22.308H10.23C16.852 22.308 22.224 16.936 22.224 10.314C22.224 3.692 16.852 0 10.224 0H12ZM10.224 18.57C8.616 18.57 7.038 18.138 5.664 17.322L5.34 17.13L3.18 17.7L3.756 15.54L3.54 15.204C2.628 13.788 2.148 12.15 2.148 10.314C2.148 5.862 5.772 2.238 10.224 2.238C14.676 2.238 18.3 5.862 18.3 10.314C18.3 14.766 14.676 18.57 10.224 18.57Z" fill={color}/>
+    </svg>
+  );
+}
 
 type Locale = "ar" | "en";
 
@@ -14,20 +30,6 @@ function safeText(v: unknown) {
 
 function getParam(sp: URLSearchParams, k: string) {
   return String(sp.get(k) || "").trim();
-}
-
-function normalizePhoneForLinks(input: string) {
-  const map: Record<string, string> = { "٠":"0","١":"1","٢":"2","٣":"3","٤":"4","٥":"5","٦":"6","٧":"7","٨":"8","٩":"9" };
-  const s = String(input || "").replace(/[٠-٩]/g, (d) => map[d] ?? d).replace(/\s+/g, "");
-  const digits = s.replace(/[^0-9+]/g, "");
-  const tel = digits.replace(/\+/g, "");
-  let wa = tel;
-  if (tel.startsWith("0") && tel.length >= 9) {
-    wa = "966" + tel.slice(1);
-  } else if (tel.startsWith("+966")) {
-    wa = tel.slice(1);
-  }
-  return { tel, wa };
 }
 
 function isMobileUA() {
@@ -59,6 +61,11 @@ type StatusRespOk = {
   accepted_meeting_location?: string;
   accepted_payment_method?: string;
   accepted_payment_details?: string;
+  provider_status?: string;
+  provider_current_lat?: number | null;
+  provider_current_lng?: number | null;
+  route_polyline?: any[] | string;
+  eta?: number | null;
 };
 
 type StatusRespFail = { ok: false; code?: string; message?: string };
@@ -98,9 +105,10 @@ function statusHint(locale: Locale, status: string) {
 export default function TrackRequestPage({
   params,
 }: {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }) {
-  const locale: Locale = asLocale(params?.locale);
+  const p = React.use(params);
+  const locale: Locale = asLocale(p?.locale);
   const isAr = locale === "ar";
 
   const sp = new URLSearchParams(
@@ -117,7 +125,26 @@ export default function TrackRequestPage({
   const [locCopied, setLocCopied] = React.useState(false);
 
   const [error, setError] = React.useState<string | null>(null);
+  const [activeTab, setActiveTab] = React.useState<'chat' | 'map' | 'complete' | 'support'>('map');
   const [result, setResult] = React.useState<StatusRespOk | null>(null);
+  const [destCoords, setDestCoords] = React.useState<[number, number] | null>(null);
+  const [routePoints, setRoutePoints] = React.useState<Array<[number, number]>>([]);
+  const [routeMeta, setRouteMeta] = React.useState<{ distance_m: number | null; duration_s: number | null } | null>(null);
+
+  const lastRouteKeyRef = React.useRef<string>("");
+  const lastRouteAtRef = React.useRef<number>(0);
+  const didAutoLoadRef = React.useRef(false);
+
+  function parseLatLng(input: string) {
+    const s = String(input || "").trim();
+    const m = s.match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
+    if (!m) return null;
+    const lat = Number(m[1]);
+    const lng = Number(m[2]);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+    return [lat, lng] as [number, number];
+  }
 
   const t = {
     title: isAr ? "متابعة الطلب" : "Track Request",
@@ -142,22 +169,32 @@ export default function TrackRequestPage({
     paymentTransfer: isAr ? "تحويل بنكي/رقمي" : "Bank/Digital Transfer",
     paymentCash: isAr ? "نقداً" : "Cash",
     transferDetails: isAr ? "معلومات الدفع" : "Payment Details",
-    call: isAr ? "اتصال" : "Call",
-    whatsapp: isAr ? "واتساب" : "WhatsApp",
   };
 
-  async function fetchStatus() {
-    setError(null);
-    setResult(null);
+  const needText = t.need;
+
+  const loadStatus = React.useCallback(async (opts?: { reset?: boolean; silent?: boolean }) => {
+    const reset = !!opts?.reset;
+    const silent = !!opts?.silent;
+
+    if (reset) {
+      setError(null);
+      setResult(null);
+      setDestCoords(null);
+      setRoutePoints([]);
+      setRouteMeta(null);
+      lastRouteKeyRef.current = "";
+      lastRouteAtRef.current = 0;
+    }
 
     const r = safeText(ref);
     const c = safeText(contact);
     if (!r || !c) {
-      setError(t.need);
+      if (!silent) setError(needText);
       return;
     }
 
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       const res = await fetch("/api/customer-requests/status", {
         method: "POST",
@@ -168,18 +205,18 @@ export default function TrackRequestPage({
       const data = (await res.json()) as StatusRespOk | StatusRespFail;
 
       if (!res.ok || !("ok" in data) || data.ok === false) {
-        setError(String((data as StatusRespFail)?.message || "Error"));
-        setLoading(false);
+        if (!silent) setError(String((data as StatusRespFail)?.message || "Error"));
+        if (!silent) setLoading(false);
         return;
       }
 
       setResult(data as StatusRespOk);
-      setLoading(false);
+      if (!silent) setLoading(false);
     } catch {
-      setError(isAr ? "تعذر الاتصال بالخادم." : "Failed to reach server.");
-      setLoading(false);
+      if (!silent) setError(isAr ? "تعذر الاتصال بالخادم." : "Failed to reach server.");
+      if (!silent) setLoading(false);
     }
-  }
+  }, [ref, contact, needText, isAr]);
 
   async function completeTrip() {
     setError(null);
@@ -211,13 +248,115 @@ export default function TrackRequestPage({
       }
 
       // بعد الإنهاء نعيد جلب الحالة لتحديث الواجهة
-      await fetchStatus();
+      await loadStatus({ reset: false, silent: true });
       setCompleting(false);
     } catch {
       setError(isAr ? "تعذر الاتصال بالخادم." : "Failed to reach server.");
       setCompleting(false);
     }
   }
+
+  React.useEffect(() => {
+    const r = safeText(ref);
+    const c = safeText(contact);
+    if (!r || !c) return;
+    if (result) return;
+    if (didAutoLoadRef.current) return;
+    didAutoLoadRef.current = true;
+    loadStatus({ reset: true, silent: true });
+  }, [ref, contact, result, loadStatus]);
+
+  React.useEffect(() => {
+    if (!result) return;
+    if (result.status !== "approved") return;
+    if (result.completed) return;
+
+    const interval = window.setInterval(() => {
+      loadStatus({ reset: false, silent: true });
+    }, 5000);
+
+    return () => window.clearInterval(interval);
+  }, [result?.ref, result?.status, result?.completed, contact]);
+
+  React.useEffect(() => {
+    const loc = safeText(result?.accepted_meeting_location || "");
+    if (!loc) return;
+
+    const parsed = parseLatLng(loc);
+    if (parsed) {
+      setDestCoords(parsed);
+      return;
+    }
+
+    const ctrl = new AbortController();
+    fetch(`/api/maps/geocode?q=${encodeURIComponent(loc)}&lang=${encodeURIComponent(locale)}`, { signal: ctrl.signal })
+      .then((r) => r.json())
+      .then((j) => {
+        if (j?.ok && Number.isFinite(j.lat) && Number.isFinite(j.lng)) {
+          setDestCoords([Number(j.lat), Number(j.lng)]);
+        }
+      })
+      .catch(() => {});
+
+    return () => ctrl.abort();
+  }, [result?.accepted_meeting_location, locale]);
+
+  React.useEffect(() => {
+    if (!result) return;
+    
+    // If server provided a route, use it
+    if (result.route_polyline) {
+        try {
+            const parsed = typeof result.route_polyline === 'string' 
+                ? JSON.parse(result.route_polyline) 
+                : result.route_polyline;
+            
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                setRoutePoints(parsed);
+                if (result.eta) {
+                    setRouteMeta({
+                        distance_m: null,
+                        duration_s: result.eta * 60 // convert minutes to seconds for consistency
+                    });
+                }
+                return; // Skip client-side calculation
+            }
+        } catch (e) {
+            console.error("Failed to parse route polyline", e);
+        }
+    }
+
+    if (result.status !== "approved") return;
+    if (result.completed) return;
+    if (!result.provider_current_lat || !result.provider_current_lng) return;
+    if (!destCoords) return;
+
+    const from: [number, number] = [result.provider_current_lat, result.provider_current_lng];
+    const to = destCoords;
+    const key = `${from[0].toFixed(5)},${from[1].toFixed(5)}->${to[0].toFixed(5)},${to[1].toFixed(5)}`;
+    const now = Date.now();
+    const tooSoon = now - lastRouteAtRef.current < 15000;
+    if (key === lastRouteKeyRef.current && tooSoon) return;
+
+    lastRouteKeyRef.current = key;
+    lastRouteAtRef.current = now;
+
+    const ctrl = new AbortController();
+    fetch(`/api/maps/route?from=${encodeURIComponent(from.join(","))}&to=${encodeURIComponent(to.join(","))}`, { signal: ctrl.signal })
+      .then((r) => r.json())
+      .then((j) => {
+        if (!j?.ok) return;
+        const pts = Array.isArray(j.points) ? (j.points as Array<[number, number]>) : [];
+        setRoutePoints(pts);
+        setRouteMeta({
+          distance_m: j.distance_m === null || j.distance_m === undefined ? null : Number(j.distance_m),
+          duration_s: j.duration_s === null || j.duration_s === undefined ? null : Number(j.duration_s),
+        });
+      })
+      .catch(() => {});
+
+    return () => ctrl.abort();
+  }, [result?.provider_current_lat, result?.provider_current_lng, result?.status, result?.completed, destCoords]);
 
   function goNew() {
     window.location.href = `/${locale}/request/customer`;
@@ -425,7 +564,7 @@ export default function TrackRequestPage({
               opacity: loading ? 0.7 : 1,
               cursor: loading ? "not-allowed" : "pointer",
             }}
-            onClick={fetchStatus}
+            onClick={() => loadStatus({ reset: false })}
             disabled={loading}
           >
             {loading ? t.checking : t.check}
@@ -500,50 +639,6 @@ export default function TrackRequestPage({
                   {result.accepted_provider_name ? (
                     <div style={{ marginTop: 6 }}>
                       <span style={{ fontWeight: 900 }}>{t.providerName}:</span> {result.accepted_provider_name}
-                    </div>
-                  ) : null}
-                  {result.accepted_provider_phone ? (
-                    <div style={{ marginTop: 6 }}>
-                      <span style={{ fontWeight: 900 }}>{t.providerPhone}:</span> {result.accepted_provider_phone}
-                    </div>
-                  ) : null}
-                  {result.accepted_provider_phone ? (
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-                      {(() => {
-                        const l = normalizePhoneForLinks(String(result.accepted_provider_phone || ""));
-                        const msg =
-                          isAr
-                            ? `مرحباً، بخصوص الطلب ${result.ref}`
-                            : `Hello, regarding request ${result.ref}`;
-                        const waUrl = `https://wa.me/${l.wa}?text=${encodeURIComponent(msg)}`;
-                        const telUrl = `tel:${l.tel}`;
-                        const circleBase: React.CSSProperties = {
-                          width: 44,
-                          height: 44,
-                          borderRadius: 999,
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          textDecoration: "none",
-                          fontWeight: 900,
-                          fontSize: 18,
-                          border: "1px solid rgba(0,0,0,0.2)",
-                          background: "#fff",
-                          color: "#111",
-                        };
-                        const circleCall: React.CSSProperties = { ...circleBase };
-                        const circleWhats: React.CSSProperties = {
-                          ...circleBase,
-                          border: "1px solid #25D366",
-                          color: "#25D366",
-                        };
-                        return (
-                          <>
-                            <a href={telUrl} style={circleCall} title={t.call} aria-label={t.call}>📞</a>
-                            <a href={waUrl} style={circleWhats} title={t.whatsapp} aria-label={t.whatsapp} target="_blank" rel="noopener noreferrer">WA</a>
-                          </>
-                        );
-                      })()}
                     </div>
                   ) : null}
                   {typeof result.accepted_price_total === "number" ? (
@@ -635,54 +730,202 @@ export default function TrackRequestPage({
                       <div style={{ whiteSpace: "pre-wrap", marginTop: 4 }}>{result.accepted_payment_details}</div>
                     </div>
                   ) : null}
-                  {result.completed === false ? (
-                    <div style={{ marginTop: 12 }}>
-                      <div style={{ marginBottom: 6, fontWeight: 900 }}>{isAr ? "التقييم لمقدم الخدمة" : "Rate Provider"}</div>
-                      <select
-                        value={rating ?? ""}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          setRating(v ? parseInt(v, 10) : null);
-                        }}
-                        style={{ ...inputStyle, height: 42 }}
-                      >
-                        <option value="">{isAr ? "اختر التقييم" : "Select rating"}</option>
-                        {(
-                          isAr
-                            ? [
-                                { v: 1, t: "1️⃣ سيّئ جدًا" },
-                                { v: 2, t: "2️⃣ سيّئ" },
-                                { v: 3, t: "3️⃣ مقبول" },
-                                { v: 4, t: "4️⃣ جيد" },
-                                { v: 5, t: "5️⃣ ممتاز" },
-                              ]
-                            : [
-                                { v: 1, t: "1️⃣ Very Poor" },
-                                { v: 2, t: "2️⃣ Poor" },
-                                { v: 3, t: "3️⃣ Fair / Average" },
-                                { v: 4, t: "4️⃣ Good" },
-                                { v: 5, t: "5️⃣ Excellent" },
-                              ]
-                        ).map((o) => (
-                          <option key={o.v} value={o.v}>{o.t}</option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        style={{
-                          ...btnPrimary,
-                          marginTop: 10,
-                          opacity: completing ? 0.7 : 1,
-                          cursor: completing ? "not-allowed" : "pointer",
-                        }}
-                        onClick={completeTrip}
-                        disabled={completing}
-                      >
-                        {completing ? t.completing : t.tripDone}
-                      </button>
-                    </div>
-                  ) : null}
+                  {/* Interactive Viewport (Map + Overlays) */}
+                  <div style={{ 
+                    height: 500, 
+                    width: "100%", 
+                    borderRadius: 16, 
+                    overflow: "hidden", 
+                    border: "1px solid #ddd", 
+                    position: 'relative',
+                    marginTop: 20, 
+                    marginBottom: 100 
+                  }}>
+                    {/* Layer 1: Map (Always visible unless explicitly hidden or unavailable) */}
+                    {result.provider_status === "en_route" && result.provider_current_lat && result.provider_current_lng ? (
+                         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }}>
+                            <LiveMap
+                                center={[result.provider_current_lat, result.provider_current_lng]}
+                                zoom={13}
+                                carIconUrl="https://cdn-icons-png.flaticon.com/512/3097/3097180.png"
+                                providerPos={[result.provider_current_lat, result.provider_current_lng]}
+                                destPos={destCoords || undefined}
+                                routePoints={routePoints}
+                                isAr={isAr}
+                                providerLabel={isAr ? "السائق في الطريق" : "Driver is en route"}
+                                destLabel={isAr ? "نقطة الالتقاء" : "Meeting Point"}
+                            />
+                            {routeMeta?.duration_s ? (
+                                <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 1000, padding: "6px 12px", background: "white", borderRadius: 8, boxShadow: "0 2px 5px rgba(0,0,0,0.2)", fontSize: 13, fontWeight: "bold" }}>
+                                    {isAr
+                                    ? `الوصول: ${Math.ceil(routeMeta.duration_s / 60)} د`
+                                    : `ETA: ${Math.ceil(routeMeta.duration_s / 60)} m`}
+                                </div>
+                            ) : null}
+                         </div>
+                    ) : (
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5' }}>
+                            <p>{isAr ? "الخريطة غير متاحة حالياً" : "Map not available"}</p>
+                        </div>
+                    )}
+
+                    {/* Layer 2: Chat Overlay */}
+                    {activeTab === 'chat' && (
+                        <div style={{ 
+                            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10,
+                            background: 'rgba(255,255,255,0.95)' // Ensure background covers map
+                        }}>
+                                <ChatWidget 
+                                requestRef={ref} 
+                                userRole="customer" 
+                                counterpartName={result.accepted_provider_name}
+                                />
+                        </div>
+                    )}
+
+                    {/* Layer 3: Complete/Rating Overlay */}
+                    {activeTab === 'complete' && (
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 20, background: 'rgba(255,255,255,0.95)', padding: 20, overflowY: 'auto' }}>
+                             {result.completed === false ? (
+                                <>
+                                <div style={{ marginBottom: 12, fontWeight: 900, fontSize: 16 }}>{isAr ? "التقييم وإنهاء الرحلة" : "Rate & Complete Trip"}</div>
+                                <div style={{ marginBottom: 8, fontSize: 14 }}>{isAr ? "التقييم لمقدم الخدمة" : "Rate Provider"}</div>
+                                <select
+                                    value={rating ?? ""}
+                                    onChange={(e) => {
+                                    const v = e.target.value;
+                                    setRating(v ? parseInt(v, 10) : null);
+                                    }}
+                                    style={{ ...inputStyle, height: 48, marginBottom: 16 }}
+                                >
+                                    <option value="">{isAr ? "اختر التقييم" : "Select rating"}</option>
+                                    {(
+                                    isAr
+                                        ? [
+                                            { v: 1, t: "1️⃣ سيّئ جدًا" },
+                                            { v: 2, t: "2️⃣ سيّئ" },
+                                            { v: 3, t: "3️⃣ مقبول" },
+                                            { v: 4, t: "4️⃣ جيد" },
+                                            { v: 5, t: "5️⃣ ممتاز" },
+                                        ]
+                                        : [
+                                            { v: 1, t: "1️⃣ Very Poor" },
+                                            { v: 2, t: "2️⃣ Poor" },
+                                            { v: 3, t: "3️⃣ Fair / Average" },
+                                            { v: 4, t: "4️⃣ Good" },
+                                            { v: 5, t: "5️⃣ Excellent" },
+                                        ]
+                                    ).map((o) => (
+                                    <option key={o.v} value={o.v}>{o.t}</option>
+                                    ))}
+                                </select>
+                                <button
+                                    type="button"
+                                    style={{
+                                    ...btnPrimary,
+                                    height: 48,
+                                    opacity: completing ? 0.7 : 1,
+                                    cursor: completing ? "not-allowed" : "pointer",
+                                    }}
+                                    onClick={completeTrip}
+                                    disabled={completing}
+                                >
+                                    {completing ? t.completing : t.tripDone}
+                                </button>
+                                </>
+                            ) : (
+                                <div style={{ textAlign: 'center', padding: 20, color: '#2e7d32', fontWeight: 'bold' }}>
+                                    {isAr ? "تمت الرحلة بنجاح شكراً لك!" : "Trip completed successfully. Thank you!"}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Layer 4: Support Overlay */}
+                    {activeTab === 'support' && (
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 20, background: 'rgba(255,255,255,0.95)', padding: 20, overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                            <div style={{ width: '100%', maxWidth: 340, textAlign: 'center' }}>
+                                <SupportView isAr={isAr} refId={result?.ref} />
+                            </div>
+                        </div>
+                    )}
+                  </div>
                 </div>
+
+                {/* Bottom Navigation Bar */}
+                <div style={{ 
+                    position: 'fixed', bottom: 0, left: 0, right: 0, 
+                    height: 80, background: '#fff', borderTop: '1px solid #eee', 
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-around', 
+                    zIndex: 2000, paddingBottom: 10,
+                    boxShadow: '0 -4px 20px rgba(0,0,0,0.08)'
+                }}>
+                    <button onClick={() => setActiveTab('chat')} style={{ background: 'none', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', transition: 'all 0.2s' }}>
+                        <div style={{ 
+                            padding: 10, 
+                            borderRadius: '50%', 
+                            background: activeTab === 'chat' ? '#111' : 'transparent',
+                            color: activeTab === 'chat' ? '#fff' : '#9ca3af',
+                            transition: 'all 0.2s'
+                        }}>
+                            <MessageCircle size={24} />
+                        </div>
+                        <span style={{ fontSize: 11, fontWeight: activeTab === 'chat' ? 700 : 500, color: activeTab === 'chat' ? '#111' : '#9ca3af' }}>{isAr ? "المحادثة" : "Chat"}</span>
+                    </button>
+
+                    <button onClick={() => setActiveTab('map')} style={{ background: 'none', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', transition: 'all 0.2s' }}>
+                        <div style={{ 
+                            padding: 10, 
+                            borderRadius: '50%', 
+                            background: activeTab === 'map' ? '#111' : 'transparent',
+                            color: activeTab === 'map' ? '#fff' : '#9ca3af',
+                            transition: 'all 0.2s'
+                        }}>
+                            <MapIcon size={24} />
+                        </div>
+                        <span style={{ fontSize: 11, fontWeight: activeTab === 'map' ? 700 : 500, color: activeTab === 'map' ? '#111' : '#9ca3af' }}>{isAr ? "الخريطة" : "Map"}</span>
+                    </button>
+
+                    <button onClick={() => setActiveTab('complete')} style={{ background: 'none', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', transition: 'all 0.2s' }}>
+                        <div style={{ 
+                            padding: 10, 
+                            borderRadius: '50%', 
+                            background: activeTab === 'complete' ? '#111' : 'transparent',
+                            color: activeTab === 'complete' ? '#fff' : '#9ca3af',
+                            transition: 'all 0.2s'
+                        }}>
+                            <Star size={24} />
+                        </div>
+                        <span style={{ fontSize: 11, fontWeight: activeTab === 'complete' ? 700 : 500, color: activeTab === 'complete' ? '#111' : '#9ca3af' }}>{isAr ? "التقييم" : "Rating"}</span>
+                    </button>
+
+                    <button onClick={() => setActiveTab('complete')} style={{ background: 'none', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', transition: 'all 0.2s' }}>
+                        <div style={{ 
+                            padding: 10, 
+                            borderRadius: '50%', 
+                            background: activeTab === 'complete' ? '#111' : 'transparent',
+                            color: activeTab === 'complete' ? '#fff' : '#9ca3af',
+                            transition: 'all 0.2s'
+                        }}>
+                            <CheckCircle size={24} />
+                        </div>
+                        <span style={{ fontSize: 11, fontWeight: activeTab === 'complete' ? 700 : 500, color: activeTab === 'complete' ? '#111' : '#9ca3af' }}>{isAr ? "تمت الرحلة" : "Completed"}</span>
+                    </button>
+
+                    <button onClick={() => setActiveTab('support')} style={{ background: 'none', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', transition: 'all 0.2s' }}>
+                        <div style={{ 
+                            padding: 10, 
+                            borderRadius: '50%', 
+                            background: activeTab === 'support' ? '#111' : 'transparent',
+                            color: activeTab === 'support' ? '#fff' : '#9ca3af',
+                            transition: 'all 0.2s'
+                        }}>
+                            <Headphones size={24} />
+                        </div>
+                        <span style={{ fontSize: 11, fontWeight: activeTab === 'support' ? 700 : 500, color: activeTab === 'support' ? '#111' : '#9ca3af' }}>{isAr ? "الدعم" : "Support"}</span>
+                    </button>
+                </div>
+
               </div>
             ) : null}
           </div>

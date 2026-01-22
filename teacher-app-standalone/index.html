@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تطبيق المعلمه مهاوي</title>
+  <link rel="manifest" href="./manifest.json">
+  <style>
+    :root {
+      --bg: #ffffff; --text: #222222; --header: #2c3e50; --muted:#777;
+      --primary: #27ae60; --danger:#e74c3c; --secondary:#bdc3c7; --chip:#ecf0f1;
+      --card-border:#e0e0e0; --shadow: rgba(0,0,0,.15);
+    }
+    [data-theme="dark"] {
+      --bg: #111418; --text:#e6e6e6; --header:#0f172a; --muted:#a0a0a0;
+      --primary:#2ecc71; --danger:#ff6b6b; --secondary:#475569; --chip:#1f2937;
+      --card-border:#263043; --shadow: rgba(0,0,0,.45);
+    }
+    body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; margin: 0; background:var(--bg); color:var(--text); }
+    header { background:var(--header); color:#fff; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; }
+    header h1 { margin:0; font-size:18px; }
+    .container { padding:12px; }
+    .toolbar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+    .toolbar select, .toolbar button, .toolbar input { padding:8px; border:1px solid #ccc; border-radius:6px; font-size:14px; }
+    nav { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
+    nav button { padding:8px 12px; border:none; border-radius:20px; background:var(--chip); cursor:pointer; color:var(--text); }
+    nav button.active { background:#2980b9; color:#fff; }
+    section { display:none; }
+    section.active { display:block; }
+    .card { border:1px solid var(--card-border); border-radius:8px; padding:12px; margin-bottom:10px; background:transparent; }
+    .list { display:grid; grid-template-columns: 1fr auto; gap:8px; align-items:center; }
+    .list .name { font-weight:600; }
+    .actions { display:flex; gap:6px; align-items:center; }
+    .actions button { padding:6px 10px; border:none; border-radius:6px; cursor:pointer; }
+    .primary { background:var(--primary); color:#fff; }
+    .danger { background:var(--danger); color:#fff; }
+    .secondary { background:var(--secondary); color:#fff; }
+    .grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    .input { display:flex; flex-direction:column; gap:6px; }
+    .input label { font-size:12px; color:#555; }
+    .input input, .input select, .input textarea { padding:8px; border:1px solid #ccc; border-radius:6px; font-size:14px; }
+    .sticky-footer { position:sticky; bottom:0; background:#f7f9fa; border-top:1px solid #eaeaea; padding:10px; display:flex; justify-content:space-between; align-items:center; }
+    .muted { color:var(--muted); font-size:12px; }
+    .modal { position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; z-index:1000; }
+    .modal .box { background:var(--bg); border-radius:10px; padding:16px; width:92%; max-width:380px; box-shadow:0 8px 24px var(--shadow); color:var(--text); }
+    .modal .box h3 { margin:0 0 12px 0; font-size:16px; color:#2c3e50; }
+    .modal .box .input { margin-bottom:10px; }
+    .modal .box .actions { display:flex; gap:8px; justify-content:flex-end; }
+    .modal .box .actions button { padding:8px 12px; border:none; border-radius:6px; }
+    .toast { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); background:#333; color:#fff; padding:10px 14px; border-radius:8px; opacity:0; pointer-events:none; transition:opacity .2s; z-index:1100; }
+    .toast.show { opacity:1; }
+  </style>
+</head>
+<body>
+  <header>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <h1>تطبيق المعلمه مهاوي</h1>
+      <button id="profileBtn" style="background:#f39c12; border:none; color:white; padding:4px 12px; border-radius:20px; font-size:14px; cursor:pointer; display:flex; align-items:center; gap:6px;">
+        👤 <span id="currentProfileName">المعلمة</span>
+      </button>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button id="exportBtn" class="secondary">تصدير النسخة الاحتياطية</button>
+      <input id="importFile" type="file" accept="application/json" style="display:none;">
+      <button id="importBtn" class="secondary">استيراد نسخة</button>
+    </div>
+  </header>
+  <div class="container">
+    <div class="toolbar">
+      <select id="classSelect"></select>
+      <button id="addClassBtn" class="secondary">إضافة فصل</button>
+      <button id="addStudentBtn" class="secondary">إضافة طالب</button>
+      <input id="todayInput" type="date">
+    </div>
+
+    <nav>
+      <button data-tab="students">الطلاب</button>
+      <button data-tab="attendance" class="active">الحضور</button>
+      <button data-tab="assignments">الواجبات</button>
+      <button data-tab="prep">التحضير</button>
+      <button data-tab="messages">الرسائل</button>
+      <button data-tab="reports">التقارير</button>
+      <button data-tab="tools">أدوات</button>
+      <button data-tab="settings">الإعدادات</button>
+    </nav>
+
+    <section id="students">
+      <div class="card">
+        <div class="input">
+          <label>بحث عن طالب/ة</label>
+          <input id="studentSearch" placeholder="اكتبي الاسم">
+        </div>
+      </div>
+      <div class="card">
+        <div id="studentsList"></div>
+      </div>
+    </section>
+
+    <section id="attendance" class="active">
+      <div class="card">
+        <div class="list" id="attendanceList"></div>
+      </div>
+      <div class="sticky-footer">
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button id="allPresentBtn" class="primary">الكل حاضر</button>
+          <button id="allAbsentBtn" class="danger">الكل غائب</button>
+          <div class="muted">اضغطي حاضر/غائب لكل طالب ثم احفظي</div>
+        </div>
+        <button id="saveAttendanceBtn" class="primary">حفظ حضور اليوم</button>
+      </div>
+    </section>
+
+    <section id="prep">
+      <div class="grid-2">
+        <div class="card">
+          <div class="input">
+            <label>تاريخ الدرس</label>
+            <input id="prepDate" type="date">
+          </div>
+          <div class="input">
+            <label>المادة</label>
+            <div style="display:flex; gap:6px;">
+                <select id="prepSubject" style="flex:1">
+                  <option value="اللغة العربية">اللغة العربية</option>
+                  <option value="الرياضيات">الرياضيات</option>
+                  <option value="العلوم">العلوم</option>
+                  <option value="الدراسات الإسلامية">الدراسات الإسلامية</option>
+                  <option value="الاجتماعيات">الاجتماعيات</option>
+                  <option value="الفنون">الفنون</option>
+                  <option value="البدنية">البدنية</option>
+                  <option value="أخرى">أخرى</option>
+                </select>
+                <button id="suggestPrepBtn" class="secondary" title="اقتراح تحضير جاهز">✨ اقتراح</button>
+            </div>
+          </div>
+          <div class="input">
+            <label>عنوان الدرس / الموضوع</label>
+            <input id="prepTopic" placeholder="اكتبي عنوان الدرس">
+          </div>
+          <div class="input">
+            <label>الأهداف</label>
+            <textarea id="prepObjectives" rows="3" placeholder="نقاط مختصرة للأهداف"></textarea>
+          </div>
+          <div class="input">
+            <label>الأنشطة / الاستراتيجيات</label>
+            <textarea id="prepActivities" rows="3" placeholder="نشاط تمهيدي، تعليمي، ختامي"></textarea>
+          </div>
+          <div class="input">
+            <label>الوسائل / المواد</label>
+            <textarea id="prepMaterials" rows="2" placeholder="بطاقات، سبورة، كتاب، أوراق..."></textarea>
+          </div>
+          <div class="input">
+            <label>الواجب (اختياري)</label>
+            <input id="prepHomework" placeholder="واجب منزلي إن وجد">
+          </div>
+          <div class="input">
+            <label>ملاحظات تقييمية</label>
+            <textarea id="prepNotes" rows="2" placeholder="ملاحظة سلوكية/أكاديمية مختصرة"></textarea>
+          </div>
+          <div class="actions" style="justify-content:flex-start; margin-top:8px;">
+            <button id="savePrepBtn" class="primary">حفظ التحضير</button>
+            <button id="resetPrepBtn" class="secondary">مسح الحقول</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="input">
+            <label>فلترة حسب التاريخ</label>
+            <input id="prepFilterDate" type="date">
+          </div>
+          <div class="input">
+            <label>بحث بالعنوان</label>
+            <input id="prepSearch" placeholder="اكتبي جزءاً من العنوان">
+          </div>
+          <button id="exportPrepBtn" class="secondary">تصدير التحضير (CSV)</button>
+          <div id="prepList"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="assignments">
+      <div class="grid-2">
+        <div class="card">
+          <div class="input">
+            <label>عنوان الواجب</label>
+            <input id="asTitle" placeholder="مثل: واجب القراءة صفحة 10">
+          </div>
+          <div class="input">
+            <label>تاريخ التسليم</label>
+            <input id="asDue" type="date">
+          </div>
+          <button id="createAssignmentBtn" class="primary">إنشاء واجب</button>
+        </div>
+        <div class="card">
+          <div id="assignmentsList"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="messages">
+      <div class="card">
+        <div class="grid-2">
+          <div class="input">
+            <label>اختيار الطالب</label>
+            <select id="msgStudentSelect"></select>
+          </div>
+          <div class="input">
+            <label>قالب الرسالة</label>
+            <select id="msgTemplateSelect">
+              <option value="نجاح_واجب">ابنك/ابنتك أنجز الواجب اليوم بنجاح.</option>
+              <option value="متابعة_قبل_الموعد">نحتاج متابعة الواجب قبل موعد التسليم.</option>
+              <option value="سلوك_جيد">سلوك جميل اليوم، شكرًا للدعم.</option>
+              <option value="سلوك_يحتاج_متابعة">نحتاج متابعة السلوك داخل الفصل.</option>
+            </select>
+          </div>
+        </div>
+        <button id="sendMsgBtn" class="primary">فتح واتساب للرسالة</button>
+      </div>
+    </section>
+
+    <section id="reports">
+      <div class="card">
+        <button id="weeklyReportBtn" class="secondary">تقرير أسبوعي (CSV)</button>
+        <div id="reportStatus" class="muted"></div>
+      </div>
+    </section>
+
+    <section id="tools">
+      <div class="grid-2">
+        <div class="card" style="text-align:center; padding:32px;">
+          <h3 style="margin-top:0;">🎲 الاختيار العشوائي</h3>
+          <div id="randomPickerResult" style="font-size:24px; font-weight:bold; margin:24px 0; min-height:36px; color:var(--primary);">...</div>
+          <button id="pickRandomBtn" class="primary" style="font-size:16px; padding:10px 20px;">اختيار طالبة</button>
+        </div>
+        <div class="card" style="text-align:center; padding:32px;">
+          <h3 style="margin-top:0;">⏱️ مؤقت الأنشطة</h3>
+          <div id="timerDisplay" style="font-size:48px; font-weight:bold; margin:16px 0; font-family:monospace; direction:ltr;">05:00</div>
+          <div style="display:flex; justify-content:center; gap:8px; margin-bottom:16px;">
+            <button id="timerAdd1" class="secondary">+1 د</button>
+            <button id="timerSub1" class="secondary">-1 د</button>
+          </div>
+          <div style="display:flex; justify-content:center; gap:8px;">
+            <button id="timerStartBtn" class="primary">ابدأ</button>
+            <button id="timerPauseBtn" class="secondary">إيقاف</button>
+            <button id="timerResetBtn" class="danger">إعادة</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="settings">
+      <div class="card">
+        <div class="input">
+          <label>رمز دخول (اختياري)</label>
+          <input id="pinInput" type="password" placeholder="أربعة أرقام">
+        </div>
+        <button id="savePinBtn" class="primary">حفظ</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="profilesModal" class="modal">
+    <div class="box">
+      <h3>تبديل الحساب / المعلمة</h3>
+      <div id="profilesList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;"></div>
+      <div class="input">
+         <input id="newProfileName" placeholder="اسم معلمة جديدة">
+      </div>
+      <div class="actions">
+         <button id="addNewProfileBtn" class="primary">إضافة معلمة جديدة</button>
+         <button onclick="document.getElementById('profilesModal').style.display='none'" class="secondary">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      try {
+        const swUrl = new URL('./sw.js', location.href).href;
+        navigator.serviceWorker.register(swUrl, { scope: './' }).catch(()=>{});
+      } catch {}
+    }
+    // Toast
+    const toast = document.createElement('div'); toast.className='toast'; document.body.appendChild(toast);
+    function showToast(msg){ toast.textContent=msg; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'), 1800); }
+
+    const profileManager = {
+      profiles: [],
+      currentId: 'v1',
+      init() {
+        try {
+          const raw = localStorage.getItem('layali_profiles');
+          this.profiles = raw ? JSON.parse(raw) : [];
+          if (!this.profiles.length) {
+             // Migration: Create default
+             this.profiles = [{ id:'v1', name:'المعلمة الأساسية' }];
+             localStorage.setItem('layali_profiles', JSON.stringify(this.profiles));
+          }
+          const cur = localStorage.getItem('layali_current_profile');
+          if (cur && this.profiles.find(p=>p.id===cur)) this.currentId = cur;
+          else {
+             this.currentId = this.profiles[0].id;
+             localStorage.setItem('layali_current_profile', this.currentId);
+          }
+          const nameEl = document.getElementById('currentProfileName');
+          if(nameEl) nameEl.textContent = this.getCurrentName();
+        } catch(e){}
+      },
+      getCurrentName() {
+        const p = this.profiles.find(x=>x.id===this.currentId);
+        return p ? p.name : 'المعلمة';
+      },
+      addProfile(name) {
+        const id = 'user_' + Math.random().toString(36).slice(2,9);
+        this.profiles.push({ id, name });
+        localStorage.setItem('layali_profiles', JSON.stringify(this.profiles));
+        this.switchProfile(id);
+      },
+      switchProfile(id) {
+        localStorage.setItem('layali_current_profile', id);
+        location.reload();
+      }
+    };
+    profileManager.init();
+
+    // Profile UI
+    const profileBtn = document.getElementById('profileBtn');
+    if (profileBtn) {
+        profileBtn.addEventListener('click', ()=>{
+          const list = document.getElementById('profilesList');
+          list.innerHTML = '';
+          profileManager.profiles.forEach(p => {
+            const row = document.createElement('div');
+            row.style.display='flex'; row.style.justifyContent='space-between'; row.style.alignItems='center';
+            row.style.padding='8px'; row.style.background = p.id === profileManager.currentId ? '#e8f5e9' : '#f9f9f9';
+            row.style.borderRadius='6px';
+            
+            const n = document.createElement('span'); n.textContent = p.name + (p.id===profileManager.currentId ? ' (أنتِ)' : '');
+            const btn = document.createElement('button'); btn.className='secondary'; btn.textContent='دخول';
+            if (p.id !== profileManager.currentId) {
+              btn.addEventListener('click', ()=> profileManager.switchProfile(p.id));
+            } else {
+              btn.style.display='none';
+            }
+            row.appendChild(n); row.appendChild(btn); list.appendChild(row);
+          });
+          document.getElementById('profilesModal').style.display='flex';
+        });
+    }
+    const addNewProfileBtn = document.getElementById('addNewProfileBtn');
+    if (addNewProfileBtn) {
+        addNewProfileBtn.addEventListener('click', ()=>{
+          const name = document.getElementById('newProfileName').value.trim();
+          if (!name) return alert('أدخلي اسم المعلمة');
+          profileManager.addProfile(name);
+        });
+    }
+
+    const store = {
+      data: { classes: [], students: [], attendance: [], assignments: [], submissions: [], notes: [], preps: [], templates: [], pin: '', theme:'' },
+      load() {
+        try { 
+          const key = 'teacher_app_standalone_' + profileManager.currentId;
+          const raw = localStorage.getItem(key); 
+          this.data = raw ? JSON.parse(raw) : this.data; 
+        } catch (e) {}
+      },
+      save() { 
+        const key = 'teacher_app_standalone_' + profileManager.currentId;
+        localStorage.setItem(key, JSON.stringify(this.data)); 
+      },
+      uid() { return Math.random().toString(36).slice(2, 9); }
+    };
+    store.load();
+    // Theme
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.setAttribute('data-theme', store.data.theme || (prefersDark ? 'dark' : ''));
+    if (!Array.isArray(store.data.notes)) store.data.notes = [];
+    if (!Array.isArray(store.data.preps)) store.data.preps = [];
+    // Ensure stars
+    store.data.students.forEach(s => { if(typeof s.stars !== 'number') s.stars = 0; });
+
+    if (!Array.isArray(store.data.templates)) store.data.templates = [];
+    const requiredTemplates = [
+      { key: 'نجاح_واجب', text: 'السلام عليكم، {name} أنجز/ت الواجب اليوم بنجاح. شكرًا للدعم.' },
+      { key: 'متابعة_قبل_الموعد', text: 'السلام عليكم، نحتاج متابعة واجب {title} قبل الموعد.' },
+      { key: 'سلوك_جيد', text: 'السلام عليكم، سلوك {name} كان جميلًا اليوم. شكرًا لتعاونكم.' },
+      { key: 'سلوك_يحتاج_متابعة', text: 'السلام عليكم، نحتاج متابعة سلوك {name} داخل الفصل.' },
+      { key: 'تقرير_النجوم', text: 'مبارك! حصلت ابنتكم {name} على {stars} نجمة هذا الأسبوع لتميزها. 🌟' }
+    ];
+    let templatesChanged = false;
+    requiredTemplates.forEach(req => {
+      if (!store.data.templates.find(t => t.key === req.key)) {
+        store.data.templates.push({ id: store.uid(), ...req });
+        templatesChanged = true;
+      }
+    });
+    if (templatesChanged) store.save();
+
+    const todayInput = document.getElementById('todayInput');
+    todayInput.value = new Date().toISOString().slice(0, 10);
+    const classSelect = document.getElementById('classSelect');
+    const msgStudentSelect = document.getElementById('msgStudentSelect');
+    const attendanceList = document.getElementById('attendanceList');
+    const studentsList = document.getElementById('studentsList');
+    const prepList = document.getElementById('prepList');
+    const prepDateInput = document.getElementById('prepDate');
+    const prepFilterDateInput = document.getElementById('prepFilterDate');
+    prepDateInput && (prepDateInput.value = new Date().toISOString().slice(0,10));
+    prepFilterDateInput && (prepFilterDateInput.value = new Date().toISOString().slice(0,10));
+
+    function renderClassSelect() {
+      classSelect.innerHTML = '';
+      store.data.classes.forEach(c => {
+        const opt = document.createElement('option'); opt.value = c.id; opt.textContent = c.name; classSelect.appendChild(opt);
+      });
+      if (!store.data.classes.length) {
+        const id = store.uid(); store.data.classes.push({ id, name: 'فصل 1' }); store.save(); renderClassSelect();
+      }
+    }
+    function renderStudentsForClass() {
+      const cid = classSelect.value;
+      const students = store.data.students.filter(s => s.classId === cid);
+      attendanceList.innerHTML = '';
+      renderStudentsTab(students);
+      students.forEach(s => {
+        const row = document.createElement('div'); row.style.display='grid'; row.style.gridTemplateColumns='1fr auto auto'; row.style.gap='8px';
+        const name = document.createElement('div'); name.className='name'; name.textContent = s.name;
+        const presentBtn = document.createElement('button'); presentBtn.className='primary'; presentBtn.textContent='حاضر';
+        const absentBtn = document.createElement('button'); absentBtn.className='danger'; absentBtn.textContent='غائب';
+        presentBtn.addEventListener('click', () => markAttendance(s.id, true));
+        absentBtn.addEventListener('click', () => markAttendance(s.id, false));
+        row.appendChild(name); row.appendChild(presentBtn); row.appendChild(absentBtn); attendanceList.appendChild(row);
+      });
+      msgStudentSelect.innerHTML = '';
+      students.forEach(s => { const opt = document.createElement('option'); opt.value=s.id; opt.textContent=s.name; msgStudentSelect.appendChild(opt); });
+    }
+    function renderStudentsTab(students) {
+      const q = (document.getElementById('studentSearch').value || '').trim();
+      const list = students.filter(s => !q || s.name.includes(q));
+      studentsList.innerHTML = '';
+      list.forEach(s => {
+        const card = document.createElement('div'); card.className='card';
+        
+        // Row 1: Name & Actions (Edit + Delete)
+        const top = document.createElement('div'); top.style.display='flex'; top.style.justifyContent='space-between'; top.style.alignItems='center'; top.style.marginBottom='8px';
+        const name = document.createElement('div'); name.style.fontWeight='bold'; name.textContent = s.name;
+        
+        const btnGroup = document.createElement('div'); btnGroup.style.display='flex'; btnGroup.style.gap='4px';
+
+        const editBtn = document.createElement('button'); editBtn.className='secondary'; editBtn.textContent='تعديل رقم';
+        editBtn.style.padding='4px 8px'; editBtn.style.fontSize='12px';
+        editBtn.addEventListener('click', async ()=>{
+          const out = await openModal('تعديل رقم ولي الأمر', [
+            { id:'guardianPhone', label:'رقم ولي الأمر', placeholder:'05xxxxxxxx', type:'tel' }
+          ]);
+          if (!out) return;
+          s.guardianPhone = out.guardianPhone || s.guardianPhone || '';
+          store.save(); renderStudentsTab(students);
+        });
+
+        const delBtn = document.createElement('button'); delBtn.className='danger'; delBtn.textContent='حذف';
+        delBtn.style.padding='4px 8px'; delBtn.style.fontSize='12px';
+        delBtn.addEventListener('click', ()=>{
+            if(confirm('حذف الطالبة "'+s.name+'" وجميع بياناتها؟')) {
+                store.data.students = store.data.students.filter(x=>x.id!==s.id);
+                store.data.attendance = store.data.attendance.filter(x=>x.studentId!==s.id);
+                store.data.notes = store.data.notes.filter(x=>x.studentId!==s.id);
+                store.data.submissions = store.data.submissions.filter(x=>x.studentId!==s.id);
+                store.save();
+                renderStudentsForClass();
+                showToast('تم حذف الطالبة');
+            }
+        });
+
+        btnGroup.appendChild(editBtn); btnGroup.appendChild(delBtn);
+        top.appendChild(name); top.appendChild(btnGroup); card.appendChild(top);
+
+        // Row 2: Stars System (New)
+        const starsRow = document.createElement('div'); 
+        starsRow.style.display='flex'; starsRow.style.alignItems='center'; starsRow.style.gap='8px'; starsRow.style.background='#f9f9f9'; starsRow.style.padding='8px'; starsRow.style.borderRadius='8px'; starsRow.style.marginBottom='8px';
+        
+        const starsCount = document.createElement('span'); 
+        starsCount.style.fontSize='18px'; starsCount.style.fontWeight='bold'; starsCount.style.color='#f39c12';
+        starsCount.textContent = `⭐ ${s.stars || 0}`;
+        
+        const addStar = document.createElement('button'); addStar.className='primary'; addStar.textContent='+'; addStar.style.padding='4px 12px';
+        addStar.addEventListener('click', ()=>{ 
+            s.stars = (s.stars || 0) + 1; 
+            store.save(); 
+            starsCount.textContent = `⭐ ${s.stars}`; 
+            try{ new Audio('https://actions.google.com/sounds/v1/cartoon/pop.ogg').play().catch(()=>{}); }catch(e){}
+        });
+
+        const removeStar = document.createElement('button'); removeStar.className='secondary'; removeStar.textContent='-'; removeStar.style.padding='4px 12px';
+        removeStar.addEventListener('click', ()=>{ 
+            if((s.stars||0) > 0) { s.stars--; store.save(); starsCount.textContent = `⭐ ${s.stars}`; }
+        });
+
+        const shareStars = document.createElement('button'); shareStars.className='secondary'; shareStars.textContent='📱 إرسال تقرير';
+        shareStars.addEventListener('click', ()=>{
+             const tpl = store.data.templates.find(t=>t.key==='تقرير_النجوم');
+             if(!tpl) return alert('قالب تقرير النجوم غير موجود');
+             const msgText = tpl.text.replace('{name}', s.name).replace('{stars}', s.stars||0);
+             const phone = (s.guardianPhone || '').replace(/\D/g,'');
+             if (!phone) return alert('أضيفي رقم ولي الأمر للطالب');
+             const url = `https://wa.me/966${phone.startsWith('0')?phone.slice(1):phone}?text=${encodeURIComponent(msgText)}`;
+             window.open(url, '_blank');
+        });
+
+        starsRow.appendChild(starsCount);
+        starsRow.appendChild(addStar);
+        starsRow.appendChild(removeStar);
+        starsRow.appendChild(shareStars);
+        card.appendChild(starsRow);
+
+        // Row 3: Notes & Badge
+        const actions = document.createElement('div'); actions.style.display='flex'; actions.style.gap='8px'; actions.style.alignItems='center';
+        const notesCount = store.data.notes.filter(n=>n.studentId===s.id).length;
+        const notesBadge = document.createElement('span'); notesBadge.className='muted'; notesBadge.textContent = `ملاحظات: ${notesCount}`;
+        
+        const addNoteBtn = document.createElement('button'); addNoteBtn.className='secondary'; addNoteBtn.textContent='إضافة ملاحظة';
+        addNoteBtn.addEventListener('click', async ()=>{
+          const out = await openModal('إضافة ملاحظة', [
+            { id:'noteText', label:'نص الملاحظة', placeholder:'اكتبي الملاحظة' },
+            { id:'noteType', label:'نوع الملاحظة (سلوك/أكاديمي/عام)', placeholder:'عام' }
+          ]);
+          if (!out || !out.noteText) return;
+          const type = out.noteType || 'عام';
+          store.data.notes.push({ id: store.uid(), studentId: s.id, date: new Date().toISOString().slice(0,10), text: out.noteText, type });
+          store.save(); renderStudentsTab(students);
+        });
+        actions.appendChild(addNoteBtn); actions.appendChild(notesBadge); card.appendChild(actions);
+        studentsList.appendChild(card);
+      });
+    }
+    function markAttendance(studentId, present) {
+      const date = todayInput.value; const classId = classSelect.value;
+      const existing = store.data.attendance.find(a => a.date===date && a.classId===classId && a.studentId===studentId);
+      if (existing) existing.present = present;
+      else store.data.attendance.push({ id: store.uid(), date, classId, studentId, present });
+    }
+    document.getElementById('saveAttendanceBtn').addEventListener('click', () => { store.save(); alert('تم حفظ حضور اليوم'); });
+    document.getElementById('allPresentBtn').addEventListener('click', ()=>{
+      const cid = classSelect.value;
+      store.data.students.filter(s=>s.classId===cid).forEach(s=> markAttendance(s.id, true));
+      renderStudentsForClass(); showToast('تم تحديد الكل حاضر');
+    });
+    document.getElementById('allAbsentBtn').addEventListener('click', ()=>{
+      const cid = classSelect.value;
+      store.data.students.filter(s=>s.classId===cid).forEach(s=> markAttendance(s.id, false));
+      renderStudentsForClass(); showToast('تم تحديد الكل غائب');
+    });
+
+    // Modal
+    const modal = document.createElement('div'); modal.className='modal';
+    modal.innerHTML = `<div class="box">
+      <h3 id="modalTitle"></h3>
+      <div id="modalContent"></div>
+      <div class="actions">
+        <button id="modalCancel" class="secondary">إلغاء</button>
+        <button id="modalOk" class="primary">تنفيذ</button>
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+    function openModal(title, fields) {
+      return new Promise((resolve) => {
+        document.getElementById('modalTitle').textContent = title;
+        const content = document.getElementById('modalContent');
+        content.innerHTML = '';
+        const inputs = {};
+        fields.forEach(f=>{
+          const wrap = document.createElement('div'); wrap.className='input';
+          const label = document.createElement('label'); label.textContent = f.label;
+          const input = document.createElement('input'); input.placeholder = f.placeholder || ''; input.type = f.type || 'text';
+          input.id = f.id; wrap.appendChild(label); wrap.appendChild(input); content.appendChild(wrap);
+          inputs[f.id] = input;
+        });
+        modal.style.display='flex';
+        const ok = document.getElementById('modalOk');
+        const cancel = document.getElementById('modalCancel');
+        const close = () => { modal.style.display='none'; ok.onclick=null; cancel.onclick=null; };
+        cancel.onclick = () => { close(); resolve(null); };
+        ok.onclick = () => {
+          const values = {};
+          fields.forEach(f=>{ values[f.id] = inputs[f.id].value.trim(); });
+          close(); resolve(values);
+        };
+      });
+    }
+    document.getElementById('addClassBtn').addEventListener('click', async () => {
+      const values = await openModal('إضافة فصل', [{ id:'className', label:'اسم الفصل', placeholder:'مثل: أولى/ثانية' }]);
+      if (!values || !values.className) return;
+      store.data.classes.push({ id: store.uid(), name: values.className });
+      store.save(); renderClassSelect(); renderStudentsForClass();
+    });
+    document.getElementById('addStudentBtn').addEventListener('click', async () => {
+      const values = await openModal('إضافة طالب/ة', [
+        { id:'studentName', label:'اسم الطالب/ة', placeholder:'اكتبي الاسم' },
+        { id:'guardianPhone', label:'رقم ولي الأمر', placeholder:'05xxxxxxxx', type:'tel' }
+      ]);
+      if (!values || !values.studentName) return showToast('أدخلي اسم الطالب/ة');
+      const normPhone = normalizePhone(values.guardianPhone || '');
+      if (values.guardianPhone && !normPhone.valid) { showToast('رقم ولي الأمر غير صحيح'); return; }
+      store.data.students.push({ id: store.uid(), name: values.studentName, guardianPhone: normPhone.display || '', classId: classSelect.value });
+      store.save(); renderStudentsForClass();
+    });
+    function normalizePhone(input){
+      const digits = (input||'').replace(/\D/g,'');
+      if (!digits) return { valid:false, display:'' };
+      // Accept SA numbers starting with 05xxxxxxxx or 9665xxxxxxxx
+      if (digits.length===10 && digits.startsWith('05')) return { valid:true, display: digits };
+      if (digits.length===12 && digits.startsWith('9665')) return { valid:true, display: '0'+digits.slice(3) };
+      return { valid:false, display:'' };
+    }
+
+    const assignmentsList = document.getElementById('assignmentsList');
+    function renderAssignments() {
+      assignmentsList.innerHTML = '';
+      const cid = classSelect.value;
+      store.data.assignments.filter(a => a.classId===cid).forEach(a => {
+        const card = document.createElement('div'); card.className='card';
+        const title = document.createElement('div'); title.textContent = `${a.title} — التسليم: ${a.dueDate}`;
+        const students = store.data.students.filter(s=>s.classId===cid);
+        const list = document.createElement('div'); list.style.display='grid'; list.style.gap='6px';
+        students.forEach(s=>{
+          const row = document.createElement('div'); row.style.display='grid'; row.style.gridTemplateColumns='1fr auto';
+          const name = document.createElement('div'); name.textContent=s.name;
+          const doneBtn = document.createElement('button'); doneBtn.className='secondary'; doneBtn.textContent='إنجاز';
+          const exists = store.data.submissions.find(x=>x.assignmentId===a.id && x.studentId===s.id);
+          if (exists) { doneBtn.className='primary'; doneBtn.textContent='مُنجز'; }
+          doneBtn.addEventListener('click', ()=>{
+            const sub = store.data.submissions.find(x=>x.assignmentId===a.id && x.studentId===s.id);
+            if (sub) { store.data.submissions = store.data.submissions.filter(x=>x!==sub); }
+            else store.data.submissions.push({ id: store.uid(), assignmentId:a.id, studentId:s.id, done:true });
+            store.save(); renderAssignments();
+          });
+          row.appendChild(name); row.appendChild(doneBtn); list.appendChild(row);
+        });
+        card.appendChild(title); card.appendChild(list); assignmentsList.appendChild(card);
+      });
+    }
+    document.getElementById('createAssignmentBtn').addEventListener('click', () => {
+      const title = document.getElementById('asTitle').value.trim(); if (!title) return alert('اكتبي عنوان الواجب');
+      const due = document.getElementById('asDue').value; if (!due) return alert('حددي تاريخ التسليم');
+      store.data.assignments.push({ id: store.uid(), title, dueDate: due, classId: classSelect.value });
+      store.save(); document.getElementById('asTitle').value=''; renderAssignments(); alert('تم إنشاء الواجب');
+    });
+
+    function renderTemplatesSelect() {
+      const sel = document.getElementById('msgTemplateSelect');
+      sel.innerHTML = '';
+      store.data.templates.forEach(t=>{
+        const opt = document.createElement('option'); opt.value = t.id; opt.textContent = t.key; sel.appendChild(opt);
+      });
+    }
+    renderTemplatesSelect();
+    document.getElementById('sendMsgBtn').addEventListener('click', () => {
+      const sid = msgStudentSelect.value;
+      const student = store.data.students.find(s=>s.id===sid);
+      if (!student) return alert('اختاري طالب/ة');
+      const tplId = document.getElementById('msgTemplateSelect').value;
+      const tpl = store.data.templates.find(t=>t.id===tplId);
+      const msgText = (tpl?.text || '').replace('{name}', student.name).replace('{title}', document.getElementById('asTitle').value || '');
+      const msg = encodeURIComponent(msgText);
+      const phone = (student.guardianPhone || '').replace(/\D/g,'');
+      if (!phone) return alert('أضيفي رقم ولي الأمر للطالب');
+      const url = `https://wa.me/966${phone.startsWith('0')?phone.slice(1):phone}?text=${msg}`;
+      window.open(url, '_blank');
+    });
+    const templatesEditorBtn = document.createElement('button');
+    templatesEditorBtn.className='secondary'; templatesEditorBtn.textContent='إضافة قالب رسالة';
+    document.getElementById('messages').appendChild(templatesEditorBtn);
+    templatesEditorBtn.addEventListener('click', ()=>{
+      const key = prompt('اسم القالب الظاهر في القائمة') || ''; if (!key.trim()) return;
+      const text = prompt('نص الرسالة (يمكن استخدام {name} و {title})') || ''; if (!text.trim()) return;
+      store.data.templates.push({ id: store.uid(), key, text }); store.save(); renderTemplatesSelect(); alert('تمت إضافة القالب');
+    });
+
+    document.getElementById('weeklyReportBtn').addEventListener('click', () => {
+      const cid = classSelect.value;
+      const start = new Date(todayInput.value); const weekStart = new Date(start); weekStart.setDate(start.getDate()-start.getDay());
+      const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate()+6);
+      const inRange = (d) => { const x=new Date(d); return x>=weekStart && x<=weekEnd; };
+      const rows = [['Student','Date','Present','Assignment','Done']];
+      const studs = store.data.students.filter(s=>s.classId===cid);
+      studs.forEach(s=>{
+        store.data.attendance.filter(a=>a.classId===cid && a.studentId===s.id && inRange(a.date))
+          .forEach(a=>rows.push([s.name,a.date,a.present?'Yes':'No','','']));
+        store.data.assignments.filter(a=>a.classId===cid && inRange(a.dueDate)).forEach(a=>{
+          const done = !!store.data.submissions.find(x=>x.assignmentId===a.id && x.studentId===s.id);
+          rows.push([s.name,a.dueDate,'',a.title,done?'Yes':'No']);
+        });
+      });
+      const csv = rows.map(r=>r.join(',')).join('\n');
+      const blob = new Blob([csv], {type:'text/csv'});
+      const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='weekly_report.csv'; a.click();
+      document.getElementById('reportStatus').textContent = 'تم تنزيل تقرير CSV';
+    });
+
+    document.getElementById('savePinBtn').addEventListener('click', () => {
+      const pin = document.getElementById('pinInput').value.trim();
+      if (pin && !/^\d{4}$/.test(pin)) return alert('أدخلي 4 أرقام');
+      store.data.pin = pin; store.save(); alert('تم الحفظ');
+    });
+    async function enforcePin(){
+      const pin = store.data.pin; if (!pin) return;
+      while (true) {
+        const out = await openModal('رمز الدخول', [
+          { id:'pinEntry', label:'أدخلي رمز الدخول', placeholder:'****', type:'password' }
+        ]);
+        if (!out) continue;
+        if (out.pinEntry === pin) break;
+        showToast('رمز غير صحيح');
+      }
+    }
+    enforcePin();
+
+    document.querySelectorAll('nav button').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
+        document.getElementById(btn.dataset.tab).classList.add('active');
+      });
+    });
+    document.getElementById('studentSearch').addEventListener('input', ()=> renderStudentsForClass());
+
+    document.getElementById('exportBtn').addEventListener('click', ()=>{
+      const blob = new Blob([JSON.stringify(store.data)], {type:'application/json'});
+      const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='teacher_app_backup.json'; a.click();
+    });
+    document.getElementById('importBtn').addEventListener('click', ()=> document.getElementById('importFile').click());
+    document.getElementById('importFile').addEventListener('change', async (e)=>{
+      const file = e.target.files[0]; if (!file) return;
+      try { const text = await file.text(); const data = JSON.parse(text);
+        if (!data.classes || !data.students) throw new Error('ملف غير صحيح');
+        store.data = data; store.save(); renderClassSelect(); renderStudentsForClass(); renderAssignments();
+        alert('تم الاستيراد بنجاح');
+      } catch { alert('فشل الاستيراد'); }
+    });
+
+    renderClassSelect(); renderStudentsForClass(); renderAssignments();
+    renderPrepList();
+    classSelect.addEventListener('change', ()=>{ renderStudentsForClass(); renderAssignments(); renderPrepList(); });
+
+    // Settings: add theme toggle
+    const settingsSection = document.getElementById('settings');
+    const themeCard = document.createElement('div'); themeCard.className='card';
+    themeCard.innerHTML = `
+      <div class="input">
+        <label>الوضع الداكن</label>
+        <select id="themeSelect">
+          <option value="">افتراضي النظام</option>
+          <option value="light">فاتح</option>
+          <option value="dark">داكن</option>
+        </select>
+      </div>`;
+    settingsSection.appendChild(themeCard);
+    const themeSelect = document.getElementById('themeSelect');
+    themeSelect.value = store.data.theme || '';
+    themeSelect.addEventListener('change', ()=>{
+      store.data.theme = themeSelect.value;
+      store.save();
+      document.documentElement.setAttribute('data-theme', store.data.theme || '');
+      showToast('تم تطبيق المظهر');
+    });
+
+    // Share App QR Code
+    const shareCard = document.createElement('div'); shareCard.className='card';
+    shareCard.innerHTML = `
+      <div style="text-align:center;">
+        <h3>مشاركة التطبيق (QR Code)</h3>
+        <p class="muted">امسحي الكود أو شاركيه مع المعلمات</p>
+        <div id="qrContainer" style="margin:16px 0;"></div>
+        <p id="appLinkText" style="direction:ltr; font-family:monospace; word-break:break-all; font-size:0.9rem;"></p>
+        <button id="copyLinkBtn" class="secondary">نسخ الرابط</button>
+      </div>
+    `;
+    settingsSection.appendChild(shareCard);
+    
+    const currentUrl = window.location.href.split('#')[0].split('?')[0]; 
+    document.getElementById('appLinkText').textContent = currentUrl;
+    
+    const qrImg = document.createElement('img');
+    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(currentUrl)}`;
+    qrImg.alt = 'QR Code';
+    qrImg.style.maxWidth = '100%';
+    qrImg.style.border = '1px solid #ddd';
+    qrImg.style.padding = '8px';
+    qrImg.style.borderRadius = '8px';
+    document.getElementById('qrContainer').appendChild(qrImg);
+
+    document.getElementById('copyLinkBtn').addEventListener('click', () => {
+       navigator.clipboard.writeText(currentUrl).then(() => showToast('تم نسخ الرابط'));
+    });
+
+    // Prep (lesson preparation)
+    if (!Array.isArray(store.data.preps)) store.data.preps = [];
+
+    const suggestPrepBtn = document.getElementById('suggestPrepBtn');
+    if (suggestPrepBtn) {
+      suggestPrepBtn.addEventListener('click', ()=>{
+        const subject = document.getElementById('prepSubject').value;
+        const suggestions = {
+          'اللغة العربية': { topic:'القراءة الجهرية', objectives:'- قراءة النص قراءة صحيحة.\n- فهم معاني الكلمات الجديدة.', activities:'- قراءة المعلمة النموذجية.\n- القراءة الزمرية.\n- مناقشة الأفكار.', materials:'الكتاب المدرسي، السبورة، بطاقات الكلمات', homework:'نسخ الفقرة الأولى' },
+          'الرياضيات': { topic:'الجمع', objectives:'- التعرف على مفهوم الجمع.\n- جمع عددين ضمن 99.', activities:'- استخدام المحسوسات.\n- حل مسائل على السبورة.\n- العمل في الكتاب.', materials:'عدادات، مكعبات، السبورة', homework:'حل صفحة التمارين' },
+          'العلوم': { topic:'أجزاء النبات', objectives:'- تحديد أجزاء النبات الرئيسية.\n- معرفة وظيفة كل جزء.', activities:'- عرض نبات حقيقي.\n- رسم أجزاء النبات.\n- فيديو تعليمي.', materials:'نبتة حقيقية، عدسة مكبرة، فيديو', homework:'رسم نبتة وتلوينها' },
+          'الدراسات الإسلامية': { topic:'أركان الإسلام', objectives:'- تعداد أركان الإسلام الخمسة.\n- حفظ حديث بني الإسلام على خمس.', activities:'- انشودة أركان الإسلام.\n- تلوين شجرة الأركان.', materials:'لوحة أركان الإسلام، مسجل', homework:'تسميع الحديث غداً' },
+          'الاجتماعيات': { topic:'أسرتي', objectives:'- التعرف على مفهوم الأسرة.\n- احترام الوالدين.', activities:'- عرض صور لأسرة.\n- تحدث الطالبات عن أسرهن.', materials:'صور، لوحات', homework:'إلصاق صورة للأسرة' },
+          'الفنون': { topic:'الألوان الأساسية', objectives:'- التعرف على الألوان الأساسية.\n- التمييز بينها.', activities:'- عرض نماذج ملونة.\n- التلوين بالألوان المائية.', materials:'كراسة، ألوان مائية', homework:'رسم منظر طبيعي' },
+          'البدنية': { topic:'الوقوف الصحيح', objectives:'- معرفة وضعية الوقوف الصحيح.\n- تطبيق الوقوف في الطابور.', activities:'- تمارين الإحماء.\n- تطبيق الوقوف المعتدل.', materials:'صافرة، ساحة', homework:'ممارسة المشي' }
+        };
+        const s = suggestions[subject] || { topic:'درس عام', objectives:'- هدف معرفي.\n- هدف وجداني.', activities:'- التمهيد.\n- العرض.\n- التطبيق.', materials:'السبورة، الكتاب', homework:'' };
+        
+        document.getElementById('prepTopic').value = s.topic;
+        document.getElementById('prepObjectives').value = s.objectives;
+        document.getElementById('prepActivities').value = s.activities;
+        document.getElementById('prepMaterials').value = s.materials;
+        document.getElementById('prepHomework').value = s.homework;
+        showToast('تم تعبئة اقتراح لـ ' + subject);
+      });
+    }
+
+    document.getElementById('savePrepBtn').addEventListener('click', ()=>{
+      const classId = classSelect.value;
+      const date = (prepDateInput && prepDateInput.value) || todayInput.value;
+      const subject = document.getElementById('prepSubject').value;
+      const topic = document.getElementById('prepTopic').value.trim();
+      const objectives = document.getElementById('prepObjectives').value.trim();
+      const activities = document.getElementById('prepActivities').value.trim();
+      const materials = document.getElementById('prepMaterials').value.trim();
+      const homework = document.getElementById('prepHomework').value.trim();
+      const notes = document.getElementById('prepNotes').value.trim();
+      if (!topic) return showToast('اكتبي عنوان الدرس');
+      const prep = { id: store.uid(), classId, date, subject, topic, objectives, activities, materials, homework, notes };
+      store.data.preps.push(prep); store.save();
+      renderPrepList(); showToast('تم حفظ التحضير');
+    });
+    function renderPrepList(){
+      const cid = classSelect.value;
+      const fdate = prepFilterDateInput && prepFilterDateInput.value;
+      const items = store.data.preps.filter(p => p.classId===cid && (!fdate || p.date===fdate));
+      prepList.innerHTML = '';
+      if (!items.length) { prepList.innerHTML = '<div class="muted">لا يوجد تحضير لهذا التاريخ</div>'; return; }
+      items.forEach(p=>{
+        const card = document.createElement('div'); card.className='card';
+        const title = document.createElement('div'); title.style.fontWeight='600';
+        title.textContent = `${p.subject} — ${p.topic} (${p.date})`;
+        const body = document.createElement('div'); body.style.marginTop='8px';
+        body.innerHTML = `
+          <div><span class="muted">الأهداف:</span> ${p.objectives || '-'}</div>
+          <div><span class="muted">الأنشطة:</span> ${p.activities || '-'}</div>
+          <div><span class="muted">الوسائل:</span> ${p.materials || '-'}</div>
+          <div><span class="muted">الواجب:</span> ${p.homework || '-'}</div>
+          <div><span class="muted">ملاحظات:</span> ${p.notes || '-'}</div>`;
+        const actions = document.createElement('div'); actions.style.display='flex'; actions.style.gap='8px'; actions.style.marginTop='8px';
+        const printBtn = document.createElement('button'); printBtn.className='secondary'; printBtn.textContent='طباعة ورقة التحضير';
+        printBtn.addEventListener('click', ()=> printPrep(p));
+        const delBtn = document.createElement('button'); delBtn.className='danger'; delBtn.textContent='حذف';
+        delBtn.addEventListener('click', ()=>{
+          if (!confirm('تأكيد حذف التحضير؟')) return;
+          store.data.preps = store.data.preps.filter(x=>x.id!==p.id); store.save(); renderPrepList();
+        });
+        actions.appendChild(printBtn); actions.appendChild(delBtn);
+        card.appendChild(title); card.appendChild(body); card.appendChild(actions);
+        prepList.appendChild(card);
+      });
+    }
+    function printPrep(p){
+      const html = `
+      <html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>ورقة تحضير</title>
+      <style>
+      body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;padding:24px;color:#222}
+      h2{margin:0 0 12px 0;color:#2c3e50}
+      .row{margin-bottom:8px}
+      .label{color:#555;font-weight:bold}
+      .box{border:1px solid #ddd;border-radius:8px;padding:12px;margin-top:6px}
+      </style></head><body>
+      <h2>ورقة تحضير الدرس</h2>
+      <div class="row"><span class="label">الفصل:</span> ${store.data.classes.find(c=>c.id===p.classId)?.name || ''}</div>
+      <div class="row"><span class="label">التاريخ:</span> ${p.date}</div>
+      <div class="row"><span class="label">المادة:</span> ${p.subject}</div>
+      <div class="row"><span class="label">عنوان الدرس:</span> ${p.topic}</div>
+      <div class="box"><div class="label">الأهداف</div><div>${(p.objectives||'').replace(/\n/g,'<br>') || '-'}</div></div>
+      <div class="box"><div class="label">الأنشطة / الاستراتيجيات</div><div>${(p.activities||'').replace(/\n/g,'<br>') || '-'}</div></div>
+      <div class="box"><div class="label">الوسائل / المواد</div><div>${(p.materials||'').replace(/\n/g,'<br>') || '-'}</div></div>
+      <div class="box"><div class="label">الواجب</div><div>${(p.homework||'').replace(/\n/g,'<br>') || '-'}</div></div>
+      <div class="box"><div class="label">ملاحظات تقييمية</div><div>${(p.notes||'').replace(/\n/g,'<br>') || '-'}</div></div>
+      </body></html>`;
+      const w = window.open('', '_blank'); w.document.write(html); w.document.close();
+      w.focus();
+      w.print();
+    }
+    prepFilterDateInput && prepFilterDateInput.addEventListener('change', renderPrepList);
+    document.getElementById('exportPrepBtn').addEventListener('click', ()=>{
+      const cid = classSelect.value;
+      const fdate = prepFilterDateInput && prepFilterDateInput.value;
+      const rows = [['الفصل','التاريخ','المادة','عنوان الدرس','الأهداف','الأنشطة','الوسائل','الواجب','ملاحظات']];
+      const cname = (store.data.classes.find(c=>c.id===cid)?.name) || '';
+      const esc = (s)=>('"'+String(s||'').replace(/"/g,'""').replace(/\r?\n/g,' ').trim()+'"');
+      store.data.preps.filter(p=>p.classId===cid && (!fdate || p.date===fdate)).forEach(p=>{
+        rows.push([cname,p.date,p.subject,p.topic,p.objectives,p.activities,p.materials,p.homework,p.notes].map(esc));
+      });
+      const bom = '\ufeff';
+      const csv = bom + rows.map(r=>Array.isArray(r)?r.join(','):r).join('\n');
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download = fdate ? `تحضير_${cname}_${fdate}.csv` : `تحضير_${cname}.csv`; a.click();
+    });
+
+    // Prep V2: إعادة بناء وفرض الأحداث الجديدة
+    (function rebuildPrepModule(){
+      if (!Array.isArray(store.data.preps)) store.data.preps = [];
+      const prepSearchInput = document.getElementById('prepSearch');
+      let editingPrepId = null;
+      function getClassName(cid){ return (store.data.classes.find(c=>c.id===cid)?.name) || ''; }
+      function collectPrepForm(){
+        return {
+          classId: classSelect.value,
+          date: (prepDateInput && prepDateInput.value) || todayInput.value,
+          subject: document.getElementById('prepSubject').value,
+          topic: document.getElementById('prepTopic').value.trim(),
+          objectives: document.getElementById('prepObjectives').value.trim(),
+          activities: document.getElementById('prepActivities').value.trim(),
+          materials: document.getElementById('prepMaterials').value.trim(),
+          homework: document.getElementById('prepHomework').value.trim(),
+          notes: document.getElementById('prepNotes').value.trim(),
+        };
+      }
+      function resetPrepForm(){
+        document.getElementById('prepTopic').value='';
+        document.getElementById('prepObjectives').value='';
+        document.getElementById('prepActivities').value='';
+        document.getElementById('prepMaterials').value='';
+        document.getElementById('prepHomework').value='';
+        document.getElementById('prepNotes').value='';
+        editingPrepId = null;
+      }
+      const btnSaveOld = document.getElementById('savePrepBtn');
+      const btnSaveNew = btnSaveOld.cloneNode(true);
+      btnSaveOld.parentNode.replaceChild(btnSaveNew, btnSaveOld);
+      btnSaveNew.addEventListener('click', ()=>{
+        const data = collectPrepForm();
+        if (!data.topic) return showToast('اكتبي عنوان الدرس');
+        if (editingPrepId){
+          const existing = store.data.preps.find(x=>x.id===editingPrepId);
+          if (existing) Object.assign(existing, data);
+          editingPrepId = null;
+        } else {
+          store.data.preps.push({ id: store.uid(), ...data });
+        }
+        store.save();
+        renderPrepListV2();
+        showToast('تم حفظ التحضير');
+      });
+      const btnReset = document.getElementById('resetPrepBtn');
+      btnReset.addEventListener('click', resetPrepForm);
+      function renderPrepListV2(){
+        const cid = classSelect.value;
+        const fdate = prepFilterDateInput && prepFilterDateInput.value;
+        const q = (prepSearchInput && prepSearchInput.value || '').trim();
+        const items = store.data.preps
+          .filter(p => p.classId===cid && (!fdate || p.date===fdate) && (!q || p.topic.includes(q)));
+        prepList.innerHTML = '';
+        if (!items.length) { prepList.innerHTML = '<div class="muted">لا يوجد تحضير حسب الفلترة الحالية</div>'; return; }
+        items.forEach(p=>{
+          const card = document.createElement('div'); card.className='card';
+          const title = document.createElement('div'); title.style.fontWeight='600';
+          title.textContent = `${p.subject} — ${p.topic} (${p.date})`;
+          const body = document.createElement('div'); body.style.marginTop='8px';
+          body.innerHTML = `
+            <div><span class="muted">الأهداف:</span> ${p.objectives || '-'}</div>
+            <div><span class="muted">الأنشطة:</span> ${p.activities || '-'}</div>
+            <div><span class="muted">الوسائل:</span> ${p.materials || '-'}</div>
+            <div><span class="muted">الواجب:</span> ${p.homework || '-'}</div>
+            <div><span class="muted">ملاحظات:</span> ${p.notes || '-'}</div>`;
+          const actions = document.createElement('div'); actions.style.display='flex'; actions.style.gap='8px'; actions.style.marginTop='8px';
+          const editBtn = document.createElement('button'); editBtn.className='secondary'; editBtn.textContent='تحرير';
+          editBtn.addEventListener('click', ()=>{
+            document.getElementById('prepDate').value = p.date;
+            document.getElementById('prepSubject').value = p.subject;
+            document.getElementById('prepTopic').value = p.topic;
+            document.getElementById('prepObjectives').value = p.objectives || '';
+            document.getElementById('prepActivities').value = p.activities || '';
+            document.getElementById('prepMaterials').value = p.materials || '';
+            document.getElementById('prepHomework').value = p.homework || '';
+            document.getElementById('prepNotes').value = p.notes || '';
+            editingPrepId = p.id;
+            showToast('وضع التحرير مُفعّل');
+          });
+          const printBtn = document.createElement('button'); printBtn.className='secondary'; printBtn.textContent='طباعة ورقة التحضير';
+          printBtn.addEventListener('click', ()=> printPrepV2(p));
+          const delBtn = document.createElement('button'); delBtn.className='danger'; delBtn.textContent='حذف';
+          delBtn.addEventListener('click', ()=>{
+            if (!confirm('تأكيد حذف التحضير؟')) return;
+            store.data.preps = store.data.preps.filter(x=>x.id!==p.id); store.save(); renderPrepListV2();
+          });
+          actions.appendChild(editBtn); actions.appendChild(printBtn); actions.appendChild(delBtn);
+          card.appendChild(title); card.appendChild(body); card.appendChild(actions);
+          prepList.appendChild(card);
+        });
+      }
+      function printPrepV2(p){
+        const iframe = document.createElement('iframe');
+        iframe.style.position='fixed'; iframe.style.right='0'; iframe.style.bottom='0';
+        iframe.style.width='0'; iframe.style.height='0'; iframe.style.border='0';
+        document.body.appendChild(iframe);
+        const doc = iframe.contentWindow.document;
+        const html = doc.documentElement;
+        html.setAttribute('dir','rtl'); html.setAttribute('lang','ar');
+        const head = doc.head || doc.createElement('head'); doc.appendChild(head);
+        const meta = doc.createElement('meta'); meta.setAttribute('charset','UTF-8'); head.appendChild(meta);
+        const title = doc.createElement('title'); title.textContent = 'ورقة تحضير'; head.appendChild(title);
+        const style = doc.createElement('style');
+        style.textContent = `
+          body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;margin:0;padding:24px;color:#222}
+          h2{margin:0 0 12px 0;color:#2c3e50}
+          .row{margin-bottom:8px}
+          .label{color:#555;font-weight:bold}
+          .box{border:1px solid #ddd;border-radius:8px;padding:12px;margin-top:6px}
+          @page { size: A4; margin: 16mm; }
+        `;
+        head.appendChild(style);
+        const body = doc.body || doc.createElement('body'); doc.appendChild(body);
+        const h2 = doc.createElement('h2'); h2.textContent='ورقة تحضير الدرس'; body.appendChild(h2);
+        function row(label,text){
+          const d = doc.createElement('div'); d.className='row';
+          const s = doc.createElement('span'); s.className='label'; s.textContent=label+' ';
+          d.appendChild(s); d.appendChild(doc.createTextNode(text||'')); return d;
+        }
+        function box(label,htmlContent){
+          const b = doc.createElement('div'); b.className='box';
+          const l = doc.createElement('div'); l.className='label'; l.textContent=label; b.appendChild(l);
+          const c = doc.createElement('div'); c.innerHTML = htmlContent || '-'; b.appendChild(c); return b;
+        }
+        body.appendChild(row('الفصل:', getClassName(p.classId)));
+        body.appendChild(row('التاريخ:', p.date));
+        body.appendChild(row('المادة:', p.subject));
+        body.appendChild(row('عنوان الدرس:', p.topic));
+        const br = (s)=>String(s||'').replace(/\\n/g,'<br>');
+        body.appendChild(box('الأهداف', br(p.objectives)));
+        body.appendChild(box('الأنشطة / الاستراتيجيات', br(p.activities)));
+        body.appendChild(box('الوسائل / المواد', br(p.materials)));
+        body.appendChild(box('الواجب', br(p.homework)));
+        body.appendChild(box('ملاحظات تقييمية', br(p.notes)));
+        setTimeout(()=>iframe.contentWindow.print(), 50);
+        iframe.contentWindow.addEventListener('afterprint', ()=> { document.body.removeChild(iframe); }, { once:true });
+      }
+      // إعادة ربط الفلاتر
+      const fOld = prepFilterDateInput; fOld && fOld.addEventListener('change', renderPrepListV2);
+      prepSearchInput && prepSearchInput.addEventListener('input', renderPrepListV2);
+      // أول عرض
+      renderPrepListV2();
+      // تبديل مستمع تغيير الفصل ليستخدم V2
+      const classSelOld = classSelect;
+      classSelOld.addEventListener('change', renderPrepListV2);
+      // زر التصدير يبقى كما هو ويقرأ من الفلاتر الحالية
+
+      // --- Auto Prep Suggestion ---
+      const samplePreps = {
+        'اللغة العربية': [
+            { topic: 'حرف (أ)', objectives: '1- أن تتعرف الطالبة على حرف الألف.\n2- أن تنطق الحرف بالحركات الثلاث.', activities: 'عرض بطاقات للحرف - كتابة الحرف في الهواء', materials: 'بطاقات حروف - سبورة', homework: 'كتابة حرف أ في الدفتر' },
+            { topic: 'قراءة نص قصير', objectives: '1- أن تقرأ الطالبة النص قراءة صحيحة.\n2- أن تستخرج الكلمات التي بها مد.', activities: 'القراءة الزمرية - القراءة الفردية', materials: 'الكتاب المدرسي', homework: 'نسخ السطر الأول' }
+        ],
+        'الرياضيات': [
+            { topic: 'الجمع البسيط', objectives: '1- أن تجمع الطالبة عددين ضمن 10.\n2- أن تستخدم المحسوسات في الجمع.', activities: 'استخدام العداد - حل مسائل على السبورة', materials: 'عدادات - أقلام ملونة', homework: 'حل صفحة التمارين رقم 5' },
+            { topic: 'الأشكال الهندسية', objectives: '1- أن تميز الطالبة بين المربع والمستطيل.\n2- أن تذكر أمثلة من الفصل.', activities: 'البحث عن أشكال في الفصل - الرسم', materials: 'مجسمات هندسية', homework: 'رسم شكل دائرة ومربع' }
+        ],
+        'العلوم': [
+            { topic: 'أجزاء النبات', objectives: '1- أن تعدد الطالبة أجزاء النبات.\n2- أن تذكر وظيفة الجذر.', activities: 'عرض نبتة حقيقية - رسم أجزاء النبات', materials: 'نبتة - لوحة توضيحية', homework: 'رسم نبتة وتلوينها' }
+        ],
+        'الدراسات الإسلامية': [
+            { topic: 'آداب الطعام', objectives: '1- أن تذكر الطالبة دعاء ما قبل الطعام.\n2- أن تطبق آداب الأكل باليمين.', activities: 'تمثيل دور - عرض فيديو كرتوني', materials: 'شاشة عرض', homework: 'تطبيق الآداب في المنزل' }
+        ]
+      };
+      
+      const suggestBtn = document.getElementById('suggestPrepBtn');
+      if(suggestBtn){
+        suggestBtn.addEventListener('click', ()=>{
+            const subj = document.getElementById('prepSubject').value;
+            const samples = samplePreps[subj];
+            if(!samples || !samples.length) return showToast('لا توجد اقتراحات لهذه المادة حالياً');
+            
+            // Pick random
+            const p = samples[Math.floor(Math.random() * samples.length)];
+            document.getElementById('prepTopic').value = p.topic;
+            document.getElementById('prepObjectives').value = p.objectives;
+            document.getElementById('prepActivities').value = p.activities;
+            document.getElementById('prepMaterials').value = p.materials;
+            document.getElementById('prepHomework').value = p.homework;
+            showToast('تم تعبئة اقتراح تحضير ✨');
+        });
+      }
+
+    })();
+
+    // --- Tools Logic (Random Picker & Timer) ---
+    (function initTools(){
+      const pickRandomBtn = document.getElementById('pickRandomBtn');
+      const randomPickerResult = document.getElementById('randomPickerResult');
+      let pickInterval = null;
+      if(pickRandomBtn){
+        pickRandomBtn.addEventListener('click', () => {
+          const cid = classSelect.value;
+          const students = store.data.students.filter(s => s.classId === cid);
+          if (!students.length) { showToast('لا يوجد طلاب في هذا الفصل'); return; }
+          if (pickInterval) clearInterval(pickInterval);
+          let count = 0;
+          pickRandomBtn.disabled = true;
+          pickInterval = setInterval(() => {
+            const random = students[Math.floor(Math.random() * students.length)];
+            randomPickerResult.textContent = random.name;
+            count++;
+            if (count > 20) {
+              clearInterval(pickInterval);
+              pickInterval = null;
+              pickRandomBtn.disabled = false;
+              randomPickerResult.style.transform = 'scale(1.2)';
+              setTimeout(() => randomPickerResult.style.transform = 'scale(1)', 200);
+            }
+          }, 100);
+        });
+      }
+
+      const timerDisplay = document.getElementById('timerDisplay');
+      let timerSeconds = 300; 
+      let timerInterval = null;
+      function updateTimerDisplay() {
+        const m = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
+        const s = (timerSeconds % 60).toString().padStart(2, '0');
+        if(timerDisplay) timerDisplay.textContent = `${m}:${s}`;
+      }
+      const tAdd = document.getElementById('timerAdd1');
+      const tSub = document.getElementById('timerSub1');
+      const tStart = document.getElementById('timerStartBtn');
+      const tPause = document.getElementById('timerPauseBtn');
+      const tReset = document.getElementById('timerResetBtn');
+
+      if(tAdd) tAdd.addEventListener('click', () => { timerSeconds += 60; updateTimerDisplay(); });
+      if(tSub) tSub.addEventListener('click', () => { if(timerSeconds>=60) timerSeconds -= 60; updateTimerDisplay(); });
+      if(tStart) tStart.addEventListener('click', () => {
+        if (timerInterval) return;
+        timerInterval = setInterval(() => {
+          if (timerSeconds > 0) {
+            timerSeconds--;
+            updateTimerDisplay();
+          } else {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            showToast('انتهى الوقت!');
+            try{ new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play().catch(()=>{}); }catch(e){}
+          }
+        }, 1000);
+      });
+      if(tPause) tPause.addEventListener('click', () => { clearInterval(timerInterval); timerInterval = null; });
+      if(tReset) tReset.addEventListener('click', () => { clearInterval(timerInterval); timerInterval = null; timerSeconds = 300; updateTimerDisplay(); });
+    })();
+  </script>
+</body>
+</html>

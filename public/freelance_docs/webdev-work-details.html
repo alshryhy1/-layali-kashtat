@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>بيان عمل لمطور مواقع إلكترونية مع صور توضيحية</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #ffffff;
+            color: #333333;
+            margin: 0;
+            padding: 40px;
+            line-height: 1.7;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 26px;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+        h2 {
+            font-size: 20px;
+            margin-top: 30px;
+            margin-bottom: 10px;
+            color: #34495e;
+        }
+        .subtitle {
+            color: #7f8c8d;
+            margin-bottom: 25px;
+        }
+        .label {
+            font-weight: bold;
+        }
+        .box {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 10px;
+        }
+        .screenshot {
+            width: 100%;
+            max-width: 850px;
+            border-radius: 6px;
+            border: 1px solid #e1e1e1;
+            margin-top: 10px;
+        }
+        a {
+            color: #2980b9;
+            text-decoration: none;
+            direction: ltr;
+            display: inline-block;
+            margin-top: 5px;
+        }
+        .print-btn-container {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #f0f8ff;
+            border-radius: 8px;
+            border: 1px dashed #2980b9;
+        }
+        .print-btn {
+            background-color: #2980b9;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .print-btn:hover {
+            background-color: #3498db;
+        }
+        @media print {
+            body { padding: 20px; }
+            .print-btn-container { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-btn-container">
+        <p style="margin: 0 0 10px 0;">اضغط الزر أدناه لحفظ الملف كـ PDF</p>
+        <button class="print-btn" onclick="window.print()">
+            💾 حفظ الملف كـ PDF
+        </button>
+    </div>
+
+    <div class="container">
+        <h1>بيان عمل لمطور مواقع إلكترونية</h1>
+        <div class="subtitle">شرح عمل منفذ مع صور توضيحية لموقع إلكتروني</div>
+
+        <h2>أولاً: بيانات مقدم العمل</h2>
+        <div class="box">
+            <p><span class="label">الاسم:</span> حسن خميس زيدان الشمري</p>
+            <p><span class="label">المهنة في منصة العمل الحر:</span> برمجة وتطوير المواقع الإلكترونية</p>
+        </div>
+
+        <h2>ثانياً: وصف مختصر للعمل المنفذ</h2>
+        <div class="box">
+            <p>
+                تم تنفيذ موقع إلكتروني متكامل لمنصة "ليالي كشتات" متخصص في تنظيم وحجوزات الرحلات البرية والمخيمات.
+                يشمل العمل تصميم الصفحات، برمجة الواجهة الأمامية، تجهيز نماذج استقبال الطلبات، وربط المشروع بالاستضافة
+                والنطاق الرسمي.
+            </p>
+            <p>
+                تم الاعتماد على تقنيات الويب الحديثة لضمان سهولة الاستخدام على الجوال والكمبيوتر، مع إمكانية تطوير
+                الموقع مستقبلاً لإضافة مزايا جديدة حسب الحاجة.
+            </p>
+        </div>
+
+        <h2>ثالثاً: رابط العمل المنفذ</h2>
+        <div class="box">
+            <p>
+                يمكن الاطلاع على الموقع المنشور من خلال الرابط التالي:
+            </p>
+            <a href="https://www.layalikashtat.com">https://www.layalikashtat.com</a>
+        </div>
+
+        <h2>رابعاً: صور توضح العمل المنفذ</h2>
+        <div class="box">
+            <p>
+                الصورة التالية توضح الصفحة الرئيسية لموقع "ليالي كشتات" بعد النشر على النطاق
+                <span class="label">www.layalikashtat.com</span> مع عرض الخيارات الأساسية للمستخدم.
+            </p>
+            <img src="layali-home.png.png" alt="الواجهة الرئيسية لموقع ليالي كشتات بعد النشر على النطاق الرسمي" class="screenshot">
+        </div>
+
+        <div class="box">
+            <p>
+                الصورة التالية مثال على صفحة إدخال الطلب في الموقع، حيث يمكن لمقدم الخدمة أو العميل تعبئة البيانات
+                المطلوبة ليتم حفظها ومتابعتها من داخل المنصة.
+            </p>
+            <img src="layali-request.png.png" alt="صفحة تعبئة طلب خدمة في موقع ليالي كشتات" class="screenshot">
+        </div>
+    </div>
+</body>
+</html>

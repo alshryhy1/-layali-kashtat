@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>ملف سابقة أعمال - منصة ليالي كشتات</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            margin: 0;
+            padding: 40px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+            background: white;
+            padding: 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-radius: 12px;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        h1 {
+            color: #2c3e50;
+            font-size: 28px;
+            margin: 0 0 10px 0;
+        }
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 18px;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        .info-item label {
+            display: block;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        .section-title {
+            background: #2c3e50;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .tech-badge {
+            background: #e1f5fe;
+            color: #0277bd;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid #b3e5fc;
+        }
+        .proof-box {
+            border: 2px dashed #bdc3c7;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .proof-placeholder {
+            color: #95a5a6;
+            font-style: italic;
+        }
+        .code-snippet {
+            direction: ltr;
+            background: #2d2d2d;
+            color: #ccc;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            text-align: left;
+        }
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 14px;
+            color: #7f8c8d;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>تقرير فني وسابقة أعمال</h1>
+            <div class="subtitle">إثبات مزاولة نشاط "برمجة وتطوير المواقع الإلكترونية"</div>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-item">
+                <label>اسم المطور:</label>
+                <span>حسن خميس زيدان الشمري</span>
+            </div>
+            <div class="info-item">
+                <label>اسم المشروع:</label>
+                <span>منصة ليالي كشتات (Layali Kashtat)</span>
+            </div>
+            <div class="info-item">
+                <label>نوع العمل:</label>
+                <span>تطوير وبرمجة موقع ويب متكامل (Full Stack)</span>
+            </div>
+            <div class="info-item">
+                <label>حالة المشروع:</label>
+                <span>قائم ويعمل (Production Ready)</span>
+            </div>
+        </div>
+
+        <div class="section-title">1. نبذة عن المشروع البرمجي</div>
+        <p>
+            قمت بتطوير منصة "ليالي كشتات" من الصفر، وهي منصة ويب تهدف لتنظيم حجوزات الرحلات البرية. 
+            المشروع ليس مجرد تصميم واجهة، بل نظام متكامل يحتوي على لوحة تحكم، قاعدة بيانات، ونظام إدارة محتوى.
+        </p>
+
+        <div class="section-title">2. التقنيات المستخدمة (Technical Stack)</div>
+        <div class="tech-stack">
+            <span class="tech-badge">Next.js 14 (Framework)</span>
+            <span class="tech-badge">React.js</span>
+            <span class="tech-badge">TypeScript</span>
+            <span class="tech-badge">Tailwind CSS</span>
+            <span class="tech-badge">Supabase (Database)</span>
+            <span class="tech-badge">Vercel Deployment</span>
+        </div>
+        <p style="margin-top: 15px; font-size: 14px; color: #666;">
+            تم بناء المشروع باستخدام هيكلية المجلدات الحديثة (App Router) لضمان سرعة الأداء وتوافقية محركات البحث (SEO).
+        </p>
+
+        <div class="section-title">3. هيكلية المشروع البرمجية (Code Structure)</div>
+        <p>صورة توضح المجلدات البرمجية الحقيقية للمشروع على بيئة التطوير المحلية (VS Code):</p>
+        
+        <!-- هذا المقطع يثبت أنك المالك للكود المصدري -->
+        <div class="code-snippet">
+c:\projects\layali-kashtat\
+├── app\
+│   ├── [locale]\       # دعم تعدد اللغات (عربي/إنجليزي)
+│   ├── api\            # واجهات برمجة التطبيقات (Backend APIs)
+│   ├── dashboard\      # لوحة تحكم الإدارة
+│   └── layout.tsx      # التخطيط العام للصفحات
+├── components\         # عناصر الواجهة القابلة لإعادة الاستخدام
+├── lib\
+│   ├── db.ts          # إعدادات الاتصال بقاعدة البيانات
+│   └── supabaseClient.ts
+├── public\             # الملفات والوسائط
+└── middleware.ts       # نظام الحماية والتحويل
+        </div>
+
+        <div class="section-title">4. إثباتات العمل (Screenshots)</div>
+        
+        <div class="proof-box">
+            <h3>صورة من بيئة التطوير (VS Code)</h3>
+            <p class="proof-placeholder" style="color: #d35400; font-weight: bold;">
+                ⚠️ هام جداً: قم بالتقاط صورة للشاشة الآن (Screenshot) وأنت فاتح هذا الملف في المحرر، وضعها هنا.
+                <br>
+                (صورة الشاشة التي أرسلتها لي في الدردشة ممتازة، فقط ضعها هنا)
+            </p>
+        </div>
+
+        <div class="proof-box">
+            <h3>صورة من واجهة الموقع النهائية</h3>
+            <img src="layali-home.png.png" alt="واجهة الموقع" style="max-width: 100%; border: 1px solid #ddd; border-radius: 4px; margin-top: 10px;">
+            <p class="note">واجهة المستخدم الرئيسية لمنصة ليالي كشتات (تم إدراجها تلقائياً من ملفاتك)</p>
+        </div>
+
+        <div class="proof-box">
+            <h3>صورة من لوحة التحكم</h3>
+            <img src="dashboard.bng.png" alt="لوحة التحكم" style="max-width: 100%; border: 1px solid #ddd; border-radius: 4px; margin-top: 10px;">
+            <p class="note">لوحة تحكم الإدارة والنظام الداخلي (تم إدراجها تلقائياً من ملفاتك)</p>
+        </div>
+
+        <div class="footer">
+            تم إعداد هذا التقرير لإثبات الكفاءة ومزاولة المهنة لاستخراج وثيقة العمل الحر.
+            <br>
+            المطور: حسن الشمري | التاريخ: 2025
+        </div>
+    </div>
+</body>
+</html>

@@ -61,6 +61,10 @@ export default function ServiceStepPage({
     err: isAr ? "تأكد من اختيار المدينة ونوع الخدمة." : "Please select city and service type.",
     cookYes: isAr ? "طبخ" : "Cooking",
     cookNo: isAr ? "بدون طبخ" : "No Cooking",
+    location: isAr ? "رابط الموقع (Google Maps)" : "Location Link (Google Maps)",
+    locationPh: isAr ? "الصق رابط الموقع هنا" : "Paste location link here",
+    locErr: isAr ? "يرجى إضافة رابط الموقع." : "Please add location link.",
+    locProvider: isAr ? "سيقوم مقدم الخدمة بإرسال الموقع لك بعد قبول الطلب." : "The provider will send you the location after accepting the request.",
   };
 
   // المدن (عربي/إنجليزي)
@@ -137,8 +141,34 @@ export default function ServiceStepPage({
   const [equipTent1, setEquipTent1] = React.useState(false); // خيمة
   const [equipTent2, setEquipTent2] = React.useState(false); // خيمتين
 
+  const [locationUrl, setLocationUrl] = React.useState("");
+  const [gettingLoc, setGettingLoc] = React.useState(false);
   const [notes, setNotes] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
+
+  // هل الخدمة تتطلب موقع من العميل؟
+  const isOutdoor = service.includes("كشته") || service.toLowerCase().includes("desert");
+
+  function handleJoyfulGetLocation() {
+    if (!navigator.geolocation) {
+      alert(isAr ? "المتصفح لا يدعم تحديد الموقع." : "Geolocation is not supported by your browser.");
+      return;
+    }
+    setGettingLoc(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        const link = `https://www.google.com/maps?q=${latitude},${longitude}`;
+        setLocationUrl(link);
+        setGettingLoc(false);
+      },
+      (err) => {
+        console.error(err);
+        alert(isAr ? "تعذر تحديد الموقع. يرجى تفعيل الخدمة أو لصق الرابط يدوياً." : "Unable to retrieve your location.");
+        setGettingLoc(false);
+      }
+    );
+  }
 
   // حفظ/قراءة المدينة للطقس في الشريط العلوي
   React.useEffect(() => {
@@ -165,6 +195,11 @@ export default function ServiceStepPage({
       return;
     }
 
+    if (isOutdoor && !locationUrl.trim()) {
+      setError(t.locErr);
+      return;
+    }
+
     const q = new URLSearchParams();
     q.set("name", name);
     q.set("phone", phone);
@@ -173,6 +208,10 @@ export default function ServiceStepPage({
 
     q.set("city", city);
     q.set("service", service);
+
+    if (isOutdoor && locationUrl) {
+      q.set("loc", locationUrl.trim());
+    }
 
     if (group) q.set("group", group);
     if (peopleCount) q.set("people", peopleCount);
@@ -455,6 +494,53 @@ export default function ServiceStepPage({
                 </button>
               </div>
             </div>
+
+            {/* الموقع (يظهر فقط إذا كانت كشته) */}
+            {isOutdoor ? (
+              <div>
+                <label style={labelStyle}>{t.location}</label>
+                <div style={{ position: "relative" }}>
+                  <input
+                    type="text"
+                    value={locationUrl}
+                    onChange={(e) => setLocationUrl(e.target.value)}
+                    placeholder={t.locationPh}
+                    style={{ ...selectStyle, paddingRight: isAr ? 12 : 110, paddingLeft: isAr ? 110 : 12 }}
+                    dir="ltr"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleJoyfulGetLocation}
+                    disabled={gettingLoc}
+                    style={{
+                      position: "absolute",
+                      top: 5,
+                      bottom: 5,
+                      ...(isAr ? { left: 5 } : { right: 5 }),
+                      padding: "0 10px",
+                      borderRadius: 8,
+                      border: "1px solid #ddd",
+                      background: "#f9fafb",
+                      color: "#111",
+                      fontSize: 11,
+                      fontWeight: 800,
+                      cursor: gettingLoc ? "not-allowed" : "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4
+                    }}
+                  >
+                    {gettingLoc ? (isAr ? "..." : "...") : (isAr ? "موقعي الحالي" : "My Location")}
+                    {!gettingLoc && <span style={{fontSize: 14}}>📍</span>}
+                  </button>
+                </div>
+              </div>
+            ) : service ? (
+              <div style={{ padding: "10px 12px", background: "rgba(0,0,0,0.04)", borderRadius: 12 }}>
+                <label style={{ ...labelStyle, marginBottom: 4 }}>{isAr ? "الموقع" : "Location"}</label>
+                <div style={{ fontSize: 13, color: "#555", lineHeight: 1.5 }}>{t.locProvider}</div>
+              </div>
+            ) : null}
 
             {/* ملاحظات صغيرة */}
             <div>

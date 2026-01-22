@@ -77,7 +77,7 @@ export async function POST(req: Request) {
 
   try {
     const r = await db.query(
-      "SELECT ref,status,completed,phone,email,city,service_type,updated_at,accepted_provider_id,accepted_provider_name,accepted_provider_phone,accepted_provider_email,accepted_price_total,accepted_price_currency,accepted_price_notes,accepted_meeting_location,accepted_payment_method,accepted_payment_details FROM customer_requests WHERE ref = $1 LIMIT 1",
+      "SELECT ref,status,completed,phone,email,city,service_type,updated_at,accepted_provider_id,accepted_provider_name,accepted_provider_phone,accepted_provider_email,accepted_price_total,accepted_price_currency,accepted_price_notes,accepted_meeting_location,accepted_payment_method,accepted_payment_details,provider_status,provider_current_lat,provider_current_lng,route_polyline,eta FROM customer_requests WHERE ref = $1 LIMIT 1",
       [ref]
     );
     const row = r.rows[0];
@@ -116,6 +116,11 @@ export async function POST(req: Request) {
       accepted_meeting_location: safeText(row.accepted_meeting_location || ""),
       accepted_payment_method: safeText(row.accepted_payment_method || ""),
       accepted_payment_details: safeText(row.accepted_payment_details || ""),
+      provider_status: safeText(row.provider_status || "accepted"),
+      provider_current_lat: row.provider_current_lat ? Number(row.provider_current_lat) : null,
+      provider_current_lng: row.provider_current_lng ? Number(row.provider_current_lng) : null,
+      route_polyline: row.route_polyline,
+      eta: row.eta ? Number(row.eta) : null,
     });
   } catch (e: any) {
     return jsonError(500, "db_read_failed", "تعذر جلب بيانات الطلب.");

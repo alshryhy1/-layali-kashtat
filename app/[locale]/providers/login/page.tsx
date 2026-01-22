@@ -97,13 +97,13 @@ export default function ProviderLoginPage({ params }: { params: Promise<{ locale
                 const res = await fetch("/api/providers/login/forgot", {
                   method: "POST",
                   headers: { "content-type": "application/json" },
-                  body: JSON.stringify({ email }),
+                  body: JSON.stringify({ email, locale }),
                 });
                 const j = await res.json();
                 if (j && j.ok) {
-                  setMsg(isAr ? "تم إرسال كلمة مرور مؤقتة إلى بريدك." : "A temporary password was sent to your email.");
+                  setMsg(isAr ? "تم إرسال رابط استعادة كلمة المرور إلى بريدك." : "A password reset link was sent to your email.");
                 } else {
-                  setMsg(isAr ? "تعذر الإرسال." : "Could not send.");
+                  setMsg(j.message || (isAr ? "تعذر الإرسال." : "Could not send."));
                 }
               } catch {
                 setMsg(isAr ? "حدث خطأ." : "Error.");

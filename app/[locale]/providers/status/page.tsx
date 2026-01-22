@@ -48,6 +48,7 @@ export default function ProviderStatusPage({
     statusPending: isAr ? "قيد الانتظار" : "Pending",
     statusApproved: isAr ? "مقبول" : "Approved",
     statusRejected: isAr ? "مرفوض" : "Rejected",
+    login: isAr ? "تسجيل الدخول" : "Log In",
   };
 
   const [refInput, setRefInput] = React.useState("");
@@ -314,6 +315,25 @@ export default function ProviderStatusPage({
             <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 6, fontWeight: 900 }}>{t.result}</div>
             <div style={{ fontSize: 16, fontWeight: 900, marginBottom: 4 }}>{result.ref}</div>
             <div style={{ fontSize: 13, fontWeight: 900 }}>{statusLabel(result.status)}</div>
+
+            {result.status === "approved" && (
+              <Link
+                href={`/${locale}/providers/login`}
+                style={{
+                  display: "block",
+                  marginTop: 16,
+                  padding: "12px",
+                  backgroundColor: "#000",
+                  color: "#fff",
+                  borderRadius: 12,
+                  textDecoration: "none",
+                  fontWeight: 900,
+                  fontSize: 14,
+                }}
+              >
+                {t.login || "تسجيل الدخول"}
+              </Link>
+            )}
           </div>
         ) : null}
 

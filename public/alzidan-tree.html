@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8" />
+    <title>شجرة عائلة الزيدان</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+        .page {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 24px 16px 40px;
+        }
+        h1 {
+            font-size: 26px;
+            margin: 0 0 4px 0;
+            color: #1f2933;
+            text-align: center;
+        }
+        .subtitle {
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 20px 16px;
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
+            margin-bottom: 16px;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+        }
+        label {
+            display: block;
+            font-size: 14px;
+            color: #374151;
+            margin-bottom: 4px;
+        }
+        select, input[type="text"], input[type="tel"], input[type="number"], input[type="password"], textarea {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        select:focus, input:focus, textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.2);
+        }
+        .btn {
+            border: none;
+            padding: 9px 18px;
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .btn-primary {
+            background-color: #2563eb;
+            color: #ffffff;
+        }
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+        }
+        .btn-secondary {
+            background-color: #e5e7eb;
+            color: #111827;
+        }
+        .btn-secondary:hover {
+            background-color: #d1d5db;
+        }
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+        .field {
+            margin-bottom: 10px;
+        }
+        .hint {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+        .alert {
+            margin-top: 8px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+        .alert-success {
+            background-color: #ecfdf5;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+        .alert-error {
+            background-color: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            background-color: #eff6ff;
+            color: #1d4ed8;
+        }
+        .section-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin: 4px 0 10px;
+            color: #111827;
+        }
+        .parent-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            margin-bottom: 6px;
+            gap: 8px;
+            font-size: 14px;
+        }
+        .parent-name {
+            font-weight: 500;
+        }
+        .children-list {
+            margin-top: 10px;
+            border-top: 1px dashed #e5e7eb;
+            padding-top: 8px;
+        }
+        .child-row {
+            font-size: 13px;
+            padding: 4px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .child-location {
+            color: #6b7280;
+        }
+        .event-row {
+            font-size: 13px;
+            padding: 6px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .event-meta {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+        @media (max-width: 600px) {
+            .card {
+                padding: 16px 12px;
+            }
+            .parent-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <h1>شجرة عائلة الزيدان</h1>
+        <div class="subtitle">نموذج أولي مستقل لجمع بيانات الأبناء الأحياء وتنظيم فروع العائلة</div>
+
+        <div id="login-card" class="card">
+            <div class="card-header">
+                <div class="card-title">دخول مناديب الفروع</div>
+                <span class="badge">وضع تجريبي بدون ربط حقيقي</span>
+            </div>
+            <div class="grid">
+                <div class="field">
+                    <label for="branch">فرع العائلة</label>
+                    <select id="branch">
+                        <option value="">اختر الفرع</option>
+                        <option value="زيدان">ذرية زيدان بن مطلق بن زيدان</option>
+                        <option value="مزيد">ذرية مزيد بن مطلق بن زيدان</option>
+                        <option value="زايد">ذرية زايد بن مطلق بن زيدان</option>
+                        <option value="لاحم">ذرية لاحم بن مطلق بن زيدان</option>
+                        <option value="ملحم">ذرية ملحم بن مطلق بن زيدان</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="phone">رقم الجوال</label>
+                    <input id="phone" type="tel" placeholder="05xxxxxxxx" />
+                </div>
+                <div class="field">
+                    <label for="code">رمز الدخول</label>
+                    <input id="code" type="password" placeholder="رمز خاص للمندوب" />
+                    <div class="hint">في النسخة التجريبية يكفي اختيار الفرع والضغط على دخول.</div>
+                </div>
+            </div>
+            <button id="login-btn" class="btn btn-primary" type="button">دخول المندوب</button>
+            <div id="login-error" class="alert alert-error" style="display: none;">يرجى اختيار الفرع قبل المتابعة.</div>
+        </div>
+
+        <div id="dashboard-card" class="card" style="display: none;">
+            <div class="card-header">
+                <div>
+                    <div class="card-title" id="branch-title"></div>
+                    <div class="hint">يمكنك إضافة أبناء أحياء لكل أب في هذا الفرع مع العمر والموقع.</div>
+                </div>
+                <button id="logout-btn" class="btn btn-secondary btn-small" type="button">تسجيل الخروج</button>
+            </div>
+
+            <div class="field">
+                <div class="section-title">اختيار الأب</div>
+                <select id="parent-select">
+                    <option value="">اختر الأب لإضافة أبنائه</option>
+                </select>
+                <div class="hint">قائمة الآباء في هذه النسخة تجريبية ويمكن تطويرها لاحقًا.</div>
+            </div>
+
+            <div class="field">
+                <div class="section-title">إضافة أبناء أحياء</div>
+                <div class="grid">
+                    <div>
+                        <label for="child-name-1">اسم الابن</label>
+                        <input id="child-name-1" type="text" placeholder="الاسم الكامل" />
+                    </div>
+                    <div>
+                        <label for="child-year-1">سنة الميلاد</label>
+                        <input id="child-year-1" type="number" placeholder="مثال 1405" />
+                    </div>
+                    <div>
+                        <label for="child-city-1">المدينة</label>
+                        <input id="child-city-1" type="text" placeholder="المدينة" />
+                    </div>
+                    <div>
+                        <label for="child-area-1">الحي / القرية</label>
+                        <input id="child-area-1" type="text" placeholder="حي كذا أو قرية كذا" />
+                    </div>
+                </div>
+                <div class="hint">يمكنك تكرار الإدخال لنفس الأب أكثر من مرة لإضافة باقي الأبناء.</div>
+                <button id="add-child-btn" class="btn btn-primary" type="button" style="margin-top: 8px;">حفظ بيانات الابن</button>
+                <div id="child-alert" class="alert alert-success" style="display: none;">تم حفظ بيانات الابن لهذا الأب في الجلسة الحالية.</div>
+            </div>
+
+            <div class="field">
+                <div class="section-title">أبناء الأب المختار</div>
+                <div id="children-container" class="children-list"></div>
+            </div>
+        </div>
+
+        <div id="events-card" class="card">
+            <div class="card-header">
+                <div>
+                    <div class="card-title">المناسبات العائلية</div>
+                    <div class="hint">تسجيل تهنئة بمولود جديد، تخرج، أو دعاء لمريض.</div>
+                </div>
+            </div>
+            <div class="grid">
+                <div class="field">
+                    <label for="event-type">نوع المناسبة</label>
+                    <select id="event-type">
+                        <option value="">اختر نوع المناسبة</option>
+                        <option value="birth">مولود جديد</option>
+                        <option value="graduation">تخرج</option>
+                        <option value="sick">دعاء لمريض</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="event-person">اسم الشخص</label>
+                    <input id="event-person" type="text" placeholder="الاسم الكامل" />
+                </div>
+                <div class="field">
+                    <label for="event-date">تاريخ المناسبة</label>
+                    <input id="event-date" type="date" />
+                </div>
+            </div>
+            <div class="field">
+                <label for="event-details">تفاصيل إضافية (اختياري)</label>
+                <textarea id="event-details" rows="2" placeholder="مثال: تم إجراء العملية بنجاح، حصل على درجة الماجستير من جامعة ..."></textarea>
+            </div>
+            <button id="add-event-btn" class="btn btn-primary" type="button">إضافة مناسبة</button>
+            <div id="event-alert" class="alert alert-success" style="display: none;">تم تسجيل المناسبة في هذه الجلسة.</div>
+
+            <div class="field" style="margin-top: 14px;">
+                <div class="section-title">آخر المناسبات المسجلة</div>
+                <div id="events-list" class="children-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const parentsByBranch = {
+            "زيدان": ["خميس بن زيدان بن مطلق", "عبدالله بن زيدان بن مطلق"],
+            "مزيد": ["خميس بن مزيد بن مطلق", "محمد بن مزيد بن مطلق"],
+            "زايد": ["فلان بن زايد بن مطلق"],
+            "لاحم": ["فلان بن لاحم بن مطلق"],
+            "ملحم": ["فلان بن ملحم بن مطلق"]
+        };
+
+        const state = {
+            branch: null,
+            children: {},
+            events: []
+        };
+
+        const loginCard = document.getElementById("login-card");
+        const loginBtn = document.getElementById("login-btn");
+        const loginError = document.getElementById("login-error");
+        const branchSelectLogin = document.getElementById("branch");
+        const dashboardCard = document.getElementById("dashboard-card");
+        const branchTitle = document.getElementById("branch-title");
+        const parentSelect = document.getElementById("parent-select");
+        const childName = document.getElementById("child-name-1");
+        const childYear = document.getElementById("child-year-1");
+        const childCity = document.getElementById("child-city-1");
+        const childArea = document.getElementById("child-area-1");
+        const addChildBtn = document.getElementById("add-child-btn");
+        const childAlert = document.getElementById("child-alert");
+        const childrenContainer = document.getElementById("children-container");
+        const logoutBtn = document.getElementById("logout-btn");
+        const eventType = document.getElementById("event-type");
+        const eventPerson = document.getElementById("event-person");
+        const eventDate = document.getElementById("event-date");
+        const eventDetails = document.getElementById("event-details");
+        const addEventBtn = document.getElementById("add-event-btn");
+        const eventAlert = document.getElementById("event-alert");
+        const eventsList = document.getElementById("events-list");
+
+        function calculateAge(year) {
+            const y = parseInt(year, 10);
+            if (!y) return "";
+            const currentYear = new Date().getFullYear();
+            const age = currentYear - y;
+            if (age < 0 || age > 120) return "";
+            return age + " سنة";
+        }
+
+        function renderParentsForBranch(branchKey) {
+            parentSelect.innerHTML = "";
+            const option = document.createElement("option");
+            option.value = "";
+            option.textContent = "اختر الأب لإضافة أبنائه";
+            parentSelect.appendChild(option);
+
+            const parents = parentsByBranch[branchKey] || [];
+            parents.forEach((name) => {
+                const opt = document.createElement("option");
+                opt.value = name;
+                opt.textContent = name;
+                parentSelect.appendChild(opt);
+            });
+        }
+
+        function renderChildrenForParent(parentName) {
+            childrenContainer.innerHTML = "";
+            const key = parentName || "";
+            const list = state.children[key] || [];
+            if (!list.length) {
+                const empty = document.createElement("div");
+                empty.className = "hint";
+                empty.textContent = "لا توجد بيانات مسجلة لهذا الأب في هذه الجلسة.";
+                childrenContainer.appendChild(empty);
+                return;
+            }
+            list.forEach((child) => {
+                const row = document.createElement("div");
+                row.className = "child-row";
+                const ageText = calculateAge(child.year);
+                const parts = [];
+                parts.push(child.name);
+                if (ageText) {
+                    parts.push("العمر: " + ageText);
+                }
+                const main = document.createElement("div");
+                main.textContent = parts.join(" – ");
+                row.appendChild(main);
+                const loc = [];
+                if (child.city) loc.push(child.city);
+                if (child.area) loc.push(child.area);
+                if (loc.length) {
+                    const locDiv = document.createElement("div");
+                    locDiv.className = "child-location";
+                    locDiv.textContent = loc.join("، ");
+                    row.appendChild(locDiv);
+                }
+                childrenContainer.appendChild(row);
+            });
+        }
+
+        function formatEventText(event) {
+            let main = "";
+            if (event.type === "birth") {
+                main = "نبارك لـ " + event.person + " بمولود جديد";
+            } else if (event.type === "graduation") {
+                main = "نبارك لـ " + event.person + " تخرجه";
+            } else if (event.type === "sick") {
+                main = "نسأل الله الشفاء لـ " + event.person;
+            }
+            return main;
+        }
+
+        function renderEvents() {
+            eventsList.innerHTML = "";
+            if (!state.events.length) {
+                const empty = document.createElement("div");
+                empty.className = "hint";
+                empty.textContent = "لا توجد مناسبات مسجلة في هذه الجلسة.";
+                eventsList.appendChild(empty);
+                return;
+            }
+            state.events.slice().reverse().forEach((event) => {
+                const row = document.createElement("div");
+                row.className = "event-row";
+                const main = document.createElement("div");
+                main.textContent = formatEventText(event);
+                row.appendChild(main);
+                const metaParts = [];
+                if (event.dateLabel) {
+                    metaParts.push("التاريخ: " + event.dateLabel);
+                }
+                if (event.details) {
+                    metaParts.push(event.details);
+                }
+                if (metaParts.length) {
+                    const meta = document.createElement("div");
+                    meta.className = "event-meta";
+                    meta.textContent = metaParts.join(" – ");
+                    row.appendChild(meta);
+                }
+                eventsList.appendChild(row);
+            });
+        }
+
+        loginBtn.addEventListener("click", () => {
+            const branchKey = branchSelectLogin.value;
+            if (!branchKey) {
+                loginError.style.display = "block";
+                return;
+            }
+            loginError.style.display = "none";
+            state.branch = branchKey;
+            branchTitle.textContent = "لوحة فرع ذرية " + branchKey + " بن مطلق بن زيدان";
+            renderParentsForBranch(branchKey);
+            loginCard.style.display = "none";
+            dashboardCard.style.display = "block";
+        });
+
+        logoutBtn.addEventListener("click", () => {
+            state.branch = null;
+            parentSelect.value = "";
+            childrenContainer.innerHTML = "";
+            loginCard.style.display = "block";
+            dashboardCard.style.display = "none";
+        });
+
+        parentSelect.addEventListener("change", () => {
+            renderChildrenForParent(parentSelect.value);
+        });
+
+        addChildBtn.addEventListener("click", () => {
+            const parentName = parentSelect.value;
+            if (!parentName) {
+                childAlert.textContent = "يرجى اختيار الأب أولاً.";
+                childAlert.className = "alert alert-error";
+                childAlert.style.display = "block";
+                return;
+            }
+            const name = childName.value.trim();
+            const year = childYear.value.trim();
+            const city = childCity.value.trim();
+            const area = childArea.value.trim();
+            if (!name) {
+                childAlert.textContent = "يرجى إدخال اسم الابن.";
+                childAlert.className = "alert alert-error";
+                childAlert.style.display = "block";
+                return;
+            }
+            if (!state.children[parentName]) {
+                state.children[parentName] = [];
+            }
+            state.children[parentName].push({ name, year, city, area });
+            childName.value = "";
+            childYear.value = "";
+            childCity.value = "";
+            childArea.value = "";
+            childAlert.textContent = "تم حفظ بيانات الابن لهذا الأب في الجلسة الحالية.";
+            childAlert.className = "alert alert-success";
+            childAlert.style.display = "block";
+            renderChildrenForParent(parentName);
+        });
+
+        addEventBtn.addEventListener("click", () => {
+            const type = eventType.value;
+            const person = eventPerson.value.trim();
+            const dateValue = eventDate.value;
+            const details = eventDetails.value.trim();
+            if (!type || !person) {
+                eventAlert.textContent = "يرجى اختيار نوع المناسبة وكتابة اسم الشخص.";
+                eventAlert.className = "alert alert-error";
+                eventAlert.style.display = "block";
+                return;
+            }
+            let dateLabel = "";
+            if (dateValue) {
+                const d = new Date(dateValue);
+                if (!isNaN(d.getTime())) {
+                    const y = d.getFullYear();
+                    const m = (d.getMonth() + 1).toString().padStart(2, "0");
+                    const day = d.getDate().toString().padStart(2, "0");
+                    dateLabel = day + "/" + m + "/" + y;
+                }
+            }
+            state.events.push({ type, person, dateLabel, details });
+            eventType.value = "";
+            eventPerson.value = "";
+            eventDate.value = "";
+            eventDetails.value = "";
+            eventAlert.textContent = "تم تسجيل المناسبة في هذه الجلسة.";
+            eventAlert.className = "alert alert-success";
+            eventAlert.style.display = "block";
+            renderEvents();
+        });
+
+        renderEvents();
+    </script>
+</body>
+</html>

@@ -43,9 +43,29 @@ export default function SiteHeader({ locale }: { locale: Locale }) {
           {isAr ? "ليالي كشتات" : "Layali Kashtat"}
         </strong>
 
-        <div
-          style={{
-            display: "inline-flex",
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <a
+            href={`/${locale}/haraj`}
+            style={{
+              fontSize: 14,
+              fontWeight: 700,
+              textDecoration: "none",
+              color: "#92400e",
+              background: "rgba(146, 64, 14, 0.08)",
+              padding: "6px 12px",
+              borderRadius: 12,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <span>🛍️</span>
+            <span>{isAr ? "حراج" : "Haraj"}</span>
+          </a>
+
+          <div
+            style={{
+              display: "inline-flex",
             alignItems: "center",
             gap: 10,
             flexShrink: 0,
@@ -53,6 +73,7 @@ export default function SiteHeader({ locale }: { locale: Locale }) {
           }}
         >
           <LanguageSwitcher />
+        </div>
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { Client } from "pg";
 
 export const runtime = "nodejs";
 
@@ -28,14 +28,13 @@ function normalizePhone(raw: string) {
 }
 
 export async function GET(req: Request) {
+  const client = new Client({
+    connectionString: process.env.DATABASE_URL,
+    // Add ssl: { rejectUnauthorized: false } if needed for some environments,
+    // but usually DATABASE_URL handles it or default is fine for Supabase pooler
+  });
+
   try {
-    const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SRV = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!SUPABASE_URL || !SRV) {
-      return json(false, { error: "Missing env: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY." }, 500);
-    }
-
     const url = new URL(req.url);
 
     const refRaw = String(url.searchParams.get("ref") || "").trim();
@@ -56,42 +55,42 @@ export async function GET(req: Request) {
       return json(false, { error: "Invalid phone" }, 400);
     }
 
-    // ✅ Server-side (Service Role) to avoid RLS issues
-    const supabase = createClient(SUPABASE_URL, SRV, {
-      auth: { persistSession: false },
-    });
-
-    const { data, error } = await supabase
-      .from("provider_requests")
-      .select("id, phone, status")
-      .eq("id", ref)
-      .single();
-
-    if (error) {
-      // Supabase: if no row found -> return 404 (common patterns: PGRST116)
-      const msg = String((error as any)?.message || "");
-      const code = String((error as any)?.code || "");
-      if (code === "PGRST116" || msg.toLowerCase().includes("0 rows")) {
-        return json(false, { error: "Not found" }, 404);
-      }
-      return json(false, { error: msg || "Server error" }, 500);
+    if (!process.env.DATABASE_URL) {
+      return json(false, { error: "Missing env: DATABASE_URL" }, 500);
     }
 
-    if (!data) return json(false, { error: "Not found" }, 404);
+    await client.connect();
 
-    const dbPhone = normalizePhone(String((data as any).phone || ""));
+    const query = `
+      SELECT id, phone, status 
+      FROM provider_requests 
+      WHERE id = $1 
+      LIMIT 1
+    `;
+    const res = await client.query(query, [ref]);
+
+    if (res.rows.length === 0) {
+      return json(false, { error: "Not found" }, 404);
+    }
+
+    const data = res.rows[0];
+    const dbPhone = normalizePhone(String(data.phone || ""));
+
     if (!dbPhone) return json(false, { error: "Request phone missing in database" }, 500);
 
     if (dbPhone !== phone) {
       return json(false, { error: "Phone mismatch" }, 403);
     }
 
-    const st = String((data as any).status || "pending").toLowerCase();
+    const st = String(data.status || "pending").toLowerCase();
     const normalized = st === "approved" ? "approved" : st === "rejected" ? "rejected" : "pending";
 
     return json(true, { ref, status: normalized, updated_at: null }, 200);
   } catch (e: any) {
+    console.error("Provider Status Error:", e);
     return json(false, { error: e?.message || "Server error" }, 500);
+  } finally {
+    await client.end().catch(() => {});
   }
 }
 

@@ -63,6 +63,7 @@ export default function ConfirmPage({
 
   const city = getParam(sp, "city");
   const service_type = getParam(sp, "service"); // من صفحة options نخزنها في query باسم service
+  const customer_location = getParam(sp, "loc");
   const group_type = getParam(sp, "group");
   const people_count = getParam(sp, "people");
   const cooking = getParam(sp, "cooking"); // yes/no
@@ -108,6 +109,7 @@ export default function ConfirmPage({
     row(isAr ? "الإيميل" : "Email", maskEmail(email)),
     row(isAr ? "المدينة" : "City", city),
     row(isAr ? "نوع الخدمة" : "Service Type", service_type),
+    row(isAr ? "موقع الكشتة" : "Location", customer_location),
     row(isAr ? "نوع الحضور" : "Group", group_type),
     row(isAr ? "عدد الأشخاص" : "People", people_count),
     row(isAr ? "الطبخ" : "Cooking", cookingText),
@@ -140,6 +142,7 @@ export default function ConfirmPage({
         email,
         city,
         service_type, // مطابق للجدول
+        customer_location,
         group_type,
         people_count,
         cooking,
@@ -349,7 +352,7 @@ export default function ConfirmPage({
                   name
                 )}&phone=${encodeURIComponent(phone)}&email=${encodeURIComponent(
                   email
-                )}&accepted=1`}
+                )}&city=${encodeURIComponent(city)}&accepted=1`}
                 style={linkBtn}
               >
                 {t.edit}
