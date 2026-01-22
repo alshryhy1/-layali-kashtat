@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import crypto from "crypto";
 import { db } from "@/lib/db";
+import { verifyAdminSession } from "@/lib/auth-admin";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 import AdminRefSearchBox from "@/components/AdminRefSearchBox";
@@ -30,27 +31,7 @@ type Row = {
 
 type Locale = "ar" | "en";
 
-function verifyAdminSession(token: string | undefined) {
-  if (!token) return false;
-  try {
-    const raw = Buffer.from(token, "base64url").toString("utf8");
-    const [payloadStr, sig] = raw.split(".");
-    if (!payloadStr || !sig) return false;
 
-    const secret = process.env.ADMIN_SESSION_SECRET || "";
-    if (!secret) return false;
-
-    const expectedSig = crypto.createHmac("sha256", secret).update(payloadStr).digest("hex");
-    if (sig !== expectedSig) return false;
-
-    const { exp } = JSON.parse(payloadStr);
-    if (Date.now() > exp) return false;
-
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 function asLocale(v: any): Locale {
   return String(v || "").toLowerCase() === "en" ? "en" : "ar";
