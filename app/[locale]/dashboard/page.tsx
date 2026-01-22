@@ -45,7 +45,18 @@ export default async function DashboardPage({
     const r = await db.query(
       "SELECT id::text as id,name,phone,service_type,city,status,created_at FROM provider_requests ORDER BY created_at DESC LIMIT 200"
     );
-    rows = (r.rows ?? []) as Row[];
+    
+    // Sanitize rows to ensure they are plain objects and safe for React
+    rows = (r.rows ?? []).map((row: any) => ({
+      id: String(row.id || ""),
+      name: row.name ? String(row.name) : null,
+      phone: row.phone ? String(row.phone) : null,
+      service_type: row.service_type ? String(row.service_type) : null,
+      city: row.city ? String(row.city) : null,
+      status: row.status ? String(row.status) : null,
+      created_at: row.created_at ? new Date(row.created_at).toISOString() : null, // Convert Date to String
+    }));
+
   } catch (e: any) {
     console.error("Dashboard DB Error:", e);
     error = e;
