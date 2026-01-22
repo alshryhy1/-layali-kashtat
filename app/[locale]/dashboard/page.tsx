@@ -49,6 +49,14 @@ export default async function DashboardPage({
     revalidatePath(`/${locale}/dashboard`);
   }
 
+  async function deleteRequest(formData: FormData) {
+    "use server";
+    const id = String(formData.get("id") || "").trim();
+    if (!id) return;
+    await db.query("DELETE FROM provider_requests WHERE id = $1::bigint", [id]);
+    revalidatePath(`/${locale}/dashboard`);
+  }
+
   try {
     const r = await db.query(
       "SELECT id::text as id,name,phone,service_type,city,status,created_at FROM provider_requests ORDER BY created_at DESC LIMIT 200"
@@ -58,9 +66,15 @@ export default async function DashboardPage({
     error = e;
   }
 
+  // Calculate Stats
+  const total = rows.length;
+  const pending = rows.filter(r => (r.status || "pending").toLowerCase() === "pending").length;
+  const approved = rows.filter(r => (r.status || "").toLowerCase() === "approved").length;
+  const rejected = rows.filter(r => (r.status || "").toLowerCase() === "rejected").length;
+
   return (
     <main style={pageStyle}>
-      <div style={{ maxWidth: 1100, width: "100%" }}>
+      <div style={{ maxWidth: 1200, width: "100%" }}>
         <div style={topRow}>
         <div>
           <div style={{ marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -69,16 +83,36 @@ export default async function DashboardPage({
             </Link>
             <LanguageSwitcher locale={locale} />
           </div>
-          <h1 style={h1}>لوحة الطلبات</h1>
+          <h1 style={h1}>{locale === "ar" ? "طلبات انضمام مقدمي الخدمة" : "Provider Requests Dashboard"}</h1>
             <div style={sub}>
-              عرض آخر 200 طلب من <code>provider_requests</code>
+              {locale === "ar" ? "إدارة ومراجعة طلبات الانضمام الجديدة" : "Manage and review new provider applications"}
             </div>
             {error ? <div style={err}>{String(error.message || error)}</div> : null}
           </div>
 
           <a href={`/${locale}/providers/signup`} style={btnLink}>
-            فتح صفحة التسجيل
+            {locale === "ar" ? "إضافة مقدم خدمة جديد" : "Add New Provider"}
           </a>
+        </div>
+
+        {/* Stats Cards */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 24 }}>
+           <div style={statCard}>
+              <div style={statLabel}>{locale === "ar" ? "الكل" : "Total"}</div>
+              <div style={statValue}>{total}</div>
+           </div>
+           <div style={statCard}>
+              <div style={statLabel}>{locale === "ar" ? "قيد الانتظار" : "Pending"}</div>
+              <div style={{...statValue, color: "#f59e0b"}}>{pending}</div>
+           </div>
+           <div style={statCard}>
+              <div style={statLabel}>{locale === "ar" ? "مقبول" : "Approved"}</div>
+              <div style={{...statValue, color: "#10b981"}}>{approved}</div>
+           </div>
+           <div style={statCard}>
+              <div style={statLabel}>{locale === "ar" ? "مرفوض" : "Rejected"}</div>
+              <div style={{...statValue, color: "#ef4444"}}>{rejected}</div>
+           </div>
         </div>
 
         <div style={card}>
@@ -91,7 +125,7 @@ export default async function DashboardPage({
                   <th style={th}>نوع الخدمة</th>
                   <th style={th}>المدينة</th>
                   <th style={th}>الحالة</th>
-                  <th style={th}>قبول / رفض</th>
+                  <th style={th}>الإجراءات</th>
                   <th style={th}>التاريخ</th>
                 </tr>
               </thead>
@@ -110,35 +144,53 @@ export default async function DashboardPage({
 
                     return (
                       <tr key={r.id}>
-                        <td style={td}>{r.name ?? ""}</td>
-                        <td style={td}>{r.phone ?? ""}</td>
-                        <td style={td}>{r.service_type ?? ""}</td>
-                        <td style={td}>{r.city ?? ""}</td>
                         <td style={td}>
-                          <span style={badge}>{st}</span>
+                          <div style={{fontWeight: 700}}>{r.name ?? "—"}</div>
+                        </td>
+                        <td style={td}>
+                            <a href={`tel:${r.phone}`} style={{color: "#2563eb", textDecoration: "none"}} dir="ltr">{r.phone ?? "—"}</a>
+                        </td>
+                        <td style={td}>{r.service_type ?? "—"}</td>
+                        <td style={td}>{r.city ?? "—"}</td>
+                        <td style={td}>
+                          <span style={{
+                              ...badge, 
+                              background: st === "approved" ? "#dcfce7" : st === "rejected" ? "#fee2e2" : "#fef3c7",
+                              color: st === "approved" ? "#166534" : st === "rejected" ? "#991b1b" : "#92400e",
+                              border: "none"
+                          }}>
+                              {st === "approved" ? (locale === "ar" ? "مقبول" : "Approved") : 
+                               st === "rejected" ? (locale === "ar" ? "مرفوض" : "Rejected") : 
+                               (locale === "ar" ? "قيد الانتظار" : "Pending")}
+                          </span>
                         </td>
 
                         <td style={td}>
-                          {pending ? (
-                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                              <form action={updateStatus}>
-                                <input type="hidden" name="id" value={r.id} />
-                                <input type="hidden" name="status" value="approved" />
-                                <button type="submit" style={okBtn}>قبول</button>
-                              </form>
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            {pending ? (
+                                <>
+                                  <form action={updateStatus}>
+                                    <input type="hidden" name="id" value={r.id} />
+                                    <input type="hidden" name="status" value="approved" />
+                                    <button type="submit" style={okBtn}>قبول</button>
+                                  </form>
 
-                              <form action={updateStatus}>
+                                  <form action={updateStatus}>
+                                    <input type="hidden" name="id" value={r.id} />
+                                    <input type="hidden" name="status" value="rejected" />
+                                    <button type="submit" style={noBtn}>رفض</button>
+                                  </form>
+                                </>
+                            ) : null}
+                            
+                            <form action={deleteRequest} onSubmit={(e) => { if(!confirm('هل أنت متأكد من الحذف؟')) e.preventDefault(); }}>
                                 <input type="hidden" name="id" value={r.id} />
-                                <input type="hidden" name="status" value="rejected" />
-                                <button type="submit" style={noBtn}>رفض</button>
-                              </form>
-                            </div>
-                          ) : (
-                            <span style={done}>تمت المعالجة</span>
-                          )}
+                                <button type="submit" style={delBtn}>🗑️</button>
+                            </form>
+                          </div>
                         </td>
 
-                        <td style={td}>{fmt(r.created_at)}</td>
+                        <td style={td} dir="ltr">{fmt(r.created_at)}</td>
                       </tr>
                     );
                   })
@@ -157,7 +209,7 @@ function fmt(v: string | null) {
   const d = new Date(v);
   if (Number.isNaN(d.getTime())) return "—";
   try {
-    return d.toLocaleString("ar-SA");
+    return d.toLocaleString("en-GB", { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
   } catch {
     return d.toISOString();
   }
@@ -169,6 +221,7 @@ const pageStyle: React.CSSProperties = {
   background: "#f6f7f9",
   display: "flex",
   justifyContent: "center",
+  fontFamily: "inherit",
 };
 
 const topRow: React.CSSProperties = {
@@ -176,11 +229,26 @@ const topRow: React.CSSProperties = {
   justifyContent: "space-between",
   alignItems: "flex-start",
   gap: 12,
-  marginBottom: 12,
+  marginBottom: 24,
+  flexWrap: "wrap",
 };
 
-const h1: React.CSSProperties = { margin: 0, fontSize: 22, fontWeight: 900 };
-const sub: React.CSSProperties = { marginTop: 6, color: "#666", fontSize: 13 };
+const h1: React.CSSProperties = { margin: 0, fontSize: 28, fontWeight: 900, color: "#111" };
+const sub: React.CSSProperties = { marginTop: 6, color: "#666", fontSize: 14 };
+
+const statCard: React.CSSProperties = {
+    background: "#fff",
+    borderRadius: 12,
+    padding: 20,
+    boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+    border: "1px solid #eee",
+    display: "flex",
+    flexDirection: "column",
+    gap: 8
+};
+
+const statLabel: React.CSSProperties = { fontSize: 13, color: "#64748b", fontWeight: 600 };
+const statValue: React.CSSProperties = { fontSize: 24, fontWeight: 900, color: "#0f172a" };
 
 const err: React.CSSProperties = {
   marginTop: 10,
@@ -196,78 +264,93 @@ const btnLink: React.CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  padding: "10px 12px",
-  borderRadius: 10,
-  border: "1px solid #111",
-  background: "#fff",
-  color: "#111",
+  padding: "12px 20px",
+  borderRadius: 12,
+  border: "none",
+  background: "#111",
+  color: "#fff",
   textDecoration: "none",
-  fontWeight: 900,
-  fontSize: 13,
+  fontWeight: 700,
+  fontSize: 14,
   whiteSpace: "nowrap",
+  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
 };
 
 const card: React.CSSProperties = {
   background: "#fff",
   border: "1px solid #e7e7e7",
-  borderRadius: 14,
-  padding: 16,
-  boxShadow: "0 6px 16px rgba(0,0,0,0.04)",
+  borderRadius: 16,
+  padding: 20,
+  boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
 };
 
 const table: React.CSSProperties = {
   width: "100%",
-  borderCollapse: "collapse",
+  borderCollapse: "separate",
+  borderSpacing: "0",
   minWidth: 980,
 };
 
 const th: React.CSSProperties = {
   textAlign: "right",
-  padding: 10,
-  borderBottom: "1px solid #ddd",
-  background: "#fafafa",
-  fontWeight: 900,
+  padding: "16px 12px",
+  borderBottom: "2px solid #f1f5f9",
+  color: "#64748b",
+  fontWeight: 700,
   fontSize: 13,
 };
 
 const td: React.CSSProperties = {
-  padding: 10,
-  borderBottom: "1px solid #eee",
-  fontSize: 13,
-  verticalAlign: "top",
+  padding: "16px 12px",
+  borderBottom: "1px solid #f1f5f9",
+  fontSize: 14,
+  verticalAlign: "middle",
+  color: "#334155",
 };
 
-const empty: React.CSSProperties = { padding: 14, textAlign: "center", color: "#666" };
+const empty: React.CSSProperties = { padding: 40, textAlign: "center", color: "#64748b", fontSize: 14 };
 
 const badge: React.CSSProperties = {
-  display: "inline-block",
-  padding: "4px 10px",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "4px 12px",
   borderRadius: 999,
-  border: "1px solid #e7e7e7",
-  fontWeight: 900,
+  fontWeight: 700,
   fontSize: 12,
 };
 
 const okBtn: React.CSSProperties = {
-  padding: "8px 10px",
-  borderRadius: 10,
-  border: "1px solid #0a0",
-  background: "#0a0",
+  padding: "6px 12px",
+  borderRadius: 8,
+  border: "none",
+  background: "#10b981",
   color: "#fff",
-  fontWeight: 900,
+  fontWeight: 700,
   fontSize: 12,
   cursor: "pointer",
 };
 
 const noBtn: React.CSSProperties = {
-  padding: "8px 10px",
-  borderRadius: 10,
-  border: "1px solid #b00",
-  background: "#fff",
-  color: "#b00",
-  fontWeight: 900,
+  padding: "6px 12px",
+  borderRadius: 8,
+  border: "1px solid #fee2e2",
+  background: "#fee2e2",
+  color: "#991b1b",
+  fontWeight: 700,
   fontSize: 12,
   cursor: "pointer",
 };
 
-const done: React.CSSProperties = { color: "#666", fontWeight: 800, fontSize: 12 };
+const delBtn: React.CSSProperties = {
+    padding: "6px 10px",
+    borderRadius: 8,
+    border: "1px solid #eee",
+    background: "#fff",
+    color: "#666",
+    fontWeight: 700,
+    fontSize: 14,
+    cursor: "pointer",
+  };
+
+const done: React.CSSProperties = { color: "#64748b", fontWeight: 600, fontSize: 12 };

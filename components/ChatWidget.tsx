@@ -2,14 +2,12 @@
 
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "../lib/supabaseClient";
 import { Mic, MapPin, Send, StopCircle, Loader2, ChevronDown, ChevronUp, Image as ImageIcon, Camera } from "lucide-react";
 
 // Initialize Supabase Client (Public)
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+// Removed manual initialization to prevent crash if env vars are missing
+
 
 type Message = {
   id: string;

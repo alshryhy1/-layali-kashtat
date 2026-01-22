@@ -4,9 +4,11 @@ import * as React from "react";
 import Link from "next/link";
 import { LifeBuoy } from "lucide-react";
 import ChatWidget from "../../../../components/ChatWidget";
-import LiveMap from "../../../../components/LiveMap";
 import SupportModal from "../../../../components/SupportModal";
 import { supabase } from "../../../../lib/supabaseClient";
+import dynamic from "next/dynamic";
+
+const LiveMap = dynamic(() => import("../../../../components/LiveMap"), { ssr: false });
 
 type Locale = "ar" | "en";
 function asLocale(v: any): Locale {
