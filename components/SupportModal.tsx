@@ -80,7 +80,7 @@ export function SupportView({ isAr, refId }: { isAr: boolean; refId?: string }) 
       } else {
         throw new Error("Clipboard API unavailable");
       }
-    } catch (err) {
+    } catch {
       const ta = document.createElement("textarea");
       ta.value = refId;
       ta.style.position = "fixed";

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { ArrowRight, Upload, MapPin, Tag, Phone, Handshake } from "lucide-react";
+import { Upload, Handshake } from "lucide-react";
 
 export default function NewAdPage() {
   const router = useRouter();
@@ -118,8 +118,8 @@ export default function NewAdPage() {
               marginBottom: 32
             }}>
               <p style={{ fontSize: 18, fontWeight: 700, color: "#be185d", margin: 0, lineHeight: "1.6" }}>
-                "أقسم بالله العظيم أن أدفع عمولة الموقع (1%) من قيمة البيع في حال تم البيع عن طريق الموقع، 
-                وأن لا تبرأ ذمتي أمام الله إلا بدفعها."
+                &quot;أقسم بالله العظيم أن أدفع عمولة الموقع (1%) من قيمة البيع في حال تم البيع عن طريق الموقع، 
+                وأن لا تبرأ ذمتي أمام الله إلا بدفعها.&quot;
               </p>
             </div>
 

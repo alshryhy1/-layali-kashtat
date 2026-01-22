@@ -85,7 +85,7 @@ export default function ProviderAcceptPage({ params }: { params: { locale: strin
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [refParam, pidParam]);
+  }, [refParam, pidParam, isAr]);
 
   async function handleAccept() {
     if (!price) {

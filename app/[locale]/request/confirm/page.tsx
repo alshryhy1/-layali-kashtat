@@ -195,7 +195,7 @@ export default function ConfirmPage({
 
       setError(t.apiFail);
       setSending(false);
-    } catch (e: any) {
+    } catch {
       setError(t.apiFail);
       setSending(false);
     }

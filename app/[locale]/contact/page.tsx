@@ -1,10 +1,12 @@
 import * as React from "react";
 import Link from "next/link";
-import { Mail, Phone, MessageCircle, HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronUp, Phone, Mail } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-type Locale = "ar" | "en";
+type Props = {
+  params: Promise<{ locale: string }>;
+};
 
 function WhatsAppIcon({ size = 24, color = "currentColor" }: { size?: number, color?: string }) {
   return (
@@ -15,11 +17,7 @@ function WhatsAppIcon({ size = 24, color = "currentColor" }: { size?: number, co
   );
 }
 
-export default async function ContactPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
+export default async function ContactPage({ params }: Props) {
   const p = await params;
   const locale = p?.locale === "en" ? "en" : "ar";
   const isAr = locale === "ar";

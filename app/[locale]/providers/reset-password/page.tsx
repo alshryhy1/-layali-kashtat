@@ -20,7 +20,7 @@ export default function ResetPasswordPage({ params }: { params: Promise<{ locale
 
   const [password, setPassword] = React.useState("");
   const [confirm, setConfirm] = React.useState("");
-  const [msg, setMsg] = React.useState("");
+  // removed unused msg state
   const [error, setError] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [success, setSuccess] = React.useState(false);
@@ -42,7 +42,6 @@ export default function ResetPasswordPage({ params }: { params: Promise<{ locale
 
     setBusy(true);
     setError("");
-    setMsg("");
 
     try {
       const res = await fetch("/api/providers/login/reset", {

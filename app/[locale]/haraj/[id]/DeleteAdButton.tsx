@@ -25,8 +25,6 @@ export default function DeleteAdButton({ id, locale }: { id: string; locale: str
         body: JSON.stringify({ code }),
       });
 
-      const json = await res.json();
-
       if (res.ok) {
         alert(locale === "ar" ? "تم الحذف بنجاح" : "Deleted successfully");
         router.push(`/${locale}/haraj`);

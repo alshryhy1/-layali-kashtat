@@ -178,7 +178,6 @@ export default function AdminRequestsClient({
         rows={filtered}
         renderActions={(row) => {
           const id = String(row.id || "");
-          const raw = String(row.status || "pending").toLowerCase();
           const isBusy = busyId !== null && String(busyId) === id;
 
           const mkDisabled = (disabled: boolean) =>

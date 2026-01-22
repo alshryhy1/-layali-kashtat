@@ -20,7 +20,7 @@ export async function GET(req: Request) {
     return new NextResponse("<h1>تم قبول مقدم الخدمة بنجاح</h1><p>يمكنك إغلاق هذه الصفحة.</p>", { 
       headers: { "content-type": "text/html; charset=utf-8" } 
     });
-  } catch (e) {
+  } catch {
     return new NextResponse("Error", { status: 500 });
   }
 }

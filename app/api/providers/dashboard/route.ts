@@ -19,7 +19,7 @@ function verify(token: string) {
   } catch { return null; }
 }
 
-export async function GET(req: Request) {
+export async function GET() {
   const cookieStore = await cookies();
   const token = cookieStore.get("kashtat_provider_token")?.value;
   const user = verify(token || "");

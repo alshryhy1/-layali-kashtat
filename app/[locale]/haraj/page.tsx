@@ -1,5 +1,6 @@
 import { ShoppingBag, MapPin, Filter, Handshake } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 // ⚠️ IMPORTANT: Force dynamic rendering so we always get fresh DB data
 export const dynamic = "force-dynamic";
@@ -230,17 +231,14 @@ export default async function HarajPage({
               }}
             >
               <div style={{ position: "relative", paddingTop: "75%" }}>
-                <img
+                <Image
                   src={item.image_url || "https://placehold.co/400x300?text=No+Image"}
                   alt={item.title}
+                  fill
                   style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
                     objectFit: "cover",
                   }}
+                  unoptimized={item.image_url?.startsWith("http")}
                 />
                 <div
                   style={{

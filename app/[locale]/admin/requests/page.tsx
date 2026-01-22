@@ -1,5 +1,4 @@
 // ⚠️ نفس الاستيرادات والمنطق — لم يتم المساس بها
-import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -30,44 +29,34 @@ type Row = {
 };
 
 type Locale = "ar" | "en";
-type StatusFilter = "all" | "pending" | "approved" | "rejected";
-type SortKey = "new" | "old";
 
-/* ================== helpers (كما هي) ================== */
-function sbAdmin() {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) throw new Error("Missing env");
-  return createClient(url, key, { auth: { persistSession: false } });
+function verifyAdminSession(token: string | undefined) {
+  if (!token) return false;
+  try {
+    const raw = Buffer.from(token, "base64url").toString("utf8");
+    const [payloadStr, sig] = raw.split(".");
+    if (!payloadStr || !sig) return false;
+
+    const secret = process.env.ADMIN_SESSION_SECRET || "";
+    if (!secret) return false;
+
+    const expectedSig = crypto.createHmac("sha256", secret).update(payloadStr).digest("hex");
+    if (sig !== expectedSig) return false;
+
+    const { exp } = JSON.parse(payloadStr);
+    if (Date.now() > exp) return false;
+
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function asLocale(v: any): Locale {
   return String(v || "").toLowerCase() === "en" ? "en" : "ar";
 }
 
-function sign(payload: string, secret: string) {
-  return crypto.createHmac("sha256", secret).update(payload).digest("hex");
-}
-
-function verifyAdminSession(token: string | undefined | null): boolean {
-  if (!token) return false;
-  const SECRET = process.env.ADMIN_SESSION_SECRET || "";
-  if (!SECRET) return false;
-
-  try {
-    const raw = Buffer.from(token, "base64url").toString("utf8");
-    const i = raw.lastIndexOf(".");
-    if (i <= 0) return false;
-    const payload = raw.slice(0, i);
-    const sig = raw.slice(i + 1);
-    if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(sign(payload, SECRET))))
-      return false;
-    const obj = JSON.parse(payload);
-    return Date.now() <= obj.exp;
-  } catch {
-    return false;
-  }
-}
+// removed unused sign and verifyAdminSession helpers
 
 function toRef(ref: string | null) {
   return String(ref || "—");
@@ -95,7 +84,7 @@ export default async function AdminRequestsPage({
   searchParams: Promise<{ ref?: string; status?: string; sort?: string }>;
 }) {
   const p = await params;
-  const sp = await searchParams;
+  await searchParams;
 
   const locale: Locale = asLocale(p?.locale);
   const isAr = locale === "ar";

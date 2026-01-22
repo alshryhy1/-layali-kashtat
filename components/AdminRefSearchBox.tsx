@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type Props = {
   locale: "ar" | "en";
@@ -9,7 +9,6 @@ type Props = {
 
 export default function AdminRefSearchBox({ locale }: Props) {
   const router = useRouter();
-  const pathname = usePathname() || `/${locale}/admin/requests`;
   const sp = useSearchParams();
 
   const initial = sp.get("ref") ?? "";
@@ -17,7 +16,6 @@ export default function AdminRefSearchBox({ locale }: Props) {
 
   React.useEffect(() => {
     setValue(initial);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initial]);
 
   const base = React.useMemo(() => {

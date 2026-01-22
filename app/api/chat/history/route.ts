@@ -5,7 +5,6 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const ref = searchParams.get("ref");
-    const providerId = searchParams.get("provider_id");
     const requestId = searchParams.get("request_id");
 
     // We need to find the request_id first if we only have ref

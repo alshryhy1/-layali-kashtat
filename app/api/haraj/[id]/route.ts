@@ -33,7 +33,7 @@ export async function DELETE(
     }
 
     // 2. Delete if code matches
-    const res = await db.query('DELETE FROM haraj_items WHERE id = $1 RETURNING *', [id]);
+    await db.query('DELETE FROM haraj_items WHERE id = $1 RETURNING *', [id]);
 
     return NextResponse.json({ success: true, message: 'Item deleted successfully' });
   } catch (error) {

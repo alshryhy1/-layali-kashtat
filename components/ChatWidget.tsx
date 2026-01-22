@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import Image from "next/image";
 import { createClient } from "@supabase/supabase-js";
 import { Mic, MapPin, Send, StopCircle, Loader2, ChevronDown, ChevronUp, Image as ImageIcon, Camera } from "lucide-react";
 
@@ -43,7 +44,7 @@ export default function ChatWidget({ requestRef, providerId, userRole, requestId
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  // removed unused loading state
   const [realtimeStatus, setRealtimeStatus] = useState<"connecting" | "connected" | "disconnected">("connecting");
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
@@ -60,7 +61,6 @@ export default function ChatWidget({ requestRef, providerId, userRole, requestId
   useEffect(() => {
     async function initChat() {
       try {
-        setLoading(true);
         setRealtimeStatus("connecting");
         // Fetch History & Conversation ID
         let url = `/api/chat/history?`;
@@ -81,8 +81,6 @@ export default function ChatWidget({ requestRef, providerId, userRole, requestId
       } catch (e) {
         console.error("Fetch Error:", e);
         setRealtimeStatus("disconnected");
-      } finally {
-        setLoading(false);
       }
     }
 
@@ -138,7 +136,7 @@ export default function ChatWidget({ requestRef, providerId, userRole, requestId
       supabase.removeChannel(channel);
       setRealtimeStatus("disconnected");
     };
-  }, [conversationId]);
+  }, [conversationId, userRole]);
 
   // Scroll to bottom
   useEffect(() => {
@@ -314,11 +312,14 @@ export default function ChatWidget({ requestRef, providerId, userRole, requestId
     }
     if (msg.media_type === "image" && msg.media_url) {
       return (
-        <img 
+        <Image 
           src={msg.media_url} 
           alt="Sent image" 
-          style={{ maxWidth: '200px', borderRadius: '8px', cursor: 'pointer' }}
+          width={200}
+          height={200}
+          style={{ maxWidth: '200px', borderRadius: '8px', cursor: 'pointer', width: 'auto', height: 'auto' }}
           onClick={() => window.open(msg.media_url, '_blank')}
+          unoptimized
         />
       );
     }

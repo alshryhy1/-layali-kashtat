@@ -122,7 +122,7 @@ export async function POST(req: Request) {
       route_polyline: row.route_polyline,
       eta: row.eta ? Number(row.eta) : null,
     });
-  } catch (e: any) {
+  } catch {
     return jsonError(500, "db_read_failed", "تعذر جلب بيانات الطلب.");
   }
 }

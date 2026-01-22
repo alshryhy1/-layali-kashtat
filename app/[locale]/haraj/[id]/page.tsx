@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
-import { ArrowRight, MapPin, Phone, MessageCircle, Calendar, User } from "lucide-react";
+import Image from "next/image";
+import { ArrowRight, MapPin, Phone, MessageCircle, Calendar } from "lucide-react";
 import Link from "next/link";
 import DeleteAdButton from "./DeleteAdButton";
 
@@ -83,14 +84,14 @@ export default async function HarajItemPage({
           
           {/* Image */}
           <div style={{ position: "relative", height: 400, background: "#f3f4f6" }}>
-            <img
+            <Image
               src={item.image_url || "https://placehold.co/800x600?text=No+Image"}
               alt={item.title}
+              fill
               style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover", // changed from contain to cover for better look, but contain is safer for full visibility
+                objectFit: "cover",
               }}
+              unoptimized={item.image_url?.startsWith("http")}
             />
           </div>
 

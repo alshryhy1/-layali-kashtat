@@ -33,7 +33,7 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ lo
   
   const [data, setData] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState(false);
+  // removed unused error state
   const [selectedRequest, setSelectedRequest] = React.useState<any>(null);
   const [view, setView] = React.useState<"details" | "accept" | "reject">("details");
   const [locCopied, setLocCopied] = React.useState(false);
@@ -280,7 +280,7 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ lo
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [data?.provider?.id, isAr]);
+  }, [data?.provider?.id, isAr, data]);
 
   const openRequest = (req: any) => {
     setSelectedRequest(req);

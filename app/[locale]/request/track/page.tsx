@@ -4,19 +4,9 @@ import * as React from "react";
 import ChatWidget from "../../../../components/ChatWidget";
 import { SupportView } from "../../../../components/SupportModal";
 import LiveMap from "../../../../components/LiveMap";
-import { MessageCircle, Map as MapIcon, Star, CheckCircle, Headphones, Mail, Phone, Copy, Check } from "lucide-react";
+import { MessageCircle, Map as MapIcon, Star, CheckCircle, Headphones } from "lucide-react";
 
 import "leaflet/dist/leaflet.css";
-
-// Simple WhatsApp Icon SVG
-function WhatsAppIcon({ size = 24, color = "currentColor" }: { size?: number, color?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M17.472 14.382C17.112 14.382 16.392 14.382 14.232 14.382C13.872 14.382 13.512 14.742 13.512 15.102C13.512 15.462 13.872 16.902 14.232 17.262C14.592 17.622 15.312 17.622 16.392 17.622C17.472 17.622 18.192 17.622 18.192 16.542C18.192 15.462 18.192 14.382 17.472 14.382Z" fill={color} />
-      <path fillRule="evenodd" clipRule="evenodd" d="M12 0C5.373 0 0 5.373 0 12C0 14.084 0.536 16.037 1.472 17.756L0.26 22.18L4.856 21.03C6.486 21.866 8.324 22.308 10.224 22.308H10.23C16.852 22.308 22.224 16.936 22.224 10.314C22.224 3.692 16.852 0 10.224 0H12ZM10.224 18.57C8.616 18.57 7.038 18.138 5.664 17.322L5.34 17.13L3.18 17.7L3.756 15.54L3.54 15.204C2.628 13.788 2.148 12.15 2.148 10.314C2.148 5.862 5.772 2.238 10.224 2.238C14.676 2.238 18.3 5.862 18.3 10.314C18.3 14.766 14.676 18.57 10.224 18.57Z" fill={color}/>
-    </svg>
-  );
-}
 
 type Locale = "ar" | "en";
 
@@ -276,7 +266,7 @@ export default function TrackRequestPage({
     }, 5000);
 
     return () => window.clearInterval(interval);
-  }, [result?.ref, result?.status, result?.completed, contact]);
+  }, [result, contact, loadStatus]);
 
   React.useEffect(() => {
     const loc = safeText(result?.accepted_meeting_location || "");
@@ -356,7 +346,7 @@ export default function TrackRequestPage({
       .catch(() => {});
 
     return () => ctrl.abort();
-  }, [result?.provider_current_lat, result?.provider_current_lng, result?.status, result?.completed, destCoords]);
+  }, [result, destCoords]);
 
   function goNew() {
     window.location.href = `/${locale}/request/customer`;
