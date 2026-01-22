@@ -34,6 +34,28 @@ export default async function DashboardPage({
 
   let rows: Row[] = [];
   let error: any = null;
+  let dbUrlStatus = "unknown";
+
+  try {
+    if (!process.env.DATABASE_URL) {
+      throw new Error("DATABASE_URL is not set in environment variables");
+    }
+    dbUrlStatus = "present";
+
+    const r = await db.query(
+      "SELECT id::text as id,name,phone,service_type,city,status,created_at FROM provider_requests ORDER BY created_at DESC LIMIT 200"
+    );
+    rows = (r.rows ?? []) as Row[];
+  } catch (e: any) {
+    console.error("Dashboard DB Error:", e);
+    error = e;
+  }
+
+  // Calculate Stats
+  const total = rows.length;
+  const pending = rows.filter(r => (r.status || "pending").toLowerCase() === "pending").length;
+  const approved = rows.filter(r => (r.status || "").toLowerCase() === "approved").length;
+  const rejected = rows.filter(r => (r.status || "").toLowerCase() === "rejected").length;
 
   async function updateStatus(formData: FormData) {
     "use server";
@@ -57,21 +79,6 @@ export default async function DashboardPage({
     revalidatePath(`/${locale}/dashboard`);
   }
 
-  try {
-    const r = await db.query(
-      "SELECT id::text as id,name,phone,service_type,city,status,created_at FROM provider_requests ORDER BY created_at DESC LIMIT 200"
-    );
-    rows = (r.rows ?? []) as Row[];
-  } catch (e: any) {
-    error = e;
-  }
-
-  // Calculate Stats
-  const total = rows.length;
-  const pending = rows.filter(r => (r.status || "pending").toLowerCase() === "pending").length;
-  const approved = rows.filter(r => (r.status || "").toLowerCase() === "approved").length;
-  const rejected = rows.filter(r => (r.status || "").toLowerCase() === "rejected").length;
-
   return (
     <main style={pageStyle}>
       <div style={{ maxWidth: 1200, width: "100%" }}>
@@ -87,7 +94,14 @@ export default async function DashboardPage({
             <div style={sub}>
               {locale === "ar" ? "إدارة ومراجعة طلبات الانضمام الجديدة" : "Manage and review new provider applications"}
             </div>
-            {error ? <div style={err}>{String(error.message || error)}</div> : null}
+            {error ? (
+              <div style={err}>
+                <strong>System Error:</strong> {String(error.message || error)}
+                <br />
+                <small>DB Url Status: {dbUrlStatus}</small>
+                {error.digest && <><br /><small>Digest: {error.digest}</small></>}
+              </div>
+            ) : null}
           </div>
 
           <a href={`/${locale}/providers/signup`} style={btnLink}>
