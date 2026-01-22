@@ -4,6 +4,9 @@ import { Plus, UserPlus, LayoutDashboard, Search, FileText, Headphones } from "l
 
 export const dynamic = "force-dynamic";
 
+// Force deploy trigger
+
+
 type Locale = "ar" | "en";
 
 function asLocale(v: any): Locale {
