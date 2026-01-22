@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type Locale = "ar" | "en";
 
@@ -189,6 +190,14 @@ export default function AdminLoginClient(props: { locale: Locale; next: string }
             {loading ? t.loading : isLocked ? (isAr ? "مقفل مؤقتًا" : "Locked") : t.login}
           </button>
         </form>
+        <div style={{ marginTop: 20, textAlign: "center" }}>
+          <Link
+            href={`/${locale}`}
+            style={{ fontSize: 13, color: "#666", textDecoration: "none" }}
+          >
+            {isAr ? "العودة للرئيسية" : "Back to Home"}
+          </Link>
+        </div>
       </div>
 
       <style

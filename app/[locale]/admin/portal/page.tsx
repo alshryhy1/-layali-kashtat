@@ -82,8 +82,25 @@ export default async function AdminPortalPage({
   return (
     <main style={containerStyle} dir={isAr ? "rtl" : "ltr"}>
       <div style={headerStyle}>
-        <LanguageSwitcher locale={locale} />
-        <AdminLogoutButton locale={locale} />
+        <Link
+          href={`/${locale}`}
+          style={{
+            textDecoration: "none",
+            color: "#666",
+            fontSize: 14,
+            fontWeight: 500,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <span>🏠</span>
+          {isAr ? "العودة للرئيسية" : "Back to Home"}
+        </Link>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <LanguageSwitcher locale={locale} />
+          <AdminLogoutButton locale={locale} />
+        </div>
       </div>
 
       <div style={contentStyle}>

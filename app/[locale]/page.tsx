@@ -1,6 +1,6 @@
 import * as React from "react";
 import InstallPrompt from "@/components/InstallPrompt";
-import { Plus, UserPlus, LayoutDashboard, Search, FileText, ShoppingBag } from "lucide-react";
+import { Plus, UserPlus, LayoutDashboard, Search, FileText, ShoppingBag, Headphones } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +29,7 @@ export default async function Home({
     providerDashboard: isEn ? "Provider Dashboard" : "لوحة إدارة مقدم الخدمة",
     status: isEn ? "Track Request" : "متابعة الطلب",
     legal: isEn ? "Legal Texts" : "النصوص القانونية",
+    support: isEn ? "Support & Contact" : "الدعم الفني والتواصل",
   };
 
   const btnBase: React.CSSProperties = {
@@ -59,9 +60,9 @@ export default async function Home({
     ...btnBase,
     minHeight: 46,
     fontWeight: 700,
-    border: "1px solid rgba(0,0,0,0.12)",
-    background: "#fff",
-    color: "#111",
+    border: "1px solid rgba(146, 64, 14, 0.2)",
+    background: "rgba(146, 64, 14, 0.08)",
+    color: "#92400e",
   };
 
   return (
@@ -153,6 +154,11 @@ export default async function Home({
                   <span>{t.legal}</span>
                 </a>
               </div>
+
+              <a href={`/${locale}/contact`} style={btnGhost}>
+                <Headphones size={18} />
+                <span>{t.support}</span>
+              </a>
             </div>
           </div>
 

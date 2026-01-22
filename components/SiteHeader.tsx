@@ -1,9 +1,14 @@
+"use client";
+
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { usePathname } from "next/navigation";
 
 type Locale = "ar" | "en";
 
 export default function SiteHeader({ locale }: { locale: Locale }) {
   const isAr = locale === "ar";
+  const pathname = usePathname();
+  const isAdminLogin = pathname?.includes("/admin/login");
 
   return (
     <header
@@ -28,40 +33,75 @@ export default function SiteHeader({ locale }: { locale: Locale }) {
           overflow: "hidden",
         }}
       >
-        <strong
-          style={{
-            fontSize: 16,
-            fontWeight: 900,
-            lineHeight: "20px",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            color: "#111",
-          }}
-          title={isAr ? "ليالي كشتات" : "Layali Kashtat"}
-        >
-          {isAr ? "ليالي كشتات" : "Layali Kashtat"}
-        </strong>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <a
-            href={`/${locale}/haraj`}
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <strong
             style={{
-              fontSize: 14,
-              fontWeight: 700,
+              fontSize: 16,
+              fontWeight: 900,
+              lineHeight: "20px",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              color: "#111",
+            }}
+            title={isAr ? "ليالي كشتات" : "Layali Kashtat"}
+          >
+            {isAr ? "ليالي كشتات" : "Layali Kashtat"}
+          </strong>
+          <a
+            href={`/${locale}/admin/login`}
+            style={{
+              fontSize: 11,
+              color: "#64748b",
               textDecoration: "none",
-              color: "#92400e",
-              background: "rgba(146, 64, 14, 0.08)",
-              padding: "6px 12px",
-              borderRadius: 12,
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
+              marginTop: 2,
+              fontWeight: 500,
             }}
           >
-            <span>🛍️</span>
-            <span>{isAr ? "حراج" : "Haraj"}</span>
+            {isAr ? "الإدارة" : "Administration"}
           </a>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {isAdminLogin ? (
+            <a
+              href={`/${locale}`}
+              style={{
+                fontSize: 14,
+                fontWeight: 700,
+                textDecoration: "none",
+                color: "#1e293b",
+                background: "rgba(30, 41, 59, 0.08)",
+                padding: "6px 12px",
+                borderRadius: 12,
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              <span>↩️</span>
+              <span>{isAr ? "رجوع" : "Return"}</span>
+            </a>
+          ) : (
+            <a
+              href={`/${locale}/haraj`}
+              style={{
+                fontSize: 14,
+                fontWeight: 700,
+                textDecoration: "none",
+                color: "#92400e",
+                background: "rgba(146, 64, 14, 0.08)",
+                padding: "6px 12px",
+                borderRadius: 12,
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              <span>🛍️</span>
+              <span>{isAr ? "حراج" : "Haraj"}</span>
+            </a>
+          )}
 
           <div
             style={{
