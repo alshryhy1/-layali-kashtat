@@ -82,6 +82,25 @@ export default function SiteHeader({ locale }: { locale: Locale }) {
               <span>↩️</span>
               <span>{isAr ? "رجوع" : "Return"}</span>
             </a>
+          ) : pathname?.includes("/haraj") ? (
+            <a
+              href={`/${locale}`}
+              style={{
+                fontSize: 14,
+                fontWeight: 700,
+                textDecoration: "none",
+                color: "#92400e",
+                background: "rgba(146, 64, 14, 0.08)",
+                padding: "6px 12px",
+                borderRadius: 12,
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              <span>🏠</span>
+              <span>{isAr ? "الرئيسية" : "Home"}</span>
+            </a>
           ) : (
             <a
               href={`/${locale}/haraj`}
