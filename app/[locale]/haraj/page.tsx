@@ -1,4 +1,4 @@
-import { ShoppingBag, Tag, MapPin, Filter, Handshake } from "lucide-react";
+import { ShoppingBag, MapPin, Filter, Handshake } from "lucide-react";
 import Link from "next/link";
 
 // ⚠️ IMPORTANT: Force dynamic rendering so we always get fresh DB data

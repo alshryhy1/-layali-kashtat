@@ -1,6 +1,6 @@
 import * as React from "react";
 import InstallPrompt from "@/components/InstallPrompt";
-import { Plus, UserPlus, LayoutDashboard, Search, FileText, ShoppingBag, Headphones } from "lucide-react";
+import { Plus, UserPlus, LayoutDashboard, Search, FileText, Headphones } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
