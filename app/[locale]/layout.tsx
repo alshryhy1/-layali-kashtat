@@ -1,6 +1,7 @@
 import "../globals.css";
 import SiteHeader from "@/components/SiteHeader";
 import TopInfoBar from "@/components/TopInfoBar";
+import { db } from "@/lib/db"; // Direct DB access for analytics
 
 type Locale = "ar" | "en";
 
@@ -30,6 +31,15 @@ async function getWeatherText(locale: Locale) {
   }
 }
 
+// Analytics Helper
+async function incrementViews() {
+  try {
+    await db.query("UPDATE site_analytics SET value = value + 1 WHERE key = 'total_views'");
+  } catch (e) {
+    console.error("Failed to increment views:", e);
+  }
+}
+
 export default async function LocaleLayout({
   children,
   params,
@@ -41,6 +51,10 @@ export default async function LocaleLayout({
   const locale: Locale = rawLocale === "en" ? "en" : "ar";
   const dir = locale === "ar" ? "rtl" : "ltr";
   const lang = locale;
+
+  // Increment views on every page load (server-side)
+  // Note: In a real high-traffic app, use a queue or Redis. For this scale, direct DB update is fine.
+  incrementViews();
 
   const weatherText = await getWeatherText(locale);
 

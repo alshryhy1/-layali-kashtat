@@ -1,0 +1,9 @@
+
+CREATE TABLE IF NOT EXISTS site_analytics (
+  id SERIAL PRIMARY KEY,
+  key VARCHAR(50) UNIQUE NOT NULL,
+  value BIGINT DEFAULT 0,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO site_analytics (key, value) VALUES ('total_views', 0) ON CONFLICT (key) DO NOTHING;

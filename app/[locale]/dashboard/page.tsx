@@ -35,6 +35,7 @@ export default async function DashboardPage({
   let rows: Row[] = [];
   let error: any = null;
   let dbUrlStatus = "unknown";
+  let totalViews = 0;
 
   try {
     if (!process.env.DATABASE_URL) {
@@ -42,6 +43,13 @@ export default async function DashboardPage({
     }
     dbUrlStatus = "present";
 
+    // 1. Fetch Views
+    const viewsRes = await db.query("SELECT value FROM site_analytics WHERE key = 'total_views'");
+    if (viewsRes.rows.length > 0) {
+      totalViews = Number(viewsRes.rows[0].value);
+    }
+
+    // 2. Fetch Requests
     const r = await db.query(
       "SELECT id::text as id,name,phone,service_type,city,status,created_at FROM provider_requests ORDER BY created_at DESC LIMIT 200"
     );
@@ -122,6 +130,10 @@ export default async function DashboardPage({
 
         {/* Stats Cards */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 24 }}>
+           <div style={{...statCard, background: '#f8fafc', border: '1px solid #e2e8f0'}}>
+              <div style={statLabel}>{locale === "ar" ? "زيارات الموقع" : "Site Views"}</div>
+              <div style={{...statValue, color: "#334155"}}>👁️ {totalViews}</div>
+           </div>
            <div style={statCard}>
               <div style={statLabel}>{locale === "ar" ? "الكل" : "Total"}</div>
               <div style={statValue}>{total}</div>
