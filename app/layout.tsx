@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+import SnapPixel from "@/components/SnapPixel";
 
 export const metadata: Metadata = {
   title: "Layali Kashtat",
@@ -22,6 +23,7 @@ export default function RootLayout({
       </head>
       <body>
         {children}
+        <SnapPixel />
         <ServiceWorkerRegister />
       </body>
     </html>
