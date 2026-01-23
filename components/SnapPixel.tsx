@@ -31,9 +31,7 @@ export default function SnapPixel() {
         u.parentNode.insertBefore(r,u);})(window,document,
         'https://sc-static.net/scevent.min.js');
 
-        snaptr('init', 'CHANGE_ME_PIXEL_ID', {
-          'user_email': '__INSERT_USER_EMAIL__'
-        });
+        snaptr('init', '29fc505e-0da7-47a9-bcdb-80b2c49a852c', {});
 
         snaptr('track', 'PAGE_VIEW');
         `}
