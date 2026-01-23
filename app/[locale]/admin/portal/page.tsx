@@ -2,6 +2,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { db } from "@/lib/db";
 import { verifyAdminSession } from "@/lib/auth-admin";
 import AdminLogoutButton from "@/components/AdminLogoutButton";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
@@ -21,6 +22,18 @@ export default async function AdminPortalPage({
   const token = (await cookies()).get("kashtat_admin")?.value;
   if (!verifyAdminSession(token)) {
     redirect(`/${locale}/admin/login`);
+  }
+
+  let totalViews = 0;
+  try {
+    if (process.env.DATABASE_URL) {
+      const viewsRes = await db.query("SELECT value FROM site_analytics WHERE key = 'total_views'");
+      if (viewsRes.rows.length > 0) {
+        totalViews = Number(viewsRes.rows[0].value || 0);
+      }
+    }
+  } catch (e) {
+    console.error("Failed to fetch views:", e);
   }
 
   const containerStyle: React.CSSProperties = {
@@ -79,6 +92,17 @@ export default async function AdminPortalPage({
     color: "#666",
   };
 
+  const statCardStyle: React.CSSProperties = {
+    padding: 24,
+    background: "#fff",
+    border: "1px solid #e2e8f0",
+    borderRadius: 12,
+    boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+    marginBottom: 32,
+    textAlign: "center",
+    minWidth: 200,
+  };
+
   return (
     <main style={containerStyle} dir={isAr ? "rtl" : "ltr"}>
       <div style={headerStyle}>
@@ -104,9 +128,24 @@ export default async function AdminPortalPage({
       </div>
 
       <div style={contentStyle}>
-        <h1 style={{ fontSize: 32, fontWeight: 900, marginBottom: 40 }}>
-          {isAr ? "بوابة الإدارة الموحدة" : "Admin Portal"}
-        </h1>
+        <div style={{ textAlign: "center", marginBottom: 16 }}>
+          <h1 style={{ fontSize: 32, fontWeight: 900, marginBottom: 8, color: "#1e293b" }}>
+            {isAr ? "بوابة الإدارة" : "Admin Portal"}
+          </h1>
+          <p style={{ color: "#64748b" }}>
+            {isAr ? "مرحباً بك في لوحة التحكم" : "Welcome to the control panel"}
+          </p>
+        </div>
+
+        {/* View Counter */}
+        <div style={statCardStyle}>
+          <div style={{ fontSize: 14, color: "#64748b", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>
+            {isAr ? "إجمالي زيارات الموقع" : "Total Site Views"}
+          </div>
+          <div style={{ fontSize: 36, fontWeight: 800, color: "#0f172a" }}>
+            👁️ {totalViews.toLocaleString()}
+          </div>
+        </div>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 24, justifyContent: "center", width: "100%" }}>
           <Link href={`/${locale}/dashboard`} style={cardStyle}>

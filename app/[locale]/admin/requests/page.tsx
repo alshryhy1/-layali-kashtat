@@ -11,6 +11,7 @@ import AdminRefSearchBox from "@/components/AdminRefSearchBox";
 import AdminLogoutButton from "@/components/AdminLogoutButton";
 import AdminStatusButtons from "@/components/AdminStatusButtons";
 import AdminNewRequestNotifier from "@/components/AdminNewRequestNotifier";
+import DeleteRequestButton from "@/components/DeleteRequestButton";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -95,6 +96,14 @@ export default async function AdminRequestsPage({
     revalidatePath(`/${locale}/admin/requests`);
   }
 
+  async function deleteRequest(formData: FormData) {
+    "use server";
+    const id = String(formData.get("id") || "");
+    if (!id) return;
+    await db.query("DELETE FROM customer_requests WHERE id = $1::bigint", [id]);
+    revalidatePath(`/${locale}/admin/requests`);
+  }
+
   return (
     <main className="admin-page" style={{ padding: 20 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
@@ -150,6 +159,7 @@ export default async function AdminRequestsPage({
                     currentStatus={r.status || "pending"}
                     action={updateStatus}
                   />
+                  <DeleteRequestButton id={r.id} deleteAction={deleteRequest} />
                 </td>
                 <td>{fmt(locale, r.created_at)}</td>
               </tr>
@@ -177,6 +187,9 @@ export default async function AdminRequestsPage({
               currentStatus={r.status || "pending"}
               action={updateStatus}
             />
+            <div style={{ marginTop: 8 }}>
+              <DeleteRequestButton id={r.id} deleteAction={deleteRequest} />
+            </div>
           </div>
         ))}
       </div>

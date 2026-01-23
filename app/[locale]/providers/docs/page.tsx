@@ -5,8 +5,9 @@ type PageProps = {
   params: { locale: "ar" | "en" };
 };
 
-export default function ProviderDocsPage({ params }: PageProps) {
-  const isAr = params.locale === "ar";
+export default async function ProviderDocsPage({ params }: { params: Promise<{ locale: "ar" | "en" }> }) {
+  const { locale } = await params;
+  const isAr = locale === "ar";
 
   return (
     <main style={{ padding: 24, maxWidth: 860, margin: "0 auto" }}>
