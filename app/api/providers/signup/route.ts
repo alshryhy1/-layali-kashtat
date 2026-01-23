@@ -70,7 +70,7 @@ async function sendAdminEmail(payload: {
 
   const subject = `طلب تسجيل مقدم خدمة جديد (#${payload.id})`;
   const approveKey = process.env.ADMIN_SECRET || "lk_admin_secret_123";
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://layali-kashtat.vercel.app";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://layalikashtat.com";
   const approveLink = `${baseUrl}/api/providers/approve?id=${payload.id}&key=${approveKey}`;
 
   const text = [

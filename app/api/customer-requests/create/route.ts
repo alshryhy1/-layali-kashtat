@@ -293,7 +293,7 @@ export async function POST(req: Request) {
             : "",
           ...providers.rows.map((p: any) => {
             const base =
-              String(process.env.NEXT_PUBLIC_BASE_URL || process.env.PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || "").trim();
+              String(process.env.NEXT_PUBLIC_BASE_URL || "https://layalikashtat.com").trim();
             const path = `/ar/providers/accept?ref=${encodeURIComponent(row.ref)}&provider_id=${encodeURIComponent(p.id)}`;
             const url = base ? `${base}${path}` : path;
             return `قبول بواسطة ${p.name}: ${url}`;

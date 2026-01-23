@@ -43,10 +43,15 @@ export default async function DashboardPage({
     }
     dbUrlStatus = "present";
 
-    // 1. Fetch Views
-    const viewsRes = await db.query("SELECT value FROM site_analytics WHERE key = 'total_views'");
-    if (viewsRes.rows.length > 0) {
-      totalViews = Number(viewsRes.rows[0].value);
+    // 1. Fetch Views (Isolated try/catch)
+    try {
+      const viewsRes = await db.query("SELECT value FROM site_analytics WHERE key = 'total_views'");
+      if (viewsRes.rows.length > 0) {
+        totalViews = Number(viewsRes.rows[0].value || 0);
+      }
+    } catch (viewErr) {
+      console.error("Failed to fetch views:", viewErr);
+      // Don't fail the whole page for views
     }
 
     // 2. Fetch Requests

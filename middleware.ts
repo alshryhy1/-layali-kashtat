@@ -17,7 +17,7 @@ function isPublicFile(pathname: string) {
 }
 
 // ✅ Next.js 16 proxy convention: يجب تصدير دالة باسم proxy
-export function proxy(req: NextRequest) {
+export function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
 
   // ✅ اترك كل الملفات الثابتة/الصور/الأيقونات بدون أي Redirect

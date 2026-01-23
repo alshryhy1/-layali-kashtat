@@ -34,7 +34,12 @@ async function getWeatherText(locale: Locale) {
 // Analytics Helper
 async function incrementViews() {
   try {
-    await db.query("UPDATE site_analytics SET value = value + 1 WHERE key = 'total_views'");
+    await db.query(`
+      INSERT INTO site_analytics (key, value) 
+      VALUES ('total_views', 1) 
+      ON CONFLICT (key) 
+      DO UPDATE SET value = site_analytics.value + 1
+    `);
   } catch (e) {
     console.error("Failed to increment views:", e);
   }
