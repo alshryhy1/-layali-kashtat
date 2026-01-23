@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Script from "next/script";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
@@ -10,7 +11,7 @@ declare global {
   }
 }
 
-export default function SnapPixel() {
+function SnapPixelInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -20,6 +21,10 @@ export default function SnapPixel() {
     }
   }, [pathname, searchParams]);
 
+  return null;
+}
+
+export default function SnapPixel() {
   return (
     <>
       <Script id="snap-pixel" strategy="afterInteractive">
@@ -36,6 +41,9 @@ export default function SnapPixel() {
         snaptr('track', 'PAGE_VIEW');
         `}
       </Script>
+      <Suspense fallback={null}>
+        <SnapPixelInner />
+      </Suspense>
     </>
   );
 }
