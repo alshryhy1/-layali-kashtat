@@ -24,6 +24,12 @@ export default function RequestSuccessPage({
     typeof window !== "undefined" ? window.location.search : ""
   );
 
+  React.useEffect(() => {
+    if (typeof window !== "undefined" && window.snaptr) {
+      window.snaptr('track', 'SIGN_UP');
+    }
+  }, []);
+
   const ref = getParam(sp, "ref");
   const city = getParam(sp, "city");
   const service = getParam(sp, "service");
