@@ -2,6 +2,8 @@ import "../globals.css";
 import SiteHeader from "@/components/SiteHeader";
 import TopInfoBar from "@/components/TopInfoBar";
 import { db } from "@/lib/db"; // Direct DB access for analytics
+import { cookies } from "next/headers";
+import { verifyAdminSession } from "@/lib/auth-admin";
 
 type Locale = "ar" | "en";
 
@@ -57,9 +59,14 @@ export default async function LocaleLayout({
   const dir = locale === "ar" ? "rtl" : "ltr";
   const lang = locale;
 
-  // Increment views on every page load (server-side)
-  // Note: In a real high-traffic app, use a queue or Redis. For this scale, direct DB update is fine.
-  incrementViews();
+  // Check if admin
+  const token = (await cookies()).get("kashtat_admin")?.value;
+  const isAdmin = verifyAdminSession(token);
+
+  // Increment views only if NOT admin
+  if (!isAdmin) {
+    incrementViews();
+  }
 
   const weatherText = await getWeatherText(locale);
 
