@@ -33,10 +33,10 @@ export default function LegalFooter() {
         <a href="https://instagram.com/layali_kashtat" target="_blank" rel="noopener noreferrer" style={{ color: "#E1306C" }} aria-label="Instagram">
           <Instagram size={24} />
         </a>
-        <a href="https://www.snapchat.com/add/layali_kashtat" target="_blank" rel="noopener noreferrer" style={{ color: "#000" }} aria-label="Snapchat">
+        <a href="https://www.snapchat.com/add/layalikashtat" target="_blank" rel="noopener noreferrer" style={{ color: "#000" }} aria-label="Snapchat">
           <SnapchatIcon size={24} />
         </a>
-        <a href="https://www.tiktok.com/@layali_kashtat" target="_blank" rel="noopener noreferrer" style={{ color: "#000" }} aria-label="TikTok">
+        <a href="https://www.tiktok.com/@layalikashtat" target="_blank" rel="noopener noreferrer" style={{ color: "#000" }} aria-label="TikTok">
           <TiktokIcon size={24} />
         </a>
       </div>
