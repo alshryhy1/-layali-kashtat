@@ -4,8 +4,39 @@ import TopInfoBar from "@/components/TopInfoBar";
 import { db } from "@/lib/db"; // Direct DB access for analytics
 import { cookies } from "next/headers";
 import { verifyAdminSession } from "@/lib/auth-admin";
+import type { Metadata } from "next";
 
 type Locale = "ar" | "en";
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  const isAr = locale !== "en";
+
+  return {
+    title: isAr 
+      ? "ليالي كشتات | حجز مخيمات ورحلات برية وكرفانات" 
+      : "Layali Kashtat | Camping, Desert Trips & Caravans",
+    description: isAr
+      ? "المنصة الأولى في السعودية لحجز المخيمات، الكرفانات، والرحلات البرية. نوفر لك تجربة كشتة متكاملة مع خدمات مميزة."
+      : "The #1 platform in Saudi Arabia for booking camps, caravans, and desert trips. We provide a complete camping experience with premium services.",
+    keywords: isAr
+      ? ["كشتات", "مخيمات", "رحلات برية", "تأجير خيام", "السعودية", "الرياض", "فعاليات شتوية"]
+      : ["Kashtat", "Camping", "Desert Trips", "Saudi Arabia", "Riyadh", "Winter Events"],
+    openGraph: {
+      title: isAr ? "ليالي كشتات" : "Layali Kashtat",
+      description: isAr ? "حجز رحلات ومخيمات برية" : "Book Desert Trips & Camps",
+      url: "https://layali-kashtat.com", // Placeholder
+      siteName: "Layali Kashtat",
+      locale: isAr ? "ar_SA" : "en_US",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: isAr ? "ليالي كشتات" : "Layali Kashtat",
+      description: isAr ? "حجز رحلات ومخيمات برية" : "Book Desert Trips & Camps",
+    },
+  };
+}
 
 async function getWeatherText(locale: Locale) {
   try {
