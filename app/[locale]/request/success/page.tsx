@@ -19,8 +19,13 @@ function SuccessContent({ locale }: { locale: Locale }) {
   const searchParams = useSearchParams();
 
   React.useEffect(() => {
-    if (typeof window !== "undefined" && window.snaptr) {
-      window.snaptr('track', 'SIGN_UP');
+    if (typeof window !== "undefined") {
+      if (window.snaptr) {
+        window.snaptr('track', 'SIGN_UP');
+      }
+      if (window.ttq) {
+        window.ttq.track('CompleteRegistration');
+      }
     }
   }, []);
 
