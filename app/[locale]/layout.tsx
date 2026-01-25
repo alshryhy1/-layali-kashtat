@@ -1,6 +1,7 @@
 import "../globals.css";
 import SiteHeader from "@/components/SiteHeader";
 import TopInfoBar from "@/components/TopInfoBar";
+import LegalFooter from "@/components/LegalFooter";
 import { db } from "@/lib/db"; // Direct DB access for analytics
 import { cookies } from "next/headers";
 import { verifyAdminSession } from "@/lib/auth-admin";
@@ -120,6 +121,8 @@ export default async function LocaleLayout({
         >
           {children}
         </main>
+
+        <LegalFooter />
       </body>
     </html>
   );

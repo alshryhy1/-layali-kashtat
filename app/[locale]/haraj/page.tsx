@@ -2,6 +2,8 @@ import { ShoppingBag, MapPin, Filter, Handshake } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
+import HarajFilters from "./HarajFilters";
+
 // ⚠️ IMPORTANT: Force dynamic rendering so we always get fresh DB data
 export const dynamic = "force-dynamic";
 
@@ -9,42 +11,24 @@ type Locale = "ar" | "en";
 
 export default async function HarajPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const { locale: rawLocale } = await params;
   const locale = (rawLocale === "en" ? "en" : "ar") as Locale;
   const isAr = locale === "ar";
-
+  
   const t = {
     title: isAr ? "حراج ليالي كشتات" : "Layali Kashtat Marketplace",
     desc: isAr
       ? "بيع وشراء مستلزمات الكشتات والتخييم المستعملة والجديدة."
       : "Buy and sell used and new camping gear.",
-    categories: {
-      tents: isAr ? "خيام وبيوت شعر" : "Tents",
-      gear: isAr ? "أدوات تخييم" : "Camping Gear",
-      cars: isAr ? "سيارات مجهزة" : "Modified Cars",
-      others: isAr ? "أخرى" : "Others",
-    },
     addItem: isAr ? "أضف إعلانك" : "Post Ad",
-    search: isAr ? "ابحث عن سلعة..." : "Search for items...",
     sar: isAr ? "ر.س" : "SAR",
   };
-
-  // Fetch items from API (DB)
-  let items = [];
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const res = await fetch(`${baseUrl}/api/haraj`, { cache: "no-store" });
-    const json = await res.json();
-    if (json.success) {
-      items = json.data;
-    }
-  } catch (err) {
-    console.error("Failed to fetch haraj items:", err);
-  }
-
+  
   return (
     <div className="page-container" dir={isAr ? "rtl" : "ltr"}>
       {/* Header Section */}
@@ -162,48 +146,58 @@ export default async function HarajPage({
         </div>
       </div>
 
-      {/* Categories */}
-      <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 16, marginBottom: 16 }}>
-        {Object.entries(t.categories).map(([key, label]) => (
-          <button
-            key={key}
-            style={{
-              padding: "8px 16px",
-              borderRadius: 20,
-              border: "1px solid #e5e7eb",
-              background: "#fff",
-              whiteSpace: "nowrap",
-              fontSize: 14,
-              fontWeight: 600,
-              color: "#374151",
-              cursor: "pointer",
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* Search Bar */}
-      <div style={{ position: "relative", marginBottom: 24 }}>
-        <input
-          type="text"
-          placeholder={t.search}
-          style={{
-            width: "100%",
-            padding: "14px 20px",
-            paddingInlineStart: 48,
-            borderRadius: 16,
-            border: "1px solid #e5e7eb",
-            background: "#fff",
-            fontSize: 16,
-            outline: "none",
-          }}
-        />
-        <SearchIcon isAr={isAr} />
-      </div>
-
+      {/* Client-side Filters (Search + Categories) */}
+      <HarajFilters isAr={isAr} />
+      
       {/* Listings Grid */}
+      <HarajGrid searchParams={searchParams} t={t} locale={locale} isAr={isAr} />
+    </div>
+  );
+}
+
+// Separate component to handle async data fetching based on searchParams
+async function HarajGrid({ 
+  searchParams, 
+  t, 
+  locale,
+  isAr
+}: { 
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  t: any;
+  locale: string;
+  isAr: boolean;
+}) {
+  const resolvedParams = await searchParams;
+  const q = resolvedParams?.q || "";
+  const category = resolvedParams?.category || "";
+  
+  let items = [];
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const query = new URLSearchParams();
+    if (q) query.set("q", q.toString());
+    if (category) query.set("category", category.toString());
+    
+    const res = await fetch(`${baseUrl}/api/haraj?${query.toString()}`, { cache: "no-store" });
+    const json = await res.json();
+    if (json.success) {
+      items = json.data;
+    }
+  } catch (err) {
+    console.error("Failed to fetch haraj items:", err);
+  }
+
+  if (items.length === 0) {
+    return (
+      <div style={{ textAlign: "center", padding: "40px 0", color: "#6b7280" }}>
+        <p style={{ fontSize: 18, fontWeight: 600 }}>
+          {isAr ? "لا توجد نتائج مطابقة لبحثك." : "No items found matching your search."}
+        </p>
+      </div>
+    );
+  }
+
+  return (
       <div
         style={{
           display: "grid",
@@ -285,24 +279,5 @@ export default async function HarajPage({
           </Link>
         ))}
       </div>
-    </div>
-  );
-}
-
-function SearchIcon({ isAr }: { isAr: boolean }) {
-  return (
-    <div
-      style={{
-        position: "absolute",
-        top: "50%",
-        transform: "translateY(-50%)",
-        left: isAr ? "auto" : 16,
-        right: isAr ? 16 : "auto",
-        color: "#9ca3af",
-        pointerEvents: "none",
-      }}
-    >
-      <Filter size={20} />
-    </div>
   );
 }

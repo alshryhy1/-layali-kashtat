@@ -44,6 +44,10 @@ export default function LegalFooter() {
       <div style={{ fontSize: 13, color: "#666" }}>
         © {new Date().getFullYear()} ليالي كشتات | Layali Kashtat
       </div>
+      
+      <div style={{ fontSize: 12, color: "#999", marginTop: 8, borderTop: "1px solid #eee", paddingTop: 8, width: "100%" }}>
+        تطوير وتشغيل: <span style={{ fontWeight: 700, color: "#555" }}>حسن خميس الشمري</span>
+      </div>
     </footer>
   );
 }

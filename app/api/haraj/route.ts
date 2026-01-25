@@ -1,9 +1,28 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const res = await db.query('SELECT * FROM haraj_items ORDER BY created_at DESC');
+    const { searchParams } = new URL(request.url);
+    const q = searchParams.get('q');
+    const category = searchParams.get('category');
+
+    let queryText = 'SELECT * FROM haraj_items WHERE 1=1';
+    const queryParams: any[] = [];
+
+    if (q) {
+      queryParams.push(`%${q}%`);
+      queryText += ` AND (title ILIKE $${queryParams.length} OR description ILIKE $${queryParams.length})`;
+    }
+
+    if (category && category !== 'all') {
+      queryParams.push(category);
+      queryText += ` AND category = $${queryParams.length}`;
+    }
+
+    queryText += ' ORDER BY created_at DESC';
+
+    const res = await db.query(queryText, queryParams);
     return NextResponse.json({ success: true, data: res.rows });
   } catch (error) {
     console.error('Database Error:', error);

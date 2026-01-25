@@ -4,6 +4,7 @@ import Image from "next/image";
 import { ArrowRight, MapPin, Phone, MessageCircle, Calendar } from "lucide-react";
 import Link from "next/link";
 import DeleteAdButton from "./DeleteAdButton";
+import ShareButtons from "@/components/ShareButtons";
 
 export const dynamic = "force-dynamic";
 
@@ -142,8 +143,9 @@ export default async function HarajItemPage({
               </div>
             </div>
 
-            {/* Admin Actions (Delete) */}
-            <div style={{ marginBottom: 24, display: "flex", justifyContent: "flex-end" }}>
+            {/* Admin Actions (Delete) & Share */}
+            <div style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
+              <ShareButtons title={item.title} text={item.description} isAr={isAr} />
               <DeleteAdButton id={item.id} locale={locale} />
             </div>
 
