@@ -41,11 +41,11 @@ export default function NewAdPage() {
       if (json.success) {
         setFormData({ ...formData, image_url: json.url });
       } else {
-        alert("فشل رفع الصورة");
+        alert(`فشل رفع الصورة: ${json.error || 'خطأ غير معروف'}`);
       }
     } catch (err) {
       console.error(err);
-      alert("خطأ أثناء الرفع");
+      alert("خطأ أثناء الرفع: حدثت مشكلة في الاتصال");
     } finally {
       setUploading(false);
     }
