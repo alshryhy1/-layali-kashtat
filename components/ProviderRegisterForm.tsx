@@ -233,74 +233,21 @@ function AutoSendOTP({ step, phone, widgetId, tokenAuth, sentRef }: { step: "for
     if (!phone || sentRef.current) return;
     const last = Number(localStorage.getItem("lk_otp_last") || "0");
     if (Date.now() - last < 90_000) return;
-    async function loadAndSend() {
-      const urls = ["https://verify.msg91.com/otp-provider.js", "https://verify.phone91.com/otp-provider.js"];
-      let i = 0;
-      await new Promise<void>((resolve, reject) => {
-        function attempt() {
-          if ((window as any).__msg91ScriptLoaded) {
-            resolve();
-            return;
-          }
-          const s = document.createElement("script");
-          s.src = urls[i];
-          s.async = true;
-          s.onload = () => {
-            (window as any).__msg91ScriptLoaded = true;
-            resolve();
-          };
-          s.onerror = () => {
-            i++;
-            if (i < urls.length) attempt();
-            else reject(new Error("failed"));
-          };
-          document.head.appendChild(s);
+    async function sendDirect() {
+      try {
+        const fr = await fetch("/api/auth/send-otp", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ phone }),
+        });
+        const fj = await fr.json();
+        if (fj?.ok) {
+          localStorage.setItem("lk_otp_last", String(Date.now()));
+          sentRef.current = true;
         }
-        attempt();
-      });
-      const cfg: any = {
-        widgetId,
-        tokenAuth,
-        identifier: phone,
-        exposeMethods: true,
-        success: async (data: any) => {
-          const token =
-            data?.["access-token"] ||
-            data?.accessToken ||
-            data?.token ||
-            data?.data?.token ||
-            data?.data?.["access-token"] ||
-            "";
-          try {
-            const r = await fetch("/api/auth/msg91/verify", {
-              method: "POST",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify({ accessToken: token, role: "provider", phone }),
-            });
-            const j = await r.json();
-            if (j?.ok && j?.verified) {
-              localStorage.setItem("lk_otp_last", String(Date.now()));
-              sentRef.current = true;
-              window.location.href = "/ar/providers/login?verified=true";
-            }
-          } catch {}
-        },
-        failure: async () => {
-          try {
-            await fetch("/api/auth/send-otp", {
-              method: "POST",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify({ phone }),
-            });
-          } catch {}
-        },
-      };
-      if (typeof (window as any).initSendOTP === "function") {
-        sentRef.current = true;
-        (window as any).initSendOTP(cfg);
-      }
+      } catch {}
     }
-    loadAndSend();
+    sendDirect();
   }, [step, phone, widgetId, tokenAuth, sentRef]);
   return null;
 }

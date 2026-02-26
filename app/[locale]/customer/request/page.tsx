@@ -13,8 +13,8 @@
  export default function NewCustomerRequestPage({ params }: { params: { locale: string } }) {
    const locale = asLocale(params?.locale);
    const isAr = locale === "ar";
-   const [city, setCity] = React.useState("");
-   const [service, setService] = React.useState("");
+  const [city, setCity] = React.useState("");
+  const [service, setService] = React.useState("");
    const [notes, setNotes] = React.useState("");
    const [busy, setBusy] = React.useState(false);
    const [msg, setMsg] = React.useState("");
@@ -46,20 +46,36 @@
      setBusy(false);
    }
  
-   return (
+  const cityOptions = [
+    "الرياض","مكة","المدينة","القصيم","حائل","الحدود الشمالية","الجوف","تبوك","جدة","نجران","عسير"
+  ];
+  const serviceOptions = [
+    "كشته رمليه","كشته جبليه","كشته ساحليه","مخيم","شاليه","مزرعة","مسبح","ملعب كرة قدم"
+  ];
+
+  return (
      <main style={{ maxWidth: 680, margin: "0 auto", padding: 16 }} dir={isAr ? "rtl" : "ltr"}>
        <h1 style={{ fontWeight: 900, fontSize: 24, marginBottom: 12 }}>
          {isAr ? "طلب خدمة جديد" : "New Service Request"}
        </h1>
        {msg && <div style={{ padding: 12, background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 10, marginBottom: 12, color: "#374151", fontWeight: 700 }}>{msg}</div>}
        <div style={{ display: "grid", gap: 12 }}>
-         <input placeholder={isAr ? "المدينة" : "City"} value={city} onChange={(e) => setCity(e.target.value)} style={{ height: 44, borderRadius: 10, border: "1px solid #ddd", paddingInline: 12 }} />
-         <input placeholder={isAr ? "نوع الخدمة" : "Service Type"} value={service} onChange={(e) => setService(e.target.value)} style={{ height: 44, borderRadius: 10, border: "1px solid #ddd", paddingInline: 12 }} />
+        <select value={city} onChange={(e) => setCity(e.target.value)} style={{ height: 44, borderRadius: 10, border: "1px solid #ddd", paddingInline: 12 }}>
+          <option value="">{isAr ? "اختر المدينة" : "Select City"}</option>
+          {cityOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select value={service} onChange={(e) => setService(e.target.value)} style={{ height: 44, borderRadius: 10, border: "1px solid #ddd", paddingInline: 12 }}>
+          <option value="">{isAr ? "اختر نوع الخدمة" : "Select Service"}</option>
+          {serviceOptions.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
          <textarea placeholder={isAr ? "ملاحظات إضافية" : "Additional notes"} value={notes} onChange={(e) => setNotes(e.target.value)} style={{ minHeight: 90, borderRadius: 10, border: "1px solid #ddd", paddingInline: 12, paddingBlock: 8 }} />
          <button onClick={submit} disabled={busy} style={{ height: 44, borderRadius: 12, border: "none", background: "#111", color: "#fff", fontWeight: 900 }}>
            {busy ? (isAr ? "جارٍ الإرسال..." : "Submitting...") : (isAr ? "إنشاء الطلب" : "Create Request")}
          </button>
          {ref && <div style={{ color: "#111", fontWeight: 800 }}>{isAr ? `رقم الطلب: ${ref}` : `Request Ref: ${ref}`}</div>}
+        <button onClick={() => { window.location.href = `/${locale}/customer/dashboard`; }} style={{ height: 40, borderRadius: 10, border: "1px solid #111", background: "#fff", color: "#111", fontWeight: 900 }}>
+          {isAr ? "عودة للوحة العميل" : "Back to Dashboard"}
+        </button>
        </div>
      </main>
    );
