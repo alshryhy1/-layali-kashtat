@@ -91,23 +91,18 @@ export default function CustomerLoginPage({ params }: { params: Promise<{ locale
         setBusy(false);
         return;
       }
-      const res = await fetch("/api/customers/signup", {
+      setIdentifier(canonPhone(phone));
+      const fr = await fetch("/api/auth/send-otp", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email, phone, password, name, accepted: true }),
+        body: JSON.stringify({ phone: canonPhone(phone) }),
       });
-      const j = await res.json();
-      if (j.ok) {
-        if (j.message === "verification_required_otp") {
-          setIdentifier(canonPhone(phone));
-          setMsg(isAr ? "جارٍ إرسال رمز التفعيل إلى جوالك" : "Sending OTP to your mobile");
-          setView("otp");
-        } else if (j.message === "verification_sent_email") {
-          setMsg(isAr ? "تم إرسال رابط التفعيل إلى بريدك." : "Verification link sent to your email.");
-          setView("login");
-        }
+      const fj = await fr.json();
+      if (fj?.ok) {
+        setMsg(isAr ? "تم إرسال رمز التفعيل إلى جوالك" : "OTP sent to your mobile");
+        setView("otp");
       } else {
-        setMsg(isAr ? "تعذّر إنشاء الحساب" : "Failed to create account");
+        setMsg(isAr ? "تعذّر إرسال الرمز" : "Failed to send OTP");
       }
     } catch {
       setMsg(isAr ? "حدث خطأ" : "Error");
@@ -120,17 +115,28 @@ export default function CustomerLoginPage({ params }: { params: Promise<{ locale
     setBusy(true);
     setMsg("");
     try {
-      const res = await fetch("/api/auth/verify-otp", {
+      const v = await fetch("/api/auth/verify-otp", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ phone: identifier, otp }),
+        body: JSON.stringify({ phone: identifier, otp, role: "customer" }),
       });
-      const j = await res.json();
-      if (res.ok) {
+      const vj = await v.json();
+      if (!vj?.ok) {
+        setMsg(vj?.error || (isAr ? "رمز غير صحيح" : "Invalid code"));
+        setBusy(false);
+        return;
+      }
+      const r = await fetch("/api/customers/signup", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email, phone, password, name, accepted: true }),
+      });
+      const j = await r.json();
+      if (j?.ok) {
         router.push(`/${locale}/customer/dashboard`);
         return;
       }
-      setMsg(j?.error || (isAr ? "رمز غير صحيح" : "Invalid code"));
+      setMsg(isAr ? "تعذّر إنشاء الحساب" : "Failed to create account");
     } catch {
       setMsg(isAr ? "حدث خطأ" : "Error");
     }

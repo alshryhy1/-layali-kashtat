@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { verifyOTP } from "@/lib/authentica";
+import { verifyOTP } from "@/lib/msg91";
 import { db } from "@/lib/db";
 import { signToken } from "@/lib/auth-customer";
 import { cookies } from "next/headers";

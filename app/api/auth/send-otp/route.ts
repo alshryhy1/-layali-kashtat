@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sendOTP } from "@/lib/authentica";
+import { sendOTP } from "@/lib/msg91";
 import { cookies } from "next/headers";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
       path: "/",
       maxAge: 60 * 60 * 24,
     });
-    return json(true, { sent: true, provider: "authentica", info: res });
+    return json(true, { sent: true, provider: "msg91", info: res });
   } catch (e: any) {
     return json(false, { error: e?.message || "server_error" }, 500);
   }
