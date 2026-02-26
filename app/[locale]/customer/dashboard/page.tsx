@@ -57,6 +57,13 @@ export default async function CustomerDashboardPage({ params }: { params: Promis
         <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 12 }}>
           {isAr ? "طلباتك" : "Your Requests"}
         </h2>
+        <div style={{ marginBottom: 12 }}>
+          <Link href={`/${locale}/customer/request`} style={{ textDecoration: "none" }}>
+            <button style={{ height: 40, borderRadius: 10, border: "1px solid #111", background: "#111", color: "#fff", fontWeight: 900, padding: "0 14px", cursor: "pointer" }}>
+              {isAr ? "طلب جديد" : "New Request"}
+            </button>
+          </Link>
+        </div>
  
         {requests.length === 0 ? (
           <div style={{ padding: 16, borderRadius: 12, border: "1px solid #eee", background: "#fafafa", color: "#6b7280" }}>
