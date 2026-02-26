@@ -13,7 +13,6 @@ export default function ProviderRegisterForm() {
    const [busy, setBusy] = React.useState(false);
   const [agree, setAgree] = React.useState(false);
   const [step, setStep] = React.useState<"form" | "otp">("form");
-  const [otp, setOtp] = React.useState("");
   const widgetId = process.env.NEXT_PUBLIC_MSG91_WIDGET_ID as any;
   const tokenAuth = process.env.NEXT_PUBLIC_MSG91_TOKEN_AUTH as any;
   const sentRef = React.useRef(false);
@@ -55,6 +54,22 @@ export default function ProviderRegisterForm() {
     return s;
   }
 
+  async function loadWidget() {
+    if (typeof window === "undefined") return;
+    if ((window as any).__msg91ScriptLoaded) return;
+    await new Promise<void>((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = "https://control.msg91.com/app/assets/otp-provider/otp-provider.js";
+      s.async = true;
+      s.onload = () => {
+        (window as any).__msg91ScriptLoaded = true;
+        resolve();
+      };
+      s.onerror = () => reject(new Error("failed"));
+      document.head.appendChild(s);
+    });
+  }
+
   async function submit() {
     const chosen = [...serviceTypes, ...(otherEnabled && otherText.trim() ? [otherText.trim()] : [])];
     if (!name || !email || !phone || !city || chosen.length === 0 || !password) {
@@ -71,34 +86,52 @@ export default function ProviderRegisterForm() {
      }
      setBusy(true);
      setMsg("");
-     try {
-      const r = await fetch("/api/providers/signup", {
-         method: "POST",
-         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          name,
-          email,
-          phone,
-          city,
-          service_types: chosen,
-          password,
-          accepted: true,
-        }),
-       });
-       const j = await r.json();
-      if (j?.ok && j?.message === "verification_required_otp") {
-        const p = canonPhone(phone);
-        try {
-          await fetch("/api/auth/send-otp", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ phone: p }) });
-        } catch {}
-        setStep("otp");
-        setMsg(`أدخل الرمز المرسل إلى ${p}`);
+    try {
+      await loadWidget();
+      const p = canonPhone(phone);
+      const cfg: any = {
+        widgetId,
+        tokenAuth,
+        identifier: p,
+        exposeMethods: true,
+        success: async () => {
+          try {
+            const r = await fetch("/api/providers/signup", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({
+                name,
+                email,
+                phone,
+                city,
+                service_types: chosen,
+                password,
+                accepted: true,
+                verified_otp: true,
+              }),
+            });
+            const j = await r.json();
+            if (j?.ok) {
+              window.location.href = "/ar/providers/login?verified=true";
+              return;
+            }
+            setMsg("حدث خطأ");
+          } catch {
+            setMsg("حدث خطأ");
+          }
+        },
+        failure: () => {
+          setMsg("تعذر التحقق عبر MSG91");
+        },
+      };
+      if (typeof (window as any).initMSG91 === "function") {
+        (window as any).initMSG91(cfg);
       } else {
-        setMsg(j?.ok ? "تم التسجيل بنجاح" : "حدث خطأ");
+        setMsg("تعذر تحميل خدمة التحقق");
       }
-     } catch {
-       setMsg("حدث خطأ");
-     }
+    } catch {
+      setMsg("حدث خطأ");
+    }
      setBusy(false);
    }
  
@@ -191,63 +224,11 @@ export default function ProviderRegisterForm() {
         </div>
       ) : (
         <div style={{ display: "grid", gap: 10 }}>
-          <p style={{ textAlign: "center", fontSize: 14, color: "#666" }}>{msg || `أدخل الرمز`}</p>
-          <input value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="أدخل الرمز" style={{ height: 40, borderRadius: 8, border: "1px solid #ddd", padding: "0 10px", textAlign: "center", letterSpacing: 6, fontWeight: 900 }} />
-          <AutoSendOTP step={step} phone={canonPhone(phone)} widgetId={widgetId} tokenAuth={tokenAuth} sentRef={sentRef} />
-          <button
-            onClick={async () => {
-              if (busy) return;
-              setBusy(true);
-              try {
-                const p = canonPhone(phone);
-                const r = await fetch("/api/auth/verify-otp", {
-                  method: "POST",
-                  headers: { "content-type": "application/json" },
-                  body: JSON.stringify({ phone: p, otp, role: "provider" }),
-                });
-                const j = await r.json();
-                if (r.ok && j?.verified) {
-                  window.location.href = "/ar/providers/login?verified=true";
-                  return;
-                }
-                setMsg("تعذر التحقق");
-              } catch {
-                setMsg("تعذر التحقق");
-              }
-              setBusy(false);
-            }}
-            disabled={busy}
-            style={{ height: 44, borderRadius: 10, background: "#111", color: "#fff", border: "none", fontWeight: 900, cursor: "pointer" }}
-          >
-            {busy ? "جارٍ التحقق..." : "جرّب التحقق"}
-          </button>
+          <p style={{ textAlign: "center", fontSize: 14, color: "#666" }}>{msg || `سيتم فتح واجهة MSG91 للتحقق`}</p>
         </div>
       )}
      </div>
    );
  }
 
-function AutoSendOTP({ step, phone, widgetId, tokenAuth, sentRef }: { step: "form" | "otp"; phone: string; widgetId: string; tokenAuth: string; sentRef: React.MutableRefObject<boolean> }) {
-  React.useEffect(() => {
-    if (step !== "otp") return;
-    if (!phone || sentRef.current) return;
-    const last = Number(localStorage.getItem("lk_otp_last") || "0");
-    if (Date.now() - last < 90_000) return;
-    async function sendDirect() {
-      try {
-        const fr = await fetch("/api/auth/send-otp", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ phone }),
-        });
-        const fj = await fr.json();
-        if (fj?.ok) {
-          localStorage.setItem("lk_otp_last", String(Date.now()));
-          sentRef.current = true;
-        }
-      } catch {}
-    }
-    sendDirect();
-  }, [step, phone, widgetId, tokenAuth, sentRef]);
-  return null;
-}
+function AutoSendOTP() { return null; }

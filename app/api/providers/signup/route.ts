@@ -87,14 +87,15 @@ export async function POST(req: Request) {
     const verification_token = crypto.randomBytes(24).toString("hex");
     const status = "pending";
     const servicesJoined = cleanedServices.join(", ");
+    const verifiedOtp = !!body?.verified_otp;
 
     const ins = await db.query(
       "INSERT INTO provider_requests (name, email, phone, password_hash, city, service_type, status, is_verified, verification_token) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id",
-      [name, email || null, phone, hash, city, servicesJoined, status, false, verification_token]
+      [name, email || null, phone, hash, city, servicesJoined, status, verifiedOtp ? true : false, verifiedOtp ? null : verification_token]
     );
     const id = ins.rows[0]?.id;
 
-    return json(true, { id, message: "verification_required_otp" }, 200);
+    return json(true, { id, message: verifiedOtp ? "created" : "verification_required_otp" }, 200);
   } catch (e: any) {
     return json(false, { code: "db_error", message: e?.message || "server_error" }, 500);
   }

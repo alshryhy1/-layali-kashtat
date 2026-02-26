@@ -54,14 +54,15 @@ export async function POST(req: Request) {
 
     const hash = await bcrypt.hash(password, 10);
     const verification_token = crypto.randomBytes(24).toString("hex");
+    const verifiedOtp = !!body?.verified_otp;
 
     const ins = await db.query(
       "INSERT INTO customers (name, email, phone, password, is_verified, verification_token) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id",
-      [name, email, phone, hash, false, verification_token]
+      [name, email, phone, hash, verifiedOtp ? true : false, verifiedOtp ? null : verification_token]
     );
     const id = ins.rows[0]?.id;
 
-    return json(true, { id, message: "verification_required_otp" });
+    return json(true, { id, message: verifiedOtp ? "created" : "verification_required_otp" });
   } catch (e: any) {
     return json(false, { error: e?.message || "server_error" }, 500);
   }

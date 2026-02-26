@@ -76,6 +76,22 @@ export default function CustomerLoginPage({ params }: { params: Promise<{ locale
     setBusy(false);
   }
 
+  async function loadWidget() {
+    if (typeof window === "undefined") return;
+    if ((window as any).__msg91ScriptLoaded) return;
+    await new Promise<void>((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = "https://control.msg91.com/app/assets/otp-provider/otp-provider.js";
+      s.async = true;
+      s.onload = () => {
+        (window as any).__msg91ScriptLoaded = true;
+        resolve();
+      };
+      s.onerror = () => reject(new Error("failed"));
+      document.head.appendChild(s);
+    });
+  }
+
   async function onSignup(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -91,56 +107,52 @@ export default function CustomerLoginPage({ params }: { params: Promise<{ locale
         setBusy(false);
         return;
       }
-      setIdentifier(canonPhone(phone));
-      const fr = await fetch("/api/auth/send-otp", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ phone: canonPhone(phone) }),
-      });
-      const fj = await fr.json();
-      if (fj?.ok) {
-        setMsg(isAr ? "تم إرسال رمز التفعيل إلى جوالك" : "OTP sent to your mobile");
-        setView("otp");
+      await loadWidget();
+      const p = canonPhone(phone);
+      setIdentifier(p);
+      const cfg: any = {
+        widgetId,
+        tokenAuth,
+        identifier: p,
+        exposeMethods: true,
+        success: async () => {
+          try {
+            const r = await fetch("/api/customers/signup", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ email, phone, password, name, accepted: true, verified_otp: true }),
+            });
+            const j = await r.json();
+            if (j?.ok) {
+              router.push(`/${locale}/customer/dashboard`);
+              return;
+            }
+            setMsg(isAr ? "تعذّر إنشاء الحساب" : "Failed to create account");
+          } catch {
+            setMsg(isAr ? "تعذّر إنشاء الحساب" : "Failed to create account");
+          } finally {
+            setBusy(false);
+          }
+        },
+        failure: () => {
+          setMsg(isAr ? "تعذّر التحقق عبر MSG91" : "MSG91 verification failed");
+          setBusy(false);
+        },
+      };
+      if (typeof (window as any).initMSG91 === "function") {
+        (window as any).initMSG91(cfg);
       } else {
-        setMsg(isAr ? "تعذّر إرسال الرمز" : "Failed to send OTP");
+        setMsg(isAr ? "تعذّر تحميل خدمة التحقق" : "Failed to load verification");
+        setBusy(false);
       }
     } catch {
       setMsg(isAr ? "حدث خطأ" : "Error");
     }
-    setBusy(false);
+    // busy cleared inside success/failure
   }
 
   async function onVerifyOTP(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true);
-    setMsg("");
-    try {
-      const v = await fetch("/api/auth/verify-otp", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ phone: identifier, otp, role: "customer" }),
-      });
-      const vj = await v.json();
-      if (!vj?.ok) {
-        setMsg(vj?.error || (isAr ? "رمز غير صحيح" : "Invalid code"));
-        setBusy(false);
-        return;
-      }
-      const r = await fetch("/api/customers/signup", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email, phone, password, name, accepted: true }),
-      });
-      const j = await r.json();
-      if (j?.ok) {
-        router.push(`/${locale}/customer/dashboard`);
-        return;
-      }
-      setMsg(isAr ? "تعذّر إنشاء الحساب" : "Failed to create account");
-    } catch {
-      setMsg(isAr ? "حدث خطأ" : "Error");
-    }
-    setBusy(false);
   }
 
   const onVerifyMSG91 = React.useCallback(async () => {
@@ -343,18 +355,11 @@ export default function CustomerLoginPage({ params }: { params: Promise<{ locale
       )}
 
       {view === "otp" && (
-        <form onSubmit={onVerifyOTP} style={{ display: "grid", gap: 12, background: "#fff", border: "1px solid #eee", borderRadius: 16, padding: 16 }}>
+        <div style={{ display: "grid", gap: 12, background: "#fff", border: "1px solid #eee", borderRadius: 16, padding: 16 }}>
           <p style={{ textAlign: "center", color: "#666" }}>
-            {isAr ? `أدخل الرمز المرسل إلى ${identifier}` : `Enter code sent to ${identifier}`}
+            {isAr ? `سيتم فتح واجهة MSG91 للتحقق من ${identifier}` : `MSG91 widget will open to verify ${identifier}`}
           </p>
-          <input placeholder="1234" value={otp} onChange={e => setOtp(e.target.value)} style={{ height: 44, borderRadius: 10, border: "1px solid #ddd", paddingInline: 12, textAlign: "center", fontWeight: 900, letterSpacing: 6 }} />
-          <button type="submit" disabled={busy} style={{ height: 44, borderRadius: 12, border: "none", background: "#111", color: "#fff", fontWeight: 900 }}>
-            {busy ? (isAr ? "جارٍ التحقق..." : "Verifying...") : (isAr ? "تأكيد الرمز" : "Confirm Code")}
-          </button>
-          <button type="button" onClick={() => setView("login")} style={{ background: "none", border: "none", color: "#666", textDecoration: "underline" }}>
-            {isAr ? "عودة" : "Back"}
-          </button>
-        </form>
+        </div>
       )}
     </main>
   );
