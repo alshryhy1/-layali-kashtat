@@ -139,7 +139,32 @@ export default function CustomerLoginPage({ params }: { params: Promise<{ locale
 
   const onVerifyMSG91 = React.useCallback(async () => {
     if (!widgetId) {
-      setMsg(isAr ? "لم يتم إعداد خدمة التحقق" : "Verification service not configured");
+      if (sentRef.current) return;
+      const last = Number(localStorage.getItem("lk_otp_last") || "0");
+      if (Date.now() - last < 90_000) {
+        setMsg(isAr ? "يرجى الانتظار قبل طلب رمز جديد" : "Please wait before requesting a new code");
+        return;
+      }
+      setBusy(true);
+      setMsg("");
+      try {
+        const fr = await fetch("/api/auth/send-otp", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ phone: identifier }),
+        });
+        const fj = await fr.json();
+        if (fj?.ok) {
+          localStorage.setItem("lk_otp_last", String(Date.now()));
+          setMsg(isAr ? "تم إرسال الرمز عبر القناة الاحتياطية" : "OTP sent via fallback channel");
+        } else {
+          setMsg(isAr ? "تعذّر إرسال الرمز. حاول لاحقاً." : "Failed to send OTP. Try later.");
+        }
+      } catch {
+        setMsg(isAr ? "تعذّر إرسال الرمز. حاول لاحقاً." : "Failed to send OTP. Try later.");
+      } finally {
+        setBusy(false);
+      }
       return;
     }
     if (sentRef.current) return;
