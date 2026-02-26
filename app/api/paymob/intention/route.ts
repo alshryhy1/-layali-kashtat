@@ -46,6 +46,10 @@ export async function POST(req: Request) {
       // Haraj marketplace flow: commission = 1% of sale price
       amount = Math.max(0, Math.round(salePriceBody * 0.01 * 100) / 100);
     }
+    // Enforce provider minimum chargeable amount (Paymob often rejects tiny cents)
+    if (Number.isFinite(amount) && amount > 0 && amount < 1) {
+      amount = 1;
+    }
     if (!Number.isFinite(amount) || amount <= 0) return json(false, { error: "invalid_amount" }, 400);
 
     // Prepare schema (add columns if missing)
