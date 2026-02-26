@@ -1,0 +1,5 @@
+{
+  "extends": ["next"],
+  "ignorePatterns": ["scripts/**", "test-*.js", "ios/**", "public/uploads/**"],
+  "rules": {}
+}

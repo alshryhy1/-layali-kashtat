@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تقرير إثبات فني - ليالي كشتات</title>
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --secondary: #d97706;
+            --bg: #f3f4f6;
+            --surface: #ffffff;
+            --text: #1f2937;
+            --border: #e5e7eb;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--surface);
+            padding: 50px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        header {
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        h1 {
+            color: var(--primary);
+            font-size: 24px;
+            margin: 0;
+        }
+        .subtitle {
+            color: #6b7280;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .meta-box {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        .meta-item label {
+            display: block;
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        .meta-item span {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .section-title {
+            background: var(--primary);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 16px;
+            margin: 40px 0 20px 0;
+            display: inline-block;
+        }
+        .evidence-card {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 30px;
+            background: white;
+            transition: transform 0.2s;
+        }
+        .evidence-card:hover {
+            border-color: var(--secondary);
+        }
+        .evidence-header {
+            padding: 15px 20px;
+            background: #f8fafc;
+            border-bottom: 1px solid var(--border);
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .evidence-body {
+            padding: 20px;
+            text-align: center;
+        }
+        .evidence-body img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid #eee;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .evidence-desc {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #4b5563;
+            text-align: right;
+        }
+        .badge {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        footer {
+            margin-top: 60px;
+            text-align: center;
+            font-size: 12px;
+            color: #9ca3af;
+            border-top: 1px solid var(--border);
+            padding-top: 20px;
+        }
+        @media print {
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; border: none; padding: 20px; max-width: 100%; }
+            .section-title { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>وثيقة إثبات مشروع تقني</h1>
+                <div class="subtitle">Technical Verification Document for Freelance License</div>
+            </div>
+            <div style="text-align: left;">
+                <div style="font-weight: bold;">التاريخ: 2026/01/22</div>
+                <div style="font-size: 12px; color: #6b7280;">Ref: LAYALI-DEV-2026</div>
+            </div>
+        </header>
+
+        <div class="meta-box">
+            <div class="meta-item">
+                <label>اسم المطور (Developer)</label>
+                <span>حسن خميس زيدان الشمري</span>
+            </div>
+            <div class="meta-item">
+                <label>نوع العمل (Role)</label>
+                <span>تطوير وبرمجة المواقع (Full Stack Developer)</span>
+            </div>
+            <div class="meta-item">
+                <label>اسم المشروع (Project Name)</label>
+                <span>ليالي كشتات (Layali Kashtat)</span>
+            </div>
+            <div class="meta-item">
+                <label>التقنيات المستخدمة (Tech Stack)</label>
+                <div style="display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px;">
+                    <span class="badge">Next.js</span>
+                    <span class="badge">React</span>
+                    <span class="badge">TypeScript</span>
+                    <span class="badge">Supabase</span>
+                    <span class="badge">Vercel</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title">1. إثبات ملكية الكود والبيئة البرمجية (Code Ownership)</div>
+        <div class="evidence-card">
+            <div class="evidence-header">
+                <span>💻</span> بيئة التطوير (VS Code Environment)
+            </div>
+            <div class="evidence-body">
+                <img src="./vscode_proof.png" alt="VS Code Screenshot">
+                <div class="evidence-desc">
+                    لقطة شاشة من المحرر البرمجي توضح هيكلية ملفات المشروع (File Structure)، والمجلدات الخاصة بـ Next.js (app router)، مما يثبت أن المشروع مبني من الصفر وليس قالب جاهز.
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title">2. حالة النشر والبيئة التشغيلية (Deployment Status)</div>
+        <div class="evidence-card">
+            <div class="evidence-header">
+                <span>🚀</span> حالة الخادم (Server Status)
+            </div>
+            <div class="evidence-body">
+                <img src="./vercel_proof.png" alt="Vercel Dashboard">
+                <div class="evidence-desc">
+                    لقطة شاشة من لوحة تحكم الاستضافة توضح أن المشروع نشط (Active) في بيئة التطوير، وجاهز للإطلاق النهائي.
+                    <br>
+                    <span style="color: #d97706; font-size: 12px;">ملاحظة: المشروع يعمل حالياً على بيئة التطوير الخاصة (Private Environment) لأغراض الصيانة والتحديث.</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="evidence-card">
+            <div class="evidence-header">
+                <span>⚙️</span> لوحة تحكم الإدارة (Admin Dashboard)
+            </div>
+            <div class="evidence-body">
+                <img src="./dashboard.bng.png" alt="Admin Dashboard">
+                <div class="evidence-desc">
+                    صورة لواجهة "لوحة التحكم" الخاصة بمدير النظام، والتي تتيح استعراض الطلبات وإدارتها، وهي ميزة برمجية متقدمة تثبت كفاءة العمل.
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title">3. واجهة المستخدم النهائية (User Interface)</div>
+        <div class="evidence-card">
+            <div class="evidence-header">
+                <span>📱</span> الصفحة الرئيسية (Home Page)
+            </div>
+            <div class="evidence-body">
+                <img src="./layali-home.png.png" alt="Home Page">
+                <div class="evidence-desc">
+                    الواجهة الأمامية للموقع كما تظهر للمستخدمين، وتوضح التصميم المتجاوب ودعم اللغة العربية.
+                </div>
+            </div>
+        </div>
+
+        <div class="evidence-card">
+            <div class="evidence-header">
+                <span>📝</span> نموذج تقديم الطلب (Request Form)
+            </div>
+            <div class="evidence-body">
+                <img src="./layali-request.png.png" alt="Request Page">
+                <div class="evidence-desc">
+                    صفحة تفاعلية تتيح للمستخدمين إرسال البيانات، مما يثبت قدرة المطور على التعامل مع النماذج (Forms) ومعالجة البيانات.
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            تم إنشاء هذا التقرير تلقائياً من بيئة التطوير الخاصة بالمشروع لغرض التوثيق الرسمي.
+            <br>
+            &copy; 2026 Layali Kashtat Development Team.
+        </footer>
+    </div>
+</body>
+</html>

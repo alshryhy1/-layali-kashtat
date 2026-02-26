@@ -1,0 +1,4 @@
+scripts/**
+ios/**
+public/uploads/**
+test-*.js

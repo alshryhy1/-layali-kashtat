@@ -1,0 +1,11 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" aria-labelledby="title desc" role="img">
+  <title>Layali Kashtat Logo</title>
+  <desc>Minimal monogram logo LK with rounded strokes, transparent background.</desc>
+  <g fill="none" stroke="#0F172A" stroke-width="48" stroke-linecap="round" stroke-linejoin="round">
+    <!-- L -->
+    <path d="M128 128 L128 384" />
+    <!-- K -->
+    <path d="M256 256 L384 128" />
+    <path d="M256 256 L384 384" />
+  </g>
+</svg>

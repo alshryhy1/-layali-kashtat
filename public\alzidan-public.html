@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8" />
+    <title>شجرة عائلة الزيدان</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #111827;
+        }
+        .page {
+            max-width: 1024px;
+            margin: 0 auto;
+            padding: 24px 16px 48px;
+        }
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .logo {
+            width: 32px;
+            height: 32px;
+            border-radius: 999px;
+            background: radial-gradient(circle at 30% 30%, #34d399, #047857);
+        }
+        .brand-text-main {
+            font-weight: 700;
+            font-size: 18px;
+        }
+        .brand-text-sub {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        nav {
+            display: flex;
+            gap: 12px;
+            font-size: 14px;
+        }
+        nav a {
+            color: #374151;
+            text-decoration: none;
+            padding: 6px 10px;
+            border-radius: 999px;
+        }
+        nav a:hover {
+            background-color: #e5e7eb;
+        }
+        .hero {
+            background: linear-gradient(135deg, #ecfdf5, #eff6ff);
+            border-radius: 16px;
+            padding: 20px 16px;
+            margin-bottom: 20px;
+        }
+        .hero-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .hero-text {
+            font-size: 14px;
+            color: #4b5563;
+            margin-bottom: 12px;
+        }
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .btn {
+            border: none;
+            padding: 9px 16px;
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .btn-primary {
+            background-color: #047857;
+            color: #ffffff;
+        }
+        .btn-primary:hover {
+            background-color: #065f46;
+        }
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid #d1d5db;
+            color: #111827;
+        }
+        .btn-outline:hover {
+            background-color: #e5e7eb;
+        }
+        .section {
+            margin-top: 24px;
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 8px;
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .section-sub {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        .link-small {
+            font-size: 12px;
+            color: #2563eb;
+            text-decoration: none;
+        }
+        .link-small:hover {
+            text-decoration: underline;
+        }
+        .branches-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+        .branch-card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 14px 12px;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+            font-size: 14px;
+        }
+        .branch-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .branch-desc {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            background-color: #eff6ff;
+            color: #1d4ed8;
+        }
+        .events-list {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 12px 12px 4px;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+            font-size: 13px;
+        }
+        .event-item {
+            padding: 6px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .event-main {
+            font-weight: 500;
+        }
+        .event-meta {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+        .event-type {
+            font-size: 11px;
+            color: #065f46;
+            background-color: #ecfdf5;
+            border-radius: 999px;
+            padding: 2px 6px;
+            margin-left: 4px;
+        }
+        .about-card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 14px 12px;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+            font-size: 13px;
+        }
+        footer {
+            margin-top: 24px;
+            font-size: 11px;
+            color: #9ca3af;
+            text-align: center;
+        }
+        @media (max-width: 640px) {
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            nav {
+                width: 100%;
+                justify-content: flex-start;
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <header>
+            <div class="brand">
+                <div class="logo"></div>
+                <div>
+                    <div class="brand-text-main">شجرة عائلة الزيدان</div>
+                    <div class="brand-text-sub">ذرية مطلق بن زيدان</div>
+                </div>
+            </div>
+            <nav>
+                <a href="#branches">فروع العائلة</a>
+                <a href="#events">المناسبات</a>
+                <a href="#about">عن الموقع</a>
+                <a href="alzidan-tree.html" target="_blank" rel="noopener noreferrer">تفاصيل الشجرة</a>
+            </nav>
+        </header>
+
+        <section class="hero">
+            <div class="hero-title">أبناء مطلق بن زيدان في مكان واحد</div>
+            <div class="hero-text">
+                منصة تعريفية تجمع فروع ذرية مطلق بن زيدان، وتعرض أبناء العائلة الأحياء مع أعمارهم التقريبية
+                ومواقع سكنهم، بالإضافة إلى المناسبات العائلية من مواليد وتخرّج ودعاء للمرضى.
+            </div>
+            <div class="hero-actions">
+                <button type="button" class="btn btn-primary" onclick="scrollToSection('branches')">
+                    عرض فروع العائلة
+                </button>
+                <button type="button" class="btn btn-outline" onclick="scrollToSection('events')">
+                    مشاهدة المناسبات العائلية
+                </button>
+            </div>
+        </section>
+
+        <section id="branches" class="section">
+            <div class="section-header">
+                <div>
+                    <div class="section-title">فروع ذرية مطلق بن زيدان</div>
+                    <div class="section-sub">تقسيم عائلي من خمسة فروع رئيسية للأبناء: زيدان، مزيد، زايد، لاحم، ملحم.</div>
+                </div>
+            </div>
+            <div class="branches-grid">
+                <div class="branch-card">
+                    <div class="branch-name">ذرية زيدان بن مطلق بن زيدان</div>
+                    <div class="branch-desc">
+                        يشمل أبناء زيدان بن مطلق وأحفادهم، ويمكن استعراض أبنائهم الأحياء وأماكن سكنهم.
+                    </div>
+                    <span class="badge">فرع زيدان</span>
+                </div>
+                <div class="branch-card">
+                    <div class="branch-name">ذرية مزيد بن مطلق بن زيدان</div>
+                    <div class="branch-desc">
+                        يشمل أبناء مزيد بن مطلق وأحفادهم، مع إمكانية إظهار الأعمار التقريبية والمدينة والحي.
+                    </div>
+                    <span class="badge">فرع مزيد</span>
+                </div>
+                <div class="branch-card">
+                    <div class="branch-name">ذرية زايد بن مطلق بن زيدان</div>
+                    <div class="branch-desc">
+                        فرع زايد بن مطلق، وتُعرض فيه بيانات الأبناء الأحياء فقط حفاظًا على خصوصية العائلة.
+                    </div>
+                    <span class="badge">فرع زايد</span>
+                </div>
+                <div class="branch-card">
+                    <div class="branch-name">ذرية لاحم بن مطلق بن زيدان</div>
+                    <div class="branch-desc">
+                        يتضمن أبناء لاحم بن مطلق وأحفادهم في المدن والقرى المختلفة داخل المملكة وخارجها.
+                    </div>
+                    <span class="badge">فرع لاحم</span>
+                </div>
+                <div class="branch-card">
+                    <div class="branch-name">ذرية ملحم بن مطلق بن زيدان</div>
+                    <div class="branch-desc">
+                        فرع ملحم بن مطلق، مع إمكانية تطوير صفحات تفصيلية لكل شخص مستقبلاً بإذن الله.
+                    </div>
+                    <span class="badge">فرع ملحم</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="events" class="section">
+            <div class="section-header">
+                <div>
+                    <div class="section-title">المناسبات العائلية</div>
+                    <div class="section-sub">أخبار مختصرة عن المواليد والتخرّج والحالات الصحية لأبناء العائلة.</div>
+                </div>
+                <a href="#" class="link-small">عرض الأرشيف الكامل لاحقًا</a>
+            </div>
+            <div class="events-list">
+                <div class="event-item">
+                    <div class="event-main">
+                        <span class="event-type">مولود جديد</span>
+                        نبارك لفلان بن فلان بمولود جديد، نسأل الله أن يجعله من مواليد السعادة.
+                    </div>
+                    <div class="event-meta">الفرع: ذرية مزيد بن مطلق – التاريخ: 27/01/2026</div>
+                </div>
+                <div class="event-item">
+                    <div class="event-main">
+                        <span class="event-type">تخرّج</span>
+                        نبارك لفلانة بنت فلان حصولها على درجة الماجستير من إحدى الجامعات السعودية.
+                    </div>
+                    <div class="event-meta">الفرع: ذرية زيدان بن مطلق – التاريخ: 15/10/2025</div>
+                </div>
+                <div class="event-item">
+                    <div class="event-main">
+                        <span class="event-type">دعاء لمريض</span>
+                        نسأل الله الشفاء العاجل لفلان بن فلان، ونسألكم الدعاء له بظهر الغيب.
+                    </div>
+                    <div class="event-meta">الفرع: ذرية لاحم بن مطلق – التاريخ: 03/05/2025</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="about" class="section">
+            <div class="section-header">
+                <div class="section-title">عن الموقع</div>
+            </div>
+            <div class="about-card">
+                <p>
+                    يهدف هذا الموقع إلى توثيق شجرة عائلة الزيدان، وتنظيم فروع ذرية مطلق بن زيدان
+                    بطريقة عصرية تحافظ على صلة الرحم وتسهّل معرفة أبناء العمومة وأماكن إقامتهم.
+                </p>
+                <p>
+                    يركّز الموقع على عرض بيانات الأبناء الأحياء فقط، مثل الاسم والعمر التقريبي والمدينة والحي أو القرية،
+                    دون إظهار أرقام الجوال أو أي معلومات حساسة، احترامًا لخصوصية العائلة.
+                </p>
+                <p>
+                    يتم تحديث بيانات الشجرة والمناسبات عن طريق مناديب معتمدين من كل فرع، مع إمكانية تطوير مزايا
+                    إضافية مستقبلًا مثل الإشعارات الفورية والتكامل مع الصندوق العائلي.
+                </p>
+            </div>
+        </section>
+
+        <footer>
+            شجرة عائلة الزيدان – نسخة أولية للعرض العام. يمكن تطوير مزيد من الصفحات والمزايا عند الحاجة.
+        </footer>
+    </div>
+
+    <script>
+        function scrollToSection(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+        }
+    </script>
+</body>
+</html>
