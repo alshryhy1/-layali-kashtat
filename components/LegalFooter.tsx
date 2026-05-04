@@ -46,6 +46,10 @@
          <a href={`/${locale}/terms`} style={{ color: "#555", textDecoration: "none" }}>
            {isAr ? "الشروط والأحكام" : "Terms of Service"}
          </a>
+        <span style={{ color: "#ddd" }}>|</span>
+        <a href={`/${locale}/delete-account`} style={{ color: "#555", textDecoration: "none" }}>
+          {isAr ? "حذف الحساب" : "Delete Account"}
+        </a>
        </div>
        
        <div style={{ fontSize: 13, color: "#666" }}>
