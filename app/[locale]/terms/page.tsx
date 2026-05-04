@@ -1,4 +1,5 @@
 import React from "react";
+import LegalFooter from "@/components/LegalFooter";
 
 const H2 = ({ children }: { children: React.ReactNode }) => (
   <h2 style={{ fontSize: 20, fontWeight: 700, marginTop: 24, marginBottom: 12 }}>{children}</h2>
@@ -19,16 +20,20 @@ export default async function TermsPage({
   const isAr = locale !== "en";
 
   return (
-    <main style={{ maxWidth: 800, margin: "0 auto", padding: "40px 20px", direction: isAr ? "rtl" : "ltr" }}>
-      <h1 style={{ fontSize: 28, fontWeight: 900, marginBottom: 24 }}>
-        {isAr ? "الشروط والأحكام" : "Terms of Service"}
-      </h1>
+    <>
+      <main style={{ maxWidth: 800, margin: "0 auto", padding: "40px 20px", direction: isAr ? "rtl" : "ltr" }}>
+        <h1 style={{ fontSize: 28, fontWeight: 900, marginBottom: 10 }}>
+          {isAr ? "الشروط والأحكام" : "Terms of Service"}
+        </h1>
+        <p style={{ marginBottom: 22, color: "#6b7280", fontWeight: 700 }}>
+          {isAr ? "آخر تحديث: 2026-05-02" : "Last updated: 2026-05-02"}
+        </p>
 
-      <P>
-        {isAr
-          ? "باستخدام منصة ليالي كشتات، فإنك توافق على هذه الشروط والأحكام. يرجى قراءتها بعناية."
-          : "By using Layali Kashtat, you agree to these Terms of Service. Please read them carefully."}
-      </P>
+        <P>
+          {isAr
+            ? "باستخدام منصة ليالي كشتات، فإنك توافق على هذه الشروط والأحكام. يرجى قراءتها بعناية."
+            : "By using Layali Kashtat, you agree to these Terms of Service. Please read them carefully."}
+        </P>
 
       <H2>{isAr ? "1. طبيعة الخدمة" : "1. Nature of Service"}</H2>
       <UL>
@@ -38,14 +43,14 @@ export default async function TermsPage({
 
       <H2>{isAr ? "2. إنشاء الحساب والتحقق" : "2. Account Creation & Verification"}</H2>
       <UL>
-        <li>{isAr ? "يلزم إدخال معلومات صحيحة، ويُشترط تفعيل البريد الإلكتروني قبل استخدام الحساب." : "Accurate information is required; email verification is mandatory before account use."}</li>
+        <li>{isAr ? "يلزم إدخال معلومات صحيحة، وقد نطلب التحقق من البريد الإلكتروني أو الجوال قبل تفعيل بعض الميزات." : "Accurate information is required; we may require email or phone verification for certain features."}</li>
         <li>{isAr ? "قد نستخدم رموز تحقق للجوال لميزات أمنية إضافية." : "We may use mobile OTP for additional security features."}</li>
       </UL>
 
       <H2>{isAr ? "3. المدفوعات والعمولة" : "3. Payments & Commission"}</H2>
       <UL>
         <li>{isAr ? "تُعالَج المدفوعات عبر مزوّد دفع خارجي موثوق؛ لا نحتفظ ببيانات البطاقات." : "Payments are processed by a trusted external provider; we do not store card data."}</li>
-        <li>{isAr ? "العمولة تُحمَّل على مقدّم الخدمة بحسب الاتفاق." : "Commission is charged to the service provider as agreed."}</li>
+        <li>{isAr ? "قد تُطبق عمولة حسب نوع الخدمة/القسم داخل المنصة. في قسم الحراج تُحسب عمولة قدرها 1% من سعر البيع المُدخل." : "Commission may apply based on the service/section. In the marketplace (Haraj), commission is 1% of the entered sale price."}</li>
       </UL>
 
       <H2>{isAr ? "4. الإلغاء والاسترجاع" : "4. Cancellation & Refunds"}</H2>
@@ -93,12 +98,17 @@ export default async function TermsPage({
           : "We may update these terms; the latest version published on this page applies."}
       </P>
 
-      <H2>{isAr ? "10. التواصل" : "10. Contact"}</H2>
+      <H2>{isAr ? "10. حذف الحساب" : "10. Account Deletion"}</H2>
       <P>
         {isAr
-          ? "للاستفسار حول الشروط أو الحقوق، يرجى التواصل عبر صفحة الدعم والتواصل."
-          : "For inquiries about terms or rights, please contact us via the support/contact page."}
+          ? "يمكنك حذف حسابك من داخل التطبيق عبر: الحساب > حذف الحساب. كما تتوفر صفحة إرشادية على الموقع: /delete-account"
+          : "You can delete your account from within the app via: Account > Delete account. A guidance page is available at: /delete-account"}
       </P>
-    </main>
+
+      <H2>{isAr ? "11. التواصل" : "11. Contact"}</H2>
+      <P>{isAr ? "للاستفسار: support@layali.app" : "Contact: support@layali.app"}</P>
+      </main>
+      <LegalFooter locale={locale} />
+    </>
   );
 }
