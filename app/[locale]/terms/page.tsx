@@ -106,7 +106,17 @@ export default async function TermsPage({
       </P>
 
       <H2>{isAr ? "11. التواصل" : "11. Contact"}</H2>
-      <P>{isAr ? "للاستفسار: layalikashtat1@gmail.com" : "Contact: layalikashtat1@gmail.com"}</P>
+      <P>
+        {isAr ? (
+          <>
+            للاستفسار: <a href="mailto:layalikashtat1@gmail.com">layalikashtat1@gmail.com</a>
+          </>
+        ) : (
+          <>
+            Contact: <a href="mailto:layalikashtat1@gmail.com">layalikashtat1@gmail.com</a>
+          </>
+        )}
+      </P>
       </main>
       <LegalFooter locale={locale} />
     </>

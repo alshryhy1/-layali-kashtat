@@ -137,9 +137,17 @@ export default async function PrivacyPage({
           {isAr ? "11. التواصل معنا" : "11. Contact Us"}
         </h2>
         <p style={{ marginBottom: 16 }}>
-          {isAr 
-            ? "للاستفسارات المتعلقة بالخصوصية أو الحقوق، تواصل معنا عبر البريد: layalikashtat1@gmail.com"
-            : "For privacy or rights inquiries, contact us at: layalikashtat1@gmail.com"}
+          {isAr ? (
+            <>
+              للاستفسارات المتعلقة بالخصوصية أو الحقوق، تواصل معنا عبر البريد:{" "}
+              <a href="mailto:layalikashtat1@gmail.com">layalikashtat1@gmail.com</a>
+            </>
+          ) : (
+            <>
+              For privacy or rights inquiries, contact us at:{" "}
+              <a href="mailto:layalikashtat1@gmail.com">layalikashtat1@gmail.com</a>
+            </>
+          )}
         </p>
       </div>
       </main>

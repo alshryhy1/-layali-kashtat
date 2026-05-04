@@ -40,9 +40,17 @@ export default async function DeleteAccountPage({
 
           <h2 style={{ fontSize: 20, fontWeight: 800, marginTop: 24, marginBottom: 12 }}>{isAr ? "3) إذا تعذر عليك الحذف" : "3) If you cannot delete your account"}</h2>
           <p style={{ marginBottom: 16 }}>
-            {isAr
-              ? "إذا لم تتمكن من تسجيل الدخول أو واجهت مشكلة أثناء الحذف، تواصل معنا عبر البريد: layalikashtat1@gmail.com"
-              : "If you cannot sign in or face issues deleting your account, contact us at: layalikashtat1@gmail.com"}
+            {isAr ? (
+              <>
+                إذا لم تتمكن من تسجيل الدخول أو واجهت مشكلة أثناء الحذف، تواصل معنا عبر البريد:{" "}
+                <a href="mailto:layalikashtat1@gmail.com">layalikashtat1@gmail.com</a>
+              </>
+            ) : (
+              <>
+                If you cannot sign in or face issues deleting your account, contact us at:{" "}
+                <a href="mailto:layalikashtat1@gmail.com">layalikashtat1@gmail.com</a>
+              </>
+            )}
           </p>
         </div>
       </main>
