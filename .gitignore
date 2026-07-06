@@ -44,3 +44,6 @@ next-env.d.ts
 *.zip
 *.rar
 *.7z
+
+# local generated Capacitor/iOS artifacts
+/ios/
