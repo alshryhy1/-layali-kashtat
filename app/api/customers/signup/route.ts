@@ -1,3 +1,8 @@
+/**
+ * Legacy web customer signup → Postgres `customers` + bcrypt (not Supabase Auth).
+ * TODO(Phase1 auth unify): dual-run with /api/customers/signup-supabase then cut over UI.
+ * See signup-supabase/route.ts for the additive Supabase Auth + profiles slice.
+ */
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 // nodemailer disabled for OTP-only flow
@@ -31,7 +36,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => null);
     const name = clean(body?.name);
-    const email = clean(body?.email);
+    const email = clean(body?.email).toLowerCase();
     const phone = normalizePhone(body?.phone || "");
     const password = clean(body?.password);
     const accepted = !!body?.accepted;
@@ -46,11 +51,19 @@ export async function POST(req: Request) {
     if (phone.length < 9) return json(false, { error: "invalid_phone" }, 400);
     if (phone && phone.length < 9) return json(false, { error: "invalid_phone" }, 400);
 
-    const check = await db.query(
-      "SELECT id FROM customers WHERE (email = $1 AND $1 IS NOT NULL AND $1 <> '') OR (phone = $2 AND $2 IS NOT NULL AND $2 <> '') LIMIT 1",
-      [email || null, phone || null]
-    );
-    if (check.rows.length > 0) return json(false, { error: "duplicate_entry" }, 409);
+    const dupSql =
+      "SELECT id, email, phone FROM customers WHERE (email = $1 AND $1 IS NOT NULL AND $1 <> '') OR (phone = $2 AND $2 IS NOT NULL AND $2 <> '') LIMIT 1";
+    const check = await db.query(dupSql, [email || null, phone || null]);
+    if (check.rows.length > 0) {
+      console.log("[customers/signup] duplicate_entry", {
+        email,
+        phone,
+        sql: dupSql,
+        rowCount: check.rows.length,
+        matched: check.rows[0],
+      });
+      return json(false, { error: "duplicate_entry" }, 409);
+    }
 
     const hash = await bcrypt.hash(password, 10);
     const verification_token = crypto.randomBytes(24).toString("hex");
