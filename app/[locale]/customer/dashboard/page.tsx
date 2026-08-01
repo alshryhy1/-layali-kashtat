@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth-customer";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { localeHref } from "@/lib/locales";
  
 type Locale = "ar" | "en";
 function asLocale(v: any): Locale {
@@ -15,7 +16,7 @@ export default async function CustomerDashboardPage({ params }: { params: Promis
  
   const session = await getSession();
   if (!session) {
-    redirect(`/${locale}`);
+    redirect(localeHref(locale, "/"));
   }
  
   let requests: any[] = [];
@@ -58,7 +59,7 @@ export default async function CustomerDashboardPage({ params }: { params: Promis
           {isAr ? "طلباتك" : "Your Requests"}
         </h2>
         <div style={{ marginBottom: 12 }}>
-          <Link href={`/${locale}/customer/request`} style={{ textDecoration: "none" }}>
+          <Link href={localeHref(locale, "/customer/request")} style={{ textDecoration: "none" }}>
             <button style={{ height: 40, borderRadius: 10, border: "1px solid #111", background: "#111", color: "#fff", fontWeight: 900, padding: "0 14px", cursor: "pointer" }}>
               {isAr ? "طلب جديد" : "New Request"}
             </button>
@@ -88,7 +89,7 @@ export default async function CustomerDashboardPage({ params }: { params: Promis
                       {isAr ? "حالة المزود" : "Provider"}: {r.provider_status}
                     </span>
                   )}
-                  <Link href={`/${locale}/haraj`} style={{ textDecoration: "underline", fontWeight: 800 }}>
+                  <Link href={localeHref(locale, "/haraj")} style={{ textDecoration: "underline", fontWeight: 800 }}>
                     {isAr ? "تصفح السوق" : "Browse Market"}
                   </Link>
                 </div>

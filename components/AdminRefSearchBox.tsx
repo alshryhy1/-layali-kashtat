@@ -19,8 +19,7 @@ export default function AdminRefSearchBox({ locale }: Props) {
   }, [initial]);
 
   const base = React.useMemo(() => {
-    // تثبيت المسار الصحيح دائمًا
-    return `/${locale}/admin/requests`;
+    return locale === "en" ? "/en/admin/requests" : "/admin/requests";
   }, [locale]);
 
   const apply = React.useCallback(

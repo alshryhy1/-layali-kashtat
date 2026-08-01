@@ -390,7 +390,7 @@ function PostCard({
 export default function GalleryPage() {
   const pathname = usePathname();
   const router = useRouter();
-  const isAr = pathname.includes("/ar");
+  const isAr = !(pathname === "/en" || pathname?.startsWith("/en/"));
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);

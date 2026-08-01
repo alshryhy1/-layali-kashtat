@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       phone: clean(row.phone || ""),
       email: clean(row.email || ""),
     });
-    return json(true, { redirect: "/ar/customer/dashboard" });
+    return json(true, { redirect: "/customer/dashboard" });
   } catch (e: any) {
     return json(false, { error: e?.message || "server_error" }, 500);
   }

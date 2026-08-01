@@ -9,6 +9,7 @@ import { db } from "@/lib/db"; // Direct DB access for analytics
 import { cookies } from "next/headers";
 import { verifyAdminSession } from "@/lib/auth-admin";
 import type { Metadata } from "next";
+import { localeHref } from "@/lib/locales";
 
 type Locale = "ar" | "en";
 
@@ -91,7 +92,7 @@ async function getLatestHaraj(locale: Locale) {
     return {
       id: String(item.id),
       title: String(item.title || ""),
-      url: `/${locale}/haraj/${item.id}`,
+      url: localeHref(locale, `/haraj/${item.id}`),
       msg: locale === "ar" ? `إعلان جديد: ${String(item.title || "").slice(0, 40)}` : `New ad: ${String(item.title || "").slice(0, 40)}`
     };
   } catch {

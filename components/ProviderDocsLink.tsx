@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { localeHref } from "@/lib/locales";
 
 export default function ProviderDocsLink() {
   const pathname = usePathname() || "/";
@@ -9,15 +10,14 @@ export default function ProviderDocsLink() {
   const isEn = pathname.startsWith("/en");
   const locale = isEn ? "en" : "ar";
 
-  // ✅ إخفاء الرابط داخل dashboard (مقفل/مفتوح)
-  if (pathname.startsWith(`/${locale}/dashboard`)) {
+  // Hide link inside dashboard
+  if (pathname.includes("/dashboard")) {
     return null;
   }
 
-  const href = `/${locale}/providers/docs`;
+  const href = localeHref(locale, "/providers/docs");
   const label = isEn ? "Provider Docs" : "توثيق مقدّمي الخدمة";
 
-  // ✅ Active إذا كنت داخل docs
   const isActive = pathname === href || pathname.startsWith(`${href}/`);
 
   return (

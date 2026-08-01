@@ -112,7 +112,7 @@ export default function ProviderRegisterForm() {
             });
             const j = await r.json();
             if (j?.ok) {
-              window.location.href = "/ar/providers/login?verified=true";
+              window.location.href = "/providers/login?verified=true";
               return;
             }
             setMsg("حدث خطأ");
@@ -215,7 +215,7 @@ export default function ProviderRegisterForm() {
           <input type="password" placeholder="كلمة المرور" value={password} onChange={(e) => setPassword(e.target.value)} style={{ height: 46, borderRadius: 10, border: "1px solid #ddd", padding: "0 12px", gridColumn: "1 / span 2" }} />
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#555" }}>
             <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
-            <span>أوافق على <a href="/ar/terms" target="_blank" style={{ color: "#111", fontWeight: 900, textDecoration: "underline" }}>الشروط والأحكام</a></span>
+            <span>أوافق على <a href="/terms" target="_blank" style={{ color: "#111", fontWeight: 900, textDecoration: "underline" }}>الشروط والأحكام</a></span>
           </label>
           {msg && <div style={{ color: "#b91c1c", fontSize: 13 }}>{msg}</div>}
           <button onClick={submit} disabled={busy} style={{ height: 50, borderRadius: 12, background: "#111", color: "#fff", border: "none", fontWeight: 900, cursor: "pointer", gridColumn: "1 / span 2" }}>

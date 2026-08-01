@@ -1,4 +1,3 @@
-// ⚠️ نفس الاستيرادات والمنطق — لم يتم المساس بها
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -12,6 +11,7 @@ import AdminLogoutButton from "@/components/AdminLogoutButton";
 import AdminStatusButtons from "@/components/AdminStatusButtons";
 import AdminNewRequestNotifier from "@/components/AdminNewRequestNotifier";
 import DeleteRequestButton from "@/components/DeleteRequestButton";
+import { localeHref } from "@/lib/locales";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -71,7 +71,7 @@ export default async function AdminRequestsPage({
   const isAr = locale === "ar";
 
   const token = (await cookies()).get("kashtat_admin")?.value;
-  if (!verifyAdminSession(token)) redirect(`/${locale}/admin/login`);
+  if (!verifyAdminSession(token)) redirect(localeHref(locale, "/admin/login"));
 
   // عرض طلبات العملاء (customer_requests)
   let rows: Row[] = [];
@@ -93,7 +93,7 @@ export default async function AdminRequestsPage({
     const status = String(formData.get("status") || "");
     if (!id) return;
     await db.query("UPDATE customer_requests SET status = $2 WHERE id = $1::bigint", [id, status]);
-    revalidatePath(`/${locale}/admin/requests`);
+    revalidatePath(localeHref(locale, "/admin/requests"));
   }
 
   async function deleteRequest(formData: FormData) {
@@ -101,13 +101,13 @@ export default async function AdminRequestsPage({
     const id = String(formData.get("id") || "");
     if (!id) return;
     await db.query("DELETE FROM customer_requests WHERE id = $1::bigint", [id]);
-    revalidatePath(`/${locale}/admin/requests`);
+    revalidatePath(localeHref(locale, "/admin/requests"));
   }
 
   return (
     <main className="admin-page" style={{ padding: 20 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <Link href={`/${locale}/admin/portal`} style={{ fontSize: 14, color: "#666", textDecoration: "none" }}>
+        <Link href={localeHref(locale, "/admin/portal")} style={{ fontSize: 14, color: "#666", textDecoration: "none" }}>
           ← {isAr ? "العودة للقائمة الرئيسية" : "Back to Portal"}
         </Link>
         <div style={{ display: "flex", gap: 16, alignItems: "center" }}>

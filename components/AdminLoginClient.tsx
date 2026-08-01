@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { localeHref } from "@/lib/locales";
 
 type Locale = "ar" | "en";
 
@@ -116,8 +117,7 @@ export default function AdminLoginClient(props: { locale: Locale; next: string }
 
       setLockedUntilMs(0);
 
-      // Redirect to the portal by default unless 'next' is explicitly set
-      const dest = props.next && props.next.length > 3 ? props.next : `/${locale}/admin/portal`;
+      const dest = props.next && props.next.length > 3 ? props.next : localeHref(locale, "/admin/portal");
       router.replace(dest);
       router.refresh();
     } catch {
@@ -192,7 +192,7 @@ export default function AdminLoginClient(props: { locale: Locale; next: string }
         </form>
         <div style={{ marginTop: 20, textAlign: "center" }}>
           <Link
-            href={`/${locale}`}
+            href={localeHref(locale, "/")}
             style={{ fontSize: 13, color: "#666", textDecoration: "none" }}
           >
             {isAr ? "العودة للرئيسية" : "Back to Home"}

@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { verifyAdminSession } from "@/lib/auth-admin";
 import AdminLogoutButton from "@/components/AdminLogoutButton";
+import { localeHref } from "@/lib/locales";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,7 +40,7 @@ export default async function AdminHistoryPage({
   const mustAuth = process.env.NODE_ENV === "production" && SECRET.length > 0;
   if (mustAuth) {
     const token = (await cookies()).get("kashtat_admin")?.value;
-    if (!verifyAdminSession(token)) redirect(`/${locale}/admin/login`);
+    if (!verifyAdminSession(token)) redirect(localeHref(locale, "/admin/login"));
   }
 
   let rows: Row[] = [];
@@ -72,7 +73,7 @@ export default async function AdminHistoryPage({
           <AdminLogoutButton locale={locale as any} />
         </div>
 
-        <form method="get" action={`/${locale}/admin/history`} style={searchRow}>
+        <form method="get" action={localeHref(locale, "/admin/history")} style={searchRow}>
           <input
             name="ref"
             defaultValue={ref}

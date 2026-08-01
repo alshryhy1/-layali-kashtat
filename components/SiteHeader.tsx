@@ -1,16 +1,19 @@
- "use client";
- 
- import LanguageSwitcher from "@/components/LanguageSwitcher";
- import { usePathname } from "next/navigation";
- 
- type Locale = "ar" | "en";
- 
- export default function SiteHeader({ locale }: { locale: Locale }) {
-   const isAr = locale === "ar";
-   const pathname = usePathname();
-   const isAdminLogin = pathname?.includes("/admin/login");
-   const isHomePage = pathname === `/${locale}` || pathname === `/${locale}/`;
-   const isHaraj = pathname?.includes("/haraj");
+"use client";
+
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { localeHref, type Locale } from "@/lib/locales";
+import { usePathname } from "next/navigation";
+
+export default function SiteHeader({ locale }: { locale: Locale }) {
+  const isAr = locale === "ar";
+  const pathname = usePathname();
+  const isAdminLogin = pathname?.includes("/admin/login");
+  const homeHref = localeHref(locale, "/");
+  const isHomePage =
+    pathname === homeHref ||
+    pathname === `${homeHref}/` ||
+    (isAr && (pathname === "/" || pathname === "/ar" || pathname === "/ar/"));
+  const isHaraj = pathname?.includes("/haraj");
  
    return (
      <header
@@ -88,74 +91,74 @@
          )}
          <div style={{ display: "flex", flexDirection: "column" }}>
            {isHomePage ? (
-             <a
-               href={`/${locale}/admin/login`}
-               style={{
-                 fontSize: 11,
-                 color: "#64748b",
-                 textDecoration: "none",
-                 marginTop: 2,
-                 fontWeight: 500,
-               }}
-             >
-               {isAr ? "الإدارة" : "Administration"}
-             </a>
-           ) : (
-             <a
-               href={`/${locale}`}
-               style={{
-                 fontSize: 11,
-                 color: "#64748b",
-                 textDecoration: "none",
-                 marginTop: 2,
-                 fontWeight: 500,
-               }}
-             >
-               {isAr ? "العودة للرئيسية" : "Back to Home"}
-             </a>
-           )}
-         </div>
- 
-         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-           {isAdminLogin ? (
-             <a
-               href={`/${locale}`}
-               style={{
-                 fontSize: 14,
-                 fontWeight: 700,
-                 textDecoration: "none",
-                 color: "#1e293b",
-                 background: "rgba(30, 41, 59, 0.08)",
-                 padding: "6px 12px",
-                 borderRadius: 12,
-                 display: "flex",
-                 alignItems: "center",
-                 gap: 6,
-               }}
-             >
-               <span>↩️</span>
-               <span>{isAr ? "رجوع" : "Return"}</span>
-             </a>
-           ) : pathname?.includes("/haraj") ? (
-             <a
-               href={`/${locale}`}
-               style={{
-                 fontSize: 14,
-                 fontWeight: 700,
-                 textDecoration: "none",
-                 color: "#92400e",
-                 background: "rgba(146, 64, 14, 0.08)",
-                 padding: "6px 12px",
-                 borderRadius: 12,
-                 display: "flex",
-                 alignItems: "center",
-                 gap: 6,
-               }}
-             >
-               <span>🏠</span>
-               <span>{isAr ? "الرئيسية" : "Home"}</span>
-             </a>
-           ) : null}
+            <a
+              href={localeHref(locale, "/admin/login")}
+              style={{
+                fontSize: 11,
+                color: "#64748b",
+                textDecoration: "none",
+                marginTop: 2,
+                fontWeight: 500,
+              }}
+            >
+              {isAr ? "الإدارة" : "Administration"}
+            </a>
+          ) : (
+            <a
+              href={homeHref}
+              style={{
+                fontSize: 11,
+                color: "#64748b",
+                textDecoration: "none",
+                marginTop: 2,
+                fontWeight: 500,
+              }}
+            >
+              {isAr ? "العودة للرئيسية" : "Back to Home"}
+            </a>
+          )}
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {isAdminLogin ? (
+            <a
+              href={homeHref}
+              style={{
+                fontSize: 14,
+                fontWeight: 700,
+                textDecoration: "none",
+                color: "#1e293b",
+                background: "rgba(30, 41, 59, 0.08)",
+                padding: "6px 12px",
+                borderRadius: 12,
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              <span>↩️</span>
+              <span>{isAr ? "رجوع" : "Return"}</span>
+            </a>
+          ) : pathname?.includes("/haraj") ? (
+            <a
+              href={homeHref}
+              style={{
+                fontSize: 14,
+                fontWeight: 700,
+                textDecoration: "none",
+                color: "#92400e",
+                background: "rgba(146, 64, 14, 0.08)",
+                padding: "6px 12px",
+                borderRadius: 12,
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              <span>🏠</span>
+              <span>{isAr ? "الرئيسية" : "Home"}</span>
+            </a>
+          ) : null}
  
            <div
              style={{

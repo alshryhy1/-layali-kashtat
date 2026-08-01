@@ -1,6 +1,7 @@
 "use client";
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { localeHref } from "@/lib/locales";
 
 type Locale = "ar" | "en";
 function asLocale(v: any): Locale {
@@ -60,7 +61,7 @@ export default function CustomerLoginPage({ params }: { params: Promise<{ locale
       });
       const j = await res.json();
       if (j.ok) {
-        window.location.href = `/${locale}/customer/dashboard`;
+        window.location.href = localeHref(locale, "/customer/dashboard");
         return;
       }
       if (j.error === "not_verified") {
@@ -124,7 +125,7 @@ export default function CustomerLoginPage({ params }: { params: Promise<{ locale
             });
             const j = await r.json();
             if (j?.ok) {
-              router.push(`/${locale}/customer/dashboard`);
+              router.push(localeHref(locale, "/customer/dashboard"));
               return;
             }
             setMsg(isAr ? "تعذّر إنشاء الحساب" : "Failed to create account");
@@ -241,7 +242,7 @@ export default function CustomerLoginPage({ params }: { params: Promise<{ locale
             if (j?.ok && j?.verified) {
               localStorage.setItem("lk_otp_last", String(Date.now()));
               sentRef.current = true;
-              window.location.href = `/${locale}/customer/dashboard`;
+              window.location.href = localeHref(locale, "/customer/dashboard");
               return;
             }
             setMsg(isAr ? "تعذّر التحقق" : "Verification failed");
@@ -340,7 +341,7 @@ export default function CustomerLoginPage({ params }: { params: Promise<{ locale
           <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "#555" }}>
             <input type="checkbox" checked={agree} onChange={e => setAgree(e.target.checked)} />
             <span>{isAr ? "أوافق على " : "I agree to the "}
-              <a href={`/${locale}/terms`} target="_blank" style={{ color: "#111", fontWeight: 900, textDecoration: "underline" }}>
+              <a href={localeHref(locale, "/terms")} target="_blank" style={{ color: "#111", fontWeight: 900, textDecoration: "underline" }}>
                 {isAr ? "الشروط والأحكام" : "Terms of Service"}
               </a>
             </span>

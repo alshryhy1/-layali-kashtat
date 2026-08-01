@@ -1,16 +1,31 @@
-import Link from "next/link";
+import InstallPrompt from "@/components/InstallPrompt";
+import LandingPageClient from "@/components/LandingPageClient";
+import { getSession } from "@/lib/auth-customer";
+import { getProviderSession } from "@/lib/auth-provider";
+import { localeHref } from "@/lib/locales";
+import { redirect } from "next/navigation";
 
-export default function RootPage() {
+export const dynamic = "force-dynamic";
+
+/**
+ * Fallback for `/` if proxy rewrite to `/ar` is skipped.
+ * Normal traffic is rewritten by proxy.ts → app/[locale]/page.tsx (locale=ar).
+ */
+export default async function RootPage() {
+  const customerSession = await getSession();
+  if (customerSession) {
+    redirect(localeHref("ar", "/customer/dashboard"));
+  }
+
+  const providerSession = await getProviderSession();
+  if (providerSession) {
+    redirect(localeHref("ar", "/providers/dashboard"));
+  }
+
   return (
-    <main className="page-container" style={{ minHeight: "70vh", display: "grid", placeItems: "center" }}>
-      <div style={{ textAlign: "center" }}>
-        <h1 style={{ fontSize: 30, fontWeight: 900, marginBottom: 12 }}>Layali Kashtat</h1>
-        <p style={{ color: "#666", marginBottom: 18 }}>اختر اللغة / Choose your language</p>
-        <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-          <Link href="/ar" style={{ padding: "10px 16px", borderRadius: 12, background: "#111", color: "#fff", fontWeight: 900, textDecoration: "none" }}>العربية</Link>
-          <Link href="/en" style={{ padding: "10px 16px", borderRadius: 12, background: "#eee", color: "#111", fontWeight: 900, textDecoration: "none" }}>English</Link>
-        </div>
-      </div>
-    </main>
+    <>
+      <LandingPageClient locale="ar" />
+      <InstallPrompt />
+    </>
   );
 }

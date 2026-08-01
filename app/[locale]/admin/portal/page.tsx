@@ -1,4 +1,3 @@
-
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -7,6 +6,7 @@ import { verifyAdminSession } from "@/lib/auth-admin";
 import AdminLogoutButton from "@/components/AdminLogoutButton";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import bcrypt from "bcrypt";
+import { localeHref } from "@/lib/locales";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,7 +22,7 @@ export default async function AdminPortalPage({
 
   const token = (await cookies()).get("kashtat_admin")?.value;
   if (!verifyAdminSession(token)) {
-    redirect(`/${locale}/admin/login`);
+    redirect(localeHref(locale, "/admin/login"));
   }
 
   let totalViews = 0;
@@ -158,7 +158,7 @@ export default async function AdminPortalPage({
     <main style={containerStyle} dir={isAr ? "rtl" : "ltr"}>
       <div style={headerStyle}>
         <Link
-          href={`/${locale}`}
+          href={localeHref(locale, "/")}
           style={{
             textDecoration: "none",
             color: "#666",
@@ -199,7 +199,7 @@ export default async function AdminPortalPage({
         </div>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 24, justifyContent: "center", width: "100%" }}>
-          <Link href={`/${locale}/dashboard`} style={cardStyle}>
+          <Link href={localeHref(locale, "/dashboard")} style={cardStyle}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>📋</div>
             <div style={titleStyle}>{isAr ? "لوحة انضمام المقدمين" : "Provider Requests"}</div>
             <div style={descStyle}>
@@ -209,7 +209,7 @@ export default async function AdminPortalPage({
             </div>
           </Link>
 
-          <Link href={`/${locale}/admin/requests`} style={cardStyle}>
+          <Link href={localeHref(locale, "/admin/requests")} style={cardStyle}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>🛒</div>
             <div style={titleStyle}>{isAr ? "لوحة طلبات العملاء" : "Customer Requests"}</div>
             <div style={descStyle}>

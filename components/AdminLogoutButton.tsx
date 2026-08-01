@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
+import { localeHref } from "@/lib/locales";
 
 type Props = {
   locale: "ar" | "en";
@@ -23,17 +24,14 @@ export default function AdminLogoutButton({ locale }: Props) {
         cache: "no-store",
       });
 
-      // حتى لو رجع 200/غيره: المطلوب خروج + توجيه صريح للدخول
       if (!res.ok) {
-        // لا نعرض أخطاء للمستخدم هنا — فقط نضمن التوجيه للدخول
+        // still redirect
       }
 
-      // ✅ Redirect نهائي وصريح إلى صفحة الدخول
-      router.replace(`/${locale}/admin/login`);
+      router.replace(localeHref(locale, "/admin/login"));
       router.refresh();
     } catch {
-      // ✅ حتى مع أي خطأ شبكي: نوجّه لصفحة الدخول
-      router.replace(`/${locale}/admin/login`);
+      router.replace(localeHref(locale, "/admin/login"));
       router.refresh();
     } finally {
       setLoading(false);
@@ -68,8 +66,8 @@ export default function AdminLogoutButton({ locale }: Props) {
           ? "جاري تسجيل الخروج..."
           : "Logging out..."
         : locale === "ar"
-        ? "تسجيل خروج"
-        : "Logout"}
+          ? "تسجيل خروج"
+          : "Logout"}
     </button>
   );
 }

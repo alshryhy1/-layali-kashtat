@@ -1,10 +1,10 @@
-
 import * as React from "react";
 import InstallPrompt from "@/components/InstallPrompt";
 import { getSession } from "@/lib/auth-customer";
 import { getProviderSession } from "@/lib/auth-provider";
 import { redirect } from "next/navigation";
 import LandingPageClient from "@/components/LandingPageClient";
+import { localeHref } from "@/lib/locales";
 
 export const dynamic = "force-dynamic";
 
@@ -21,20 +21,17 @@ export default async function Home({
 }) {
   const p = await params;
   const locale: Locale = asLocale(p?.locale);
-  
-  // 1. Check Customer Session
+
   const customerSession = await getSession();
   if (customerSession) {
-    redirect(`/${locale}/customer/dashboard`);
+    redirect(localeHref(locale, "/customer/dashboard"));
   }
 
-  // 2. Check Provider Session
   const providerSession = await getProviderSession();
   if (providerSession) {
-    redirect(`/${locale}/providers/dashboard`);
+    redirect(localeHref(locale, "/providers/dashboard"));
   }
 
-  // 3. Render Landing Page
   return (
     <>
       <LandingPageClient locale={locale} />

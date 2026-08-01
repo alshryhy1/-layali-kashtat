@@ -1,4 +1,5 @@
 import AdminLoginClient from "@/components/AdminLoginClient";
+import { localeHref } from "@/lib/locales";
 
 export const dynamic = "force-dynamic";
 
@@ -12,8 +13,7 @@ export default async function AdminLoginPage({
   const p = await params;
   const sp = await searchParams;
   const locale = p?.locale === "en" ? "en" : "ar";
-  // Change default redirect to the new portal
-  const next = sp?.next || `/${locale}/admin/portal`;
+  const next = sp?.next || localeHref(locale, "/admin/portal");
 
   return <AdminLoginClient locale={locale} next={next} />;
 }

@@ -65,7 +65,7 @@ export async function POST(req: Request) {
       const ok = await bcrypt.compare(password, clean(cust.password));
       if (!ok) return json(false, { error: "invalid_credentials" }, 401);
       const token = crypto.randomBytes(24).toString("hex");
-      const res = NextResponse.json({ ok: true, role: "customer", redirect: "/ar/customer/dashboard" });
+      const res = NextResponse.json({ ok: true, role: "customer", redirect: "/customer/dashboard" });
       res.cookies.set("customer_token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -99,7 +99,7 @@ export async function POST(req: Request) {
     const payload = JSON.stringify(payloadObj);
     const token = Buffer.from(`${payload}.${sign(payload, SECRET)}`).toString("base64url");
 
-    const res = NextResponse.json({ ok: true, role: "provider", redirect: "/ar/providers/dashboard" });
+    const res = NextResponse.json({ ok: true, role: "provider", redirect: "/providers/dashboard" });
     res.cookies.set("kashtat_provider_token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

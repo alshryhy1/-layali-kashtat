@@ -4,6 +4,7 @@
 import * as React from "react";
 import { ArrowRight, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { localeHref } from "@/lib/locales";
 
 type Locale = "ar" | "en";
 function asLocale(v: any): Locale {
@@ -51,7 +52,7 @@ export default function ProviderLoginPage({ params }: { params: Promise<{ locale
       const j = await res.json();
       
       if (j.ok) {
-        window.location.href = `/${locale}/providers/dashboard`;
+        window.location.href = localeHref(locale, "/providers/dashboard");
       } else {
         if (j.error === "not_verified") {
             if (j.message === "verification_required_otp") {
@@ -129,7 +130,7 @@ export default function ProviderLoginPage({ params }: { params: Promise<{ locale
         
         <div style={{ background: "#eeeeee", padding: "20px", borderBottom: "1px solid #e0e0e0" }}>
           <a 
-            href={`/${locale}`}
+            href={localeHref(locale, "/")}
             style={{ 
               display: "inline-flex", 
               alignItems: "center", 
