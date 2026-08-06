@@ -1,6 +1,11 @@
 // Ported from layali-native-app/src/features/auth/otp.ts — same Edge Function contracts.
 
-import { supabase } from "@/lib/supabaseClient";
+import {
+  isSupabaseConfigured,
+  supabase,
+  supabasePublicAnonKey,
+  supabasePublicUrl,
+} from "@/lib/supabaseClient";
 
 export type OtpResult =
   | {
@@ -18,8 +23,8 @@ export type OtpResult =
       httpStatus?: number;
     };
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+const SUPABASE_URL = isSupabaseConfigured ? supabasePublicUrl : "";
+const SUPABASE_ANON_KEY = isSupabaseConfigured ? supabasePublicAnonKey : "";
 const OTP_HTTP_TIMEOUT_MS = 15_000;
 const VERIFICATION_STATUS_TIMEOUT_MS = 12_000;
 const IS_DEV = process.env.NODE_ENV !== "production";
