@@ -2,14 +2,13 @@ import "../globals.css";
 import LocaleChrome from "@/components/LocaleChrome";
 import ViewTracker from "@/components/ViewTracker";
 import SnapPixel from "@/components/SnapPixel";
-import TikTokPixel from "@/components/TikTokPixel";
-import { db } from "@/lib/db"; // Direct DB access for analytics
+import { db } from "@/lib/db";
 import { cookies } from "next/headers";
 import { verifyAdminSession } from "@/lib/auth-admin";
 import type { Metadata, Viewport } from "next";
-import { localeHref } from "@/lib/locales";
-
-type Locale = "ar" | "en";
+import { notFound } from "next/navigation";
+import { isValidLocale, type Locale } from "@/lib/locales";
+import { fetchWeather } from "@/lib/weather";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -19,12 +18,15 @@ export const viewport: Viewport = {
 };
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
-  const { locale } = await params;
-  const isAr = locale !== "en";
+  const { locale: raw } = await params;
+  if (!isValidLocale(raw)) {
+    return { title: "ليالي كشتات" };
+  }
+  const isAr = raw !== "en";
 
   return {
-    title: isAr 
-      ? "ليالي كشتات | حجز مخيمات ورحلات برية وكرفانات" 
+    title: isAr
+      ? "ليالي كشتات | حجز مخيمات ورحلات برية وكرفانات"
       : "Layali Kashtat | Camping, Desert Trips & Caravans",
     description: isAr
       ? "المنصة الأولى في السعودية لحجز المخيمات، الكرفانات، والرحلات البرية. نوفر لك تجربة كشتة متكاملة مع خدمات مميزة."
@@ -41,7 +43,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     openGraph: {
       title: isAr ? "ليالي كشتات" : "Layali Kashtat",
       description: isAr ? "حجز رحلات ومخيمات برية" : "Book Desert Trips & Camps",
-      url: "https://layali-kashtat.com", // Placeholder
+      url: "https://layali-kashtat.com",
       siteName: "Layali Kashtat",
       locale: isAr ? "ar_SA" : "en_US",
       type: "website",
@@ -56,50 +58,24 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
 async function getWeatherText(locale: Locale) {
   try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/api/weather?lang=${locale}`,
-      { cache: "no-store" }
-    );
-
-    if (!res.ok) return null;
-
-    const data = await res.json();
-
-    // نتوقع API يرجع: city, temp, description
-    const city = String(data?.city || "").trim();
-    const temp = typeof data?.temp === "number" ? Math.round(data.temp) : null;
-    const desc = String(data?.description || "").trim();
-
-    if (!city || temp === null || !desc) return null;
-
-    return locale === "ar"
-      ? `${city} • ${temp}° • ${desc}`
-      : `${city} • ${temp}° • ${desc}`;
+    const data = await fetchWeather({ lang: locale, timeoutMs: 2500 });
+    return data.ok ? data.text : null;
   } catch {
     return null;
   }
 }
 
-async function getLatestHaraj(locale: Locale) {
+async function getLatestAnnouncement(): Promise<string | null> {
   try {
     const res = await db.query(
-      "SELECT id, title FROM haraj_items WHERE title NOT ILIKE $1 ORDER BY created_at DESC LIMIT 1",
-      ["%جمس%"]
+      "SELECT text FROM banner_announcements WHERE active = true ORDER BY created_at DESC LIMIT 1"
     );
-    if (res.rows.length === 0) return null;
-    const item = res.rows[0];
-    return {
-      id: String(item.id),
-      title: String(item.title || ""),
-      url: localeHref(locale, `/haraj/${item.id}`),
-      msg: locale === "ar" ? `إعلان جديد: ${String(item.title || "").slice(0, 40)}` : `New ad: ${String(item.title || "").slice(0, 40)}`
-    };
+    if (res.rows.length > 0) return String(res.rows[0].text || "");
+    return null;
   } catch {
     return null;
   }
 }
-
-
 
 export default async function LocaleLayout({
   children,
@@ -109,38 +85,25 @@ export default async function LocaleLayout({
   params: Promise<{ locale: string }>;
 }) {
   const { locale: rawLocale } = await params;
+  if (!isValidLocale(rawLocale)) {
+    notFound();
+  }
   const locale: Locale = rawLocale === "en" ? "en" : "ar";
-  // Check if admin
+
   const token = (await cookies()).get("kashtat_admin")?.value;
   const isAdmin = verifyAdminSession(token);
 
-  const weatherText = await getWeatherText(locale);
-  // const latestHaraj = await getLatestHaraj(locale);
-
-  async function getLatestAnnouncement(): Promise<string | null> {
-    try {
-      await db.query(`
-        CREATE TABLE IF NOT EXISTS banner_announcements (
-          id SERIAL PRIMARY KEY,
-          text TEXT NOT NULL,
-          active BOOLEAN DEFAULT true,
-          created_at TIMESTAMPTZ DEFAULT NOW()
-        )
-      `);
-      const res = await db.query("SELECT text FROM banner_announcements WHERE active = true ORDER BY created_at DESC LIMIT 1");
-      if (res.rows.length > 0) return String(res.rows[0].text || "");
-      return null;
-    } catch {
-      return null;
-    }
-  }
-  const topBannerText = (await getLatestAnnouncement()) || "التسجيل مجانا لفتره محدودة بادر بالتسجيل الان";
+  // Parallel, bounded work — never block home on production HTTP or DDL.
+  const [weatherText, announcement] = await Promise.all([
+    getWeatherText(locale),
+    getLatestAnnouncement(),
+  ]);
+  const topBannerText = announcement || "التسجيل مجانا لفتره محدودة بادر بالتسجيل الان";
 
   return (
     <>
       {!isAdmin && <ViewTracker />}
       <SnapPixel />
-      {/* <TikTokPixel /> */}
       <LocaleChrome
         locale={locale}
         weatherText={weatherText ?? undefined}
