@@ -260,19 +260,22 @@ export default function HomeClient({
       // cannot leave the header stuck as a guest while a later auth run finishes.
       if (uid) {
         setDisplayName(nameFromAuthUser(session?.user) ?? null);
+        // profiles schema uses `name` only (no full_name / display_name columns)
         const profileRes = await supabase
           .from("profiles")
-          .select("full_name, name, display_name")
+          .select("name, role")
           .eq("id", uid)
           .maybeSingle();
         if (!stillCurrent()) return;
         const p = (profileRes.data ?? {}) as Record<string, unknown>;
         const name =
-          (typeof p.full_name === "string" && p.full_name.trim()) ||
-          (typeof p.display_name === "string" && p.display_name.trim()) ||
           (typeof p.name === "string" && p.name.trim()) ||
           nameFromAuthUser(session?.user) ||
           null;
+        const role = String(p.role ?? "")
+          .trim()
+          .toLowerCase();
+        if (role === "admin") setIsAdmin(true);
         setDisplayName(name);
         const imgRes = await supabase
           .from("profile_images")
@@ -369,11 +372,11 @@ export default function HomeClient({
             if (psData?.user_id) {
               const pn = await supabase
                 .from("profiles")
-                .select("full_name, name")
+                .select("name")
                 .eq("id", psData.user_id)
                 .maybeSingle();
-              const pnData = pn.data as { full_name?: string; name?: string } | null;
-              other = String(pnData?.full_name || pnData?.name || "").trim() || other;
+              const pnData = pn.data as { name?: string } | null;
+              other = String(pnData?.name || "").trim() || other;
             }
           }
           bookingCards.push({
@@ -413,11 +416,11 @@ export default function HomeClient({
             if (b.customer_id) {
               const cn = await supabase
                 .from("profiles")
-                .select("full_name, name")
+                .select("name")
                 .eq("id", b.customer_id)
                 .maybeSingle();
-              const cnData = cn.data as { full_name?: string; name?: string } | null;
-              customerName = String(cnData?.full_name || cnData?.name || "").trim() || customerName;
+              const cnData = cn.data as { name?: string } | null;
+              customerName = String(cnData?.name || "").trim() || customerName;
             }
             bookingCards.push({
               id: String(b.id),
@@ -496,7 +499,7 @@ export default function HomeClient({
             ? supabase.from("service_types").select("id, name")
             : Promise.resolve({ data: [] as unknown[] }),
           providerIds.length
-            ? supabase.from("profiles").select("id, full_name, name, display_name")
+            ? supabase.from("profiles").select("id, name")
             : Promise.resolve({ data: [] as unknown[] }),
           serviceIds.length
             ? supabase.from("bookings").select("provider_service_id").in("provider_service_id", serviceIds)
@@ -538,11 +541,9 @@ export default function HomeClient({
       const providerNameById = new Map<string, string>();
       for (const pr of (profilesRes.data ?? []) as Array<{
         id: string;
-        full_name?: string;
         name?: string;
-        display_name?: string;
       }>) {
-        const n = String(pr.full_name || pr.display_name || pr.name || "").trim();
+        const n = String(pr.name || "").trim();
         if (n) providerNameById.set(String(pr.id), n);
       }
       const bookingCountByService = new Map<string, number>();
