@@ -46,6 +46,38 @@ function normalizeArabicNumberInput(value: string): string {
     .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)));
 }
 
+/** Temporary debug helper: surface real Supabase Auth error fields in UI + Console. */
+function formatAuthErrorDetails(err: unknown): string {
+  const e = err as {
+    message?: string;
+    code?: string;
+    status?: number | string;
+    name?: string;
+    __isAuthError?: boolean;
+  } | null;
+  const parts: string[] = [];
+  if (e?.code != null && String(e.code).trim()) parts.push(`code=${e.code}`);
+  if (e?.status != null && String(e.status).trim()) parts.push(`status=${e.status}`);
+  if (e?.name != null && String(e.name).trim()) parts.push(`name=${e.name}`);
+  if (e?.message != null && String(e.message).trim()) parts.push(`message=${e.message}`);
+  if (parts.length === 0) {
+    const fallback = err instanceof Error ? err.message : String(err ?? "unknown");
+    parts.push(`raw=${fallback}`);
+  }
+  return parts.join(" | ");
+}
+
+function logAuthError(context: string, err: unknown) {
+  const e = err as Record<string, unknown> | null;
+  console.error(`[auth:${context}]`, {
+    code: e?.code ?? null,
+    message: e?.message ?? null,
+    status: e?.status ?? null,
+    name: e?.name ?? null,
+    details: e && typeof e === "object" ? { ...e } : err,
+  });
+}
+
 function normalizeRemoteUri(value: unknown) {
   if (typeof value !== "string") return null;
   const cleaned = value.trim().replace(/^[`'"]+/, "").replace(/[`'"]+$/, "").trim();
@@ -579,17 +611,21 @@ export default function AccountClient({
           password: pendingSignup.password,
         });
         if (signInRes.error) {
+          logAuthError("signup-verify-signin", signInRes.error);
+          const details = formatAuthErrorDetails(signInRes.error);
           const msg = (signInRes.error.message ?? "").toLowerCase();
           if (
             ["already registered", "already exists", "user_already_exists", "duplicate key"].some(
               (p) => msg.includes(p)
             )
           ) {
-            setVerifyError("الحساب مسجل مسبقًا");
+            setVerifyError(`الحساب مسجل مسبقًا\n${details}`);
           } else if (msg.includes("invalid login credentials")) {
-            setVerifyError("تم إنشاء الحساب لكن تعذر تسجيل الدخول. جرّب تسجيل الدخول يدويًا.");
+            setVerifyError(
+              `تم إنشاء الحساب لكن تعذر تسجيل الدخول. جرّب تسجيل الدخول يدويًا.\n${details}`
+            );
           } else {
-            setVerifyError("تم إنشاء الحساب لكن تعذر تسجيل الدخول الآن. حاول مرة أخرى.");
+            setVerifyError(`تم إنشاء الحساب لكن تعذر تسجيل الدخول الآن. حاول مرة أخرى.\n${details}`);
           }
           return;
         }
@@ -719,6 +755,8 @@ export default function AccountClient({
         setNotice("تم تسجيل الدخول بنجاح");
       }
     } catch (e: any) {
+      logAuthError(mode === "signup" ? "signup" : "login", e);
+      const details = formatAuthErrorDetails(e);
       const message = (e?.message ?? "") as string;
       const lower = message.toLowerCase();
       const isDuplicate = [
@@ -729,13 +767,13 @@ export default function AccountClient({
         "unique constraint",
       ].some((p) => lower.includes(p));
       if (mode === "signup" && isDuplicate) {
-        setError("الحساب مسجل مسبقًا");
+        setError(`الحساب مسجل مسبقًا\n${details}`);
       } else if (mode === "signup") {
-        setError("تعذر إنشاء الحساب الآن. حاول مرة أخرى لاحقًا.");
+        setError(`تعذر إنشاء الحساب الآن. حاول مرة أخرى لاحقًا.\n${details}`);
       } else if (message.includes("Invalid login credentials")) {
-        setError("البريد الإلكتروني أو كلمة المرور غير صحيحة");
+        setError(`البريد الإلكتروني أو كلمة المرور غير صحيحة\n${details}`);
       } else {
-        setError("تعذر تسجيل الدخول الآن. حاول مرة أخرى لاحقًا.");
+        setError(`تعذر تسجيل الدخول الآن. حاول مرة أخرى لاحقًا.\n${details}`);
       }
     } finally {
       setLoading(false);
@@ -1236,6 +1274,8 @@ export default function AccountClient({
     fontSize: 13,
     textAlign: "right",
     marginTop: 10,
+    whiteSpace: "pre-wrap",
+    wordBreak: "break-word",
   };
   const gateLabel: React.CSSProperties = {
     color: C.navy,
