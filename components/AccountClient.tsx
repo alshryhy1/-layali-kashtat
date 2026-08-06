@@ -9,7 +9,6 @@ import {
   fetchVerificationStatus,
   isFullyVerified,
   mapToUserMessage,
-  mapToUserMessageDev,
   requestEmailOtp,
   requestPasswordResetOtp,
   sanitizeOptionalPhone,
@@ -46,27 +45,7 @@ function normalizeArabicNumberInput(value: string): string {
     .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)));
 }
 
-/** Temporary debug helper: surface real Supabase Auth error fields in UI + Console. */
-function formatAuthErrorDetails(err: unknown): string {
-  const e = err as {
-    message?: string;
-    code?: string;
-    status?: number | string;
-    name?: string;
-    __isAuthError?: boolean;
-  } | null;
-  const parts: string[] = [];
-  if (e?.code != null && String(e.code).trim()) parts.push(`code=${e.code}`);
-  if (e?.status != null && String(e.status).trim()) parts.push(`status=${e.status}`);
-  if (e?.name != null && String(e.name).trim()) parts.push(`name=${e.name}`);
-  if (e?.message != null && String(e.message).trim()) parts.push(`message=${e.message}`);
-  if (parts.length === 0) {
-    const fallback = err instanceof Error ? err.message : String(err ?? "unknown");
-    parts.push(`raw=${fallback}`);
-  }
-  return parts.join(" | ");
-}
-
+/** Log Auth errors to the browser Console only — never render technical details in the UI. */
 function logAuthError(context: string, err: unknown) {
   const e = err as Record<string, unknown> | null;
   console.error(`[auth:${context}]`, {
@@ -587,7 +566,7 @@ export default function AccountClient({
           password: pendingSignup.password,
         });
         if (!res.ok) {
-          setVerifyError(mapToUserMessageDev(res));
+          setVerifyError(mapToUserMessage(res));
           return;
         }
         const signInRes = await supabase.auth.signInWithPassword({
@@ -596,20 +575,18 @@ export default function AccountClient({
         });
         if (signInRes.error) {
           logAuthError("signup-verify-signin", signInRes.error);
-          const details = formatAuthErrorDetails(signInRes.error);
           const msg = (signInRes.error.message ?? "").toLowerCase();
+          const code = String((signInRes.error as { code?: string }).code ?? "").toLowerCase();
           if (
             ["already registered", "already exists", "user_already_exists", "duplicate key"].some(
-              (p) => msg.includes(p)
+              (p) => msg.includes(p) || code.includes(p)
             )
           ) {
-            setVerifyError(`الحساب مسجل مسبقًا\n${details}`);
-          } else if (msg.includes("invalid login credentials")) {
-            setVerifyError(
-              `تم إنشاء الحساب لكن تعذر تسجيل الدخول. جرّب تسجيل الدخول يدويًا.\n${details}`
-            );
+            setVerifyError("الحساب مسجل مسبقًا");
+          } else if (msg.includes("invalid login credentials") || code === "invalid_credentials") {
+            setVerifyError("تم إنشاء الحساب لكن تعذر تسجيل الدخول. جرّب تسجيل الدخول يدويًا.");
           } else {
-            setVerifyError(`تم إنشاء الحساب لكن تعذر تسجيل الدخول الآن. حاول مرة أخرى.\n${details}`);
+            setVerifyError("تم إنشاء الحساب لكن تعذر تسجيل الدخول الآن. حاول مرة أخرى.");
           }
           return;
         }
@@ -629,7 +606,7 @@ export default function AccountClient({
 
       const res = await verifyEmailOtp(emailVal, code);
       if (!res.ok) {
-        setVerifyError(mapToUserMessageDev(res));
+        setVerifyError(mapToUserMessage(res));
         return;
       }
       setEmailOtpCode("");
@@ -740,24 +717,26 @@ export default function AccountClient({
       }
     } catch (e: any) {
       logAuthError(mode === "signup" ? "signup" : "login", e);
-      const details = formatAuthErrorDetails(e);
       const message = (e?.message ?? "") as string;
       const lower = message.toLowerCase();
+      const code = String(e?.code ?? "").toLowerCase();
       const isDuplicate = [
         "already registered",
         "already exists",
         "user_already_exists",
         "duplicate key",
         "unique constraint",
-      ].some((p) => lower.includes(p));
+      ].some((p) => lower.includes(p) || code.includes(p));
+      const isBadCredentials =
+        lower.includes("invalid login credentials") || code === "invalid_credentials";
       if (mode === "signup" && isDuplicate) {
-        setError(`الحساب مسجل مسبقًا\n${details}`);
+        setError("الحساب مسجل مسبقًا");
       } else if (mode === "signup") {
-        setError(`تعذر إنشاء الحساب الآن. حاول مرة أخرى لاحقًا.\n${details}`);
-      } else if (message.includes("Invalid login credentials")) {
-        setError(`البريد الإلكتروني أو كلمة المرور غير صحيحة\n${details}`);
+        setError("تعذر إنشاء الحساب الآن. حاول مرة أخرى لاحقًا.");
+      } else if (isBadCredentials) {
+        setError("البريد الإلكتروني أو كلمة المرور غير صحيحة");
       } else {
-        setError(`تعذر تسجيل الدخول الآن. حاول مرة أخرى لاحقًا.\n${details}`);
+        setError("تعذر تسجيل الدخول الآن. حاول مرة أخرى لاحقًا.");
       }
     } finally {
       setLoading(false);
