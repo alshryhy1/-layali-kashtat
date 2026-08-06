@@ -1,17 +1,22 @@
 import "../globals.css";
-import SiteHeader from "@/components/SiteHeader";
-import TopInfoBar from "@/components/TopInfoBar";
-import LegalFooter from "@/components/LegalFooter";
+import LocaleChrome from "@/components/LocaleChrome";
 import ViewTracker from "@/components/ViewTracker";
 import SnapPixel from "@/components/SnapPixel";
 import TikTokPixel from "@/components/TikTokPixel";
 import { db } from "@/lib/db"; // Direct DB access for analytics
 import { cookies } from "next/headers";
 import { verifyAdminSession } from "@/lib/auth-admin";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { localeHref } from "@/lib/locales";
 
 type Locale = "ar" | "en";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: "#EFE3D2",
+};
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -28,12 +33,6 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       ? ["كشتات", "مخيمات", "رحلات برية", "تأجير خيام", "السعودية", "الرياض", "فعاليات شتوية"]
       : ["Kashtat", "Camping", "Desert Trips", "Saudi Arabia", "Riyadh", "Winter Events"],
     manifest: "/manifest.json",
-    themeColor: "#000000",
-    viewport: {
-      width: "device-width",
-      initialScale: 1,
-      maximumScale: 1,
-    },
     appleWebApp: {
       capable: true,
       statusBarStyle: "black-translucent",
@@ -111,9 +110,6 @@ export default async function LocaleLayout({
 }) {
   const { locale: rawLocale } = await params;
   const locale: Locale = rawLocale === "en" ? "en" : "ar";
-  const dir = locale === "ar" ? "rtl" : "ltr";
-  const lang = locale;
-
   // Check if admin
   const token = (await cookies()).get("kashtat_admin")?.value;
   const isAdmin = verifyAdminSession(token);
@@ -145,24 +141,13 @@ export default async function LocaleLayout({
       {!isAdmin && <ViewTracker />}
       <SnapPixel />
       {/* <TikTokPixel /> */}
-      <TopInfoBar 
-        locale={locale} 
-        weatherText={weatherText ?? undefined} 
-        text={topBannerText} 
-      />
-      <SiteHeader locale={locale} />
-      <main
-        className="page-container"
-        dir={dir}
-        style={{
-          minHeight: "calc(100vh - 120px)",
-          paddingTop: 16,
-          paddingBottom: 24,
-        }}
+      <LocaleChrome
+        locale={locale}
+        weatherText={weatherText ?? undefined}
+        topBannerText={topBannerText}
       >
         {children}
-      </main>
-      <LegalFooter locale={locale} />
+      </LocaleChrome>
     </>
   );
 }

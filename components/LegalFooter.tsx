@@ -70,7 +70,11 @@ export default function LegalFooter({ locale = "ar" }: { locale?: string }) {
         </a>
         <span style={{ color: "#ddd" }}>|</span>
         <a href={localeHref(locale, "/delete-account")} style={{ color: "#555", textDecoration: "none" }}>
-          {isAr ? "حذف الحساب" : "Delete Account"}
+          {isAr ? "حذف الحساب / البيانات" : "Delete Account / Data"}
+        </a>
+        <span style={{ color: "#ddd" }}>|</span>
+        <a href={localeHref(locale, "/legal")} style={{ color: "#555", textDecoration: "none" }}>
+          {isAr ? "النصوص القانونية" : "Legal Texts"}
         </a>
       </div>
 

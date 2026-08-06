@@ -1,5 +1,4 @@
 import React from "react";
-import LegalFooter from "@/components/LegalFooter";
 
 export const metadata = {
   title: "حذف الحساب | Delete Account",
@@ -26,9 +25,14 @@ export default async function DeleteAccountPage({
               : "You can delete your Layali Kashtat account at any time. This page explains how and what happens after deletion."}
           </p>
 
-          <h2 style={{ fontSize: 20, fontWeight: 800, marginTop: 24, marginBottom: 12 }}>{isAr ? "1) الحذف من داخل التطبيق" : "1) Delete from within the app"}</h2>
+          <h2 style={{ fontSize: 20, fontWeight: 800, marginTop: 24, marginBottom: 12 }}>{isAr ? "1) الحذف من داخل التطبيق / الويب" : "1) Delete from within the app / web"}</h2>
           <p style={{ marginBottom: 16 }}>
-            {isAr ? "افتح التطبيق ثم اذهب إلى: الحساب > حذف الحساب، ثم أكد عملية الحذف." : "Open the app and go to: Account > Delete account, then confirm deletion."}
+            {isAr
+              ? "افتح التطبيق أو الويب ثم اذهب إلى: الحساب > بياناتي > حذف الحساب، ثم أكد عملية الحذف."
+              : "Open the app or web and go to: Account > Profile > Delete account, then confirm deletion."}{" "}
+            <a href={locale === "en" ? "/en/account?view=profile" : "/account?view=profile"} style={{ fontWeight: 800 }}>
+              {isAr ? "فتح الحساب" : "Open account"}
+            </a>
           </p>
 
           <h2 style={{ fontSize: 20, fontWeight: 800, marginTop: 24, marginBottom: 12 }}>{isAr ? "2) ماذا يحدث بعد الحذف؟" : "2) What happens after deletion?"}</h2>
@@ -54,7 +58,6 @@ export default async function DeleteAccountPage({
           </p>
         </div>
       </main>
-      <LegalFooter locale={locale} />
     </>
   );
 }

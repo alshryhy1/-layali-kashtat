@@ -139,7 +139,7 @@ export default function SiteHeader({ locale }: { locale: Locale }) {
               <span>↩️</span>
               <span>{isAr ? "رجوع" : "Return"}</span>
             </a>
-          ) : pathname?.includes("/haraj") ? (
+           ) : pathname?.includes("/haraj") ? (
             <a
               href={homeHref}
               style={{
@@ -159,6 +159,23 @@ export default function SiteHeader({ locale }: { locale: Locale }) {
               <span>{isAr ? "الرئيسية" : "Home"}</span>
             </a>
           ) : null}
+
+           {!isAdminLogin ? (
+             <a
+               href={localeHref(locale, "/account")}
+               style={{
+                 fontSize: 14,
+                 fontWeight: 800,
+                 textDecoration: "none",
+                 color: "#173B5B",
+                 background: "rgba(23, 59, 91, 0.08)",
+                 padding: "6px 12px",
+                 borderRadius: 12,
+               }}
+             >
+               {isAr ? "الحساب" : "Account"}
+             </a>
+           ) : null}
  
            <div
              style={{

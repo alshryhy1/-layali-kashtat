@@ -36,21 +36,21 @@ export default function LandingPageClient({ locale }: { locale: "ar" | "en" }) {
        </div>
        <div style={{ display: "grid", gap: 12 }}>
          <a
-           href={localeHref(locale, "/providers/login")}
+           href={localeHref(locale, "/account?view=login")}
            style={{
              display: "inline-block",
              padding: "12px 16px",
              borderRadius: 12,
-             background: "#92400e",
+             background: "#173B5B",
              color: "#fff",
              fontWeight: 900,
              textDecoration: "none",
            }}
          >
-           {isAr ? "تسجيل الدخول" : "Login"}
+           {isAr ? "الحساب" : "Account"}
          </a>
          <a
-           href={localeHref(locale, "/signup")}
+           href={localeHref(locale, "/account?view=signup")}
            style={{
              display: "inline-block",
              padding: "12px 16px",
@@ -62,7 +62,7 @@ export default function LandingPageClient({ locale }: { locale: "ar" | "en" }) {
              textDecoration: "none",
            }}
          >
-           {isAr ? "تسجيل جديد" : "Sign Up"}
+           {isAr ? "إنشاء حساب" : "Sign Up"}
          </a>
          <div
            style={{

@@ -29,6 +29,19 @@ export default function proxy(req: Request) {
     return NextResponse.redirect(dest, 308);
   }
 
+  // Store / legacy aliases for account & data deletion guidance (keep legal URLs stable)
+  const deleteDataAliases = new Set([
+    "/delete-data",
+    "/data-deletion",
+    "/en/delete-data",
+    "/en/data-deletion",
+  ]);
+  if (deleteDataAliases.has(pathname)) {
+    const destPath = pathname.startsWith("/en/") ? "/en/delete-account" : "/delete-account";
+    const dest = new URL(`${destPath}${url.search}`, req.url);
+    return NextResponse.redirect(dest, 308);
+  }
+
   // English keeps /en prefix
   if (pathname === "/en" || pathname.startsWith("/en/")) {
     return NextResponse.next();

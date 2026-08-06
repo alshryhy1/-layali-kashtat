@@ -3,6 +3,8 @@ const nextConfig = {
   turbopack: {
     root: __dirname,
   },
+  // Local web often opened via 127.0.0.1 while `next dev` binds localhost
+  allowedDevOrigins: ["127.0.0.1", "localhost"],
   // Force Vercel to ignore type errors during build
   typescript: {
     ignoreBuildErrors: true,

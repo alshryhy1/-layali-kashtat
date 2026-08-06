@@ -1,277 +1,337 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import Link from "next/link";
-import { db } from "@/lib/db";
-import { verifyAdminSession } from "@/lib/auth-admin";
-import AdminLogoutButton from "@/components/AdminLogoutButton";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
-import bcrypt from "bcrypt";
+import { AdminPageShell, adminCardStyle } from "@/components/AdminPageShell";
+import { requireAdminLocale, fmtAdminDate } from "@/lib/admin-auth-page";
 import { localeHref } from "@/lib/locales";
+import { ADMIN_SECTIONS } from "@/lib/admin-sections";
+import {
+  loadPortalActionCounts,
+  loadPortalActionFeed,
+  type PortalFeedItem,
+} from "@/lib/admin-portal-data";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const SECTIONS = ADMIN_SECTIONS;
+
+function kindLabel(isAr: boolean, kind: PortalFeedItem["kind"]) {
+  if (!isAr) {
+    const map = {
+      request: "Request",
+      report: "Report",
+      moderation: "Moderation",
+      help: "Help",
+      history: "History",
+      alert: "Alert",
+    } as const;
+    return map[kind];
+  }
+  const map = {
+    request: "طلب",
+    report: "بلاغ",
+    moderation: "مراجعة",
+    help: "فزعة",
+    history: "عملية",
+    alert: "تنبيه",
+  } as const;
+  return map[kind];
+}
 
 export default async function AdminPortalPage({
   params,
 }: {
   params: Promise<{ locale: string }>;
 }) {
-  const p = await params;
-  const locale = p?.locale === "en" ? "en" : "ar";
-  const isAr = locale === "ar";
+  const { locale, isAr } = await requireAdminLocale(params);
 
-  const token = (await cookies()).get("kashtat_admin")?.value;
-  if (!verifyAdminSession(token)) {
-    redirect(localeHref(locale, "/admin/login"));
-  }
+  let counts = {
+    pendingCustomerRequests: 0,
+    pendingProviderRequests: 0,
+    pendingReports: 0,
+    pendingServiceModeration: 0,
+    pendingHelpPosts: 0,
+    unverifiedProfiles: 0,
+  };
+  let feed: PortalFeedItem[] = [];
 
-  let totalViews = 0;
-  try {
-    if (process.env.DATABASE_URL) {
-      const viewsRes = await db.query("SELECT value FROM site_analytics WHERE key = 'total_views'");
-      if (viewsRes.rows.length > 0) {
-        totalViews = Number(viewsRes.rows[0].value || 0);
-      }
+  if (process.env.DATABASE_URL) {
+    try {
+      [counts, feed] = await Promise.all([loadPortalActionCounts(), loadPortalActionFeed(locale)]);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn("[admin] Failed to load portal action data:", msg);
     }
-  } catch (e) {
-    console.error("Failed to fetch views:", e);
   }
 
-  const containerStyle: React.CSSProperties = {
-    minHeight: "calc(100vh - 100px)", // Adjust for layout padding
-    display: "flex",
-    flexDirection: "column",
-    background: "#f9f9f9",
-    padding: 20,
-    fontFamily: "inherit",
-  };
+  const attentionCards = [
+    {
+      href: "/admin/requests",
+      icon: "🛒",
+      labelAr: "الطلبات الجديدة التي تحتاج مراجعة",
+      labelEn: "New requests needing review",
+      value: counts.pendingCustomerRequests + counts.pendingProviderRequests,
+    },
+    {
+      href: "/admin/flags?status=pending",
+      icon: "🚩",
+      labelAr: "البلاغات الجديدة",
+      labelEn: "New reports",
+      value: counts.pendingReports,
+    },
+    {
+      href: "/admin/moderation",
+      icon: "⭐",
+      labelAr: "خدمات بانتظار المراجعة",
+      labelEn: "Services awaiting review",
+      value: counts.pendingServiceModeration,
+    },
+    {
+      href: "/admin/users?verified=unverified",
+      icon: "✅",
+      labelAr: "طلبات تحقق معلقة",
+      labelEn: "Pending verification requests",
+      value: counts.unverifiedProfiles,
+    },
+  ];
 
-  const headerStyle: React.CSSProperties = {
-    width: "100%",
-    display: "flex",
-    justifyContent: "space-between", // Spread items apart
-    alignItems: "center",
-    marginBottom: 40,
-  };
-
-  const contentStyle: React.CSSProperties = {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 32,
-  };
-
-  const cardStyle: React.CSSProperties = {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
-    maxWidth: 400,
-    padding: 40,
-    background: "#fff",
-    border: "1px solid #eee",
-    borderRadius: 16,
-    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-    textDecoration: "none",
-    color: "#111",
-    transition: "transform 0.2s, box-shadow 0.2s",
-    cursor: "pointer",
-    textAlign: "center",
-  };
-
-  const titleStyle: React.CSSProperties = {
-    fontSize: 24,
-    fontWeight: 900,
-    marginBottom: 8,
-  };
-
-  const descStyle: React.CSSProperties = {
-    fontSize: 16,
-    color: "#666",
-  };
-
-  const statCardStyle: React.CSSProperties = {
-    padding: 24,
-    background: "#fff",
-    border: "1px solid #e2e8f0",
-    borderRadius: 12,
-    boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-    marginBottom: 32,
-    textAlign: "center",
-    minWidth: 200,
-  };
-
-  async function addAdmin(formData: FormData) {
-    "use server";
-    const username = String(formData.get("username") || "").trim().toLowerCase();
-    const password = String(formData.get("password") || "").trim();
-    if (!username || !password) return;
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS admins (
-        id SERIAL PRIMARY KEY,
-        username TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
-    const hash = await bcrypt.hash(password, 10);
-    await db.query("INSERT INTO admins (username, password_hash) VALUES ($1, $2) ON CONFLICT (username) DO NOTHING", [username, hash]);
+  const alerts: Array<{ ar: string; en: string; href: string }> = [];
+  if (counts.pendingReports > 0) {
+    alerts.push({
+      ar: `هناك ${counts.pendingReports} بلاغًا مفتوحًا يحتاج مراجعة.`,
+      en: `${counts.pendingReports} open report(s) need review.`,
+      href: "/admin/flags?status=pending",
+    });
   }
-
-  async function addAnnouncement(formData: FormData) {
-    "use server";
-    const text = String(formData.get("text") || "").trim();
-    if (!text) return;
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS banner_announcements (
-        id SERIAL PRIMARY KEY,
-        text TEXT NOT NULL,
-        active BOOLEAN DEFAULT true,
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
-    await db.query("INSERT INTO banner_announcements (text, active) VALUES ($1, true)", [text]);
+  if (counts.pendingServiceModeration > 0) {
+    alerts.push({
+      ar: `${counts.pendingServiceModeration} خدمة بانتظار الاعتماد قبل النشر.`,
+      en: `${counts.pendingServiceModeration} service(s) awaiting approval.`,
+      href: "/admin/moderation",
+    });
   }
-
-  async function deleteAnnouncement(formData: FormData) {
-    "use server";
-    const id = Number(formData.get("id") || 0);
-    if (!id) return;
-    await db.query("DELETE FROM banner_announcements WHERE id = $1", [id]);
+  if (counts.pendingCustomerRequests > 0) {
+    alerts.push({
+      ar: `${counts.pendingCustomerRequests} طلب عميل بانتظار المعالجة.`,
+      en: `${counts.pendingCustomerRequests} customer request(s) pending.`,
+      href: "/admin/requests",
+    });
   }
-
-  let admins: Array<{ id: number; username: string; created_at: string }> = [];
-  let announcements: Array<{ id: number; text: string; active: boolean; created_at: string }> = [];
-  try {
-    const a1 = await db.query("SELECT id, username, created_at FROM admins ORDER BY created_at DESC");
-    admins = a1.rows || [];
-  } catch {}
-  try {
-    const a2 = await db.query("SELECT id, text, active, created_at FROM banner_announcements ORDER BY created_at DESC");
-    announcements = a2.rows || [];
-  } catch {}
+  if (counts.pendingHelpPosts > 0) {
+    alerts.push({
+      ar: `${counts.pendingHelpPosts} فزعة بانتظار المراجعة.`,
+      en: `${counts.pendingHelpPosts} help post(s) awaiting review.`,
+      href: "/admin/fazaa",
+    });
+  }
 
   return (
-    <main style={containerStyle} dir={isAr ? "rtl" : "ltr"}>
-      <div style={headerStyle}>
-        <Link
-          href={localeHref(locale, "/")}
+    <AdminPageShell
+      locale={locale}
+      showBackToPortal={false}
+      title={isAr ? "بوابة الإدارة" : "Admin Portal"}
+      subtitle={
+        isAr
+          ? "وحدة إدارة تشغيلية — راجع ما يحتاج إجراءً ثم افتح القسم المناسب."
+          : "Operational management console — review what needs action, then open the right section."
+      }
+    >
+      {/* Action overview */}
+      <section style={{ marginBottom: 32 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 900, color: "#1e293b", marginBottom: 12 }}>
+          {isAr ? "ما يحتاج إجراءً الآن" : "Needs action now"}
+        </h2>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+          {attentionCards.map((c) => (
+            <Link
+              key={c.href + c.labelEn}
+              href={localeHref(locale, c.href)}
+              style={{
+                ...adminCardStyle,
+                flex: "1 1 200px",
+                minWidth: 180,
+                maxWidth: 280,
+              }}
+            >
+              <div style={{ fontSize: 28 }}>{c.icon}</div>
+              <div style={{ fontSize: 13, color: "#64748b", fontWeight: 700 }}>
+                {isAr ? c.labelAr : c.labelEn}
+              </div>
+              <div style={{ fontSize: 28, fontWeight: 900, color: c.value > 0 ? "#b45309" : "#0f172a" }}>
+                {c.value.toLocaleString(isAr ? "ar-SA" : "en-US")}
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* Alerts */}
+      <section style={{ marginBottom: 32 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 900, color: "#1e293b", marginBottom: 12 }}>
+          {isAr ? "التنبيهات المهمة" : "Important alerts"}
+        </h2>
+        {alerts.length === 0 ? (
+          <div
+            style={{
+              padding: 16,
+              background: "#ecfdf5",
+              border: "1px solid #a7f3d0",
+              borderRadius: 12,
+              color: "#065f46",
+              fontWeight: 700,
+            }}
+          >
+            {isAr ? "لا توجد تنبيهات عاجلة حالياً." : "No urgent alerts right now."}
+          </div>
+        ) : (
+          <div style={{ display: "grid", gap: 10 }}>
+            {alerts.map((a) => (
+              <Link
+                key={a.href + a.en}
+                href={localeHref(locale, a.href)}
+                style={{
+                  display: "block",
+                  padding: 14,
+                  background: "#fff7ed",
+                  border: "1px solid #fdba74",
+                  borderRadius: 12,
+                  color: "#9a3412",
+                  fontWeight: 800,
+                  textDecoration: "none",
+                }}
+              >
+                {isAr ? a.ar : a.en}
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Recent operations / feed */}
+      <section style={{ marginBottom: 36 }}>
+        <div
           style={{
-            textDecoration: "none",
-            color: "#666",
-            fontSize: 14,
-            fontWeight: 500,
             display: "flex",
+            justifyContent: "space-between",
             alignItems: "center",
-            gap: 6,
+            gap: 12,
+            marginBottom: 12,
+            flexWrap: "wrap",
           }}
         >
-          <span>🏠</span>
-          {isAr ? "العودة للرئيسية" : "Back to Home"}
-        </Link>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <LanguageSwitcher locale={locale} />
-          <AdminLogoutButton locale={locale} />
-        </div>
-      </div>
-
-      <div style={contentStyle}>
-        <div style={{ textAlign: "center", marginBottom: 16 }}>
-          <h1 style={{ fontSize: 32, fontWeight: 900, marginBottom: 8, color: "#1e293b" }}>
-            {isAr ? "بوابة الإدارة" : "Admin Portal"}
-          </h1>
-          <p style={{ color: "#64748b" }}>
-            {isAr ? "مرحباً بك في لوحة التحكم" : "Welcome to the control panel"}
-          </p>
-        </div>
-
-        {/* View Counter */}
-        <div style={statCardStyle}>
-          <div style={{ fontSize: 14, color: "#64748b", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>
-            {isAr ? "إجمالي زيارات الموقع" : "Total Site Views"}
-          </div>
-          <div style={{ fontSize: 36, fontWeight: 800, color: "#0f172a" }}>
-            👁️ {totalViews.toLocaleString()}
-          </div>
-        </div>
-
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 24, justifyContent: "center", width: "100%" }}>
-          <Link href={localeHref(locale, "/dashboard")} style={cardStyle}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>📋</div>
-            <div style={titleStyle}>{isAr ? "لوحة انضمام المقدمين" : "Provider Requests"}</div>
-            <div style={descStyle}>
-              {isAr
-                ? "مراجعة وقبول طلبات التسجيل الجديدة لمقدمي الخدمة."
-                : "Review and approve new service provider applications."}
-            </div>
-          </Link>
-
-          <Link href={localeHref(locale, "/admin/requests")} style={cardStyle}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🛒</div>
-            <div style={titleStyle}>{isAr ? "لوحة طلبات العملاء" : "Customer Requests"}</div>
-            <div style={descStyle}>
-              {isAr
-                ? "إدارة حجوزات وطلبات العملاء."
-                : "Manage customer bookings and requests."}
-            </div>
+          <h2 style={{ fontSize: 18, fontWeight: 900, color: "#1e293b", margin: 0 }}>
+            {isAr ? "آخر العمليات والطابور" : "Recent activity & queue"}
+          </h2>
+          <Link
+            href={localeHref(locale, "/admin/history")}
+            style={{ fontSize: 13, color: "#64748b", fontWeight: 700, textDecoration: "none" }}
+          >
+            {isAr ? "سجل الحالة ←" : "Status history →"}
           </Link>
         </div>
+        {feed.length === 0 ? (
+          <div
+            style={{
+              padding: 20,
+              background: "#fff",
+              border: "1px solid #e2e8f0",
+              borderRadius: 12,
+              color: "#64748b",
+              fontWeight: 600,
+            }}
+          >
+            {isAr ? "لا توجد عناصر حديثة في الطابور." : "No recent queue items."}
+          </div>
+        ) : (
+          <div
+            style={{
+              background: "#fff",
+              border: "1px solid #e2e8f0",
+              borderRadius: 12,
+              overflow: "hidden",
+            }}
+          >
+            {feed.map((item) => (
+              <Link
+                key={item.id}
+                href={localeHref(locale, item.href)}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  padding: "14px 16px",
+                  borderBottom: "1px solid #f1f5f9",
+                  textDecoration: "none",
+                  color: "inherit",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 900,
+                        padding: "2px 8px",
+                        borderRadius: 999,
+                        background: "#f1f5f9",
+                        color: "#475569",
+                      }}
+                    >
+                      {kindLabel(isAr, item.kind)}
+                    </span>
+                    <span style={{ fontWeight: 800, color: "#0f172a" }}>
+                      {isAr ? item.titleAr : item.titleEn}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 13, color: "#64748b" }}>
+                    {isAr ? item.metaAr : item.metaEn}
+                  </div>
+                </div>
+                <div style={{ fontSize: 12, color: "#94a3b8", whiteSpace: "nowrap" }}>
+                  {fmtAdminDate(locale, item.createdAt)}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, width: "100%", maxWidth: 900 }}>
-          <div style={{ padding: 24, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12 }}>
-            <h2 style={{ fontSize: 20, fontWeight: 900, marginBottom: 12 }}>{isAr ? "إضافة مشرف" : "Add Admin"}</h2>
-            <form action={addAdmin}>
-              <div style={{ display: "grid", gap: 10 }}>
-                <input name="username" placeholder={isAr ? "اسم المستخدم" : "Username"} style={{ padding: 10, borderRadius: 10, border: "1px solid #e2e8f0" }} />
-                <input name="password" type="password" placeholder={isAr ? "كلمة المرور" : "Password"} style={{ padding: 10, borderRadius: 10, border: "1px solid #e2e8f0" }} />
-                <button type="submit" style={{ padding: 10, borderRadius: 10, border: "1px solid #111", background: "#111", color: "#fff", fontWeight: 900 }}>
-                  {isAr ? "إضافة" : "Add"}
-                </button>
-              </div>
-            </form>
-            <div style={{ marginTop: 16 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 800 }}>{isAr ? "قائمة المشرفين" : "Admins List"}</h3>
-              <ul>
-                {admins.map(a => (
-                  <li key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0" }}>
-                    <span>{a.username}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-          <div style={{ padding: 24, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12 }}>
-            <h2 style={{ fontSize: 20, fontWeight: 900, marginBottom: 12 }}>{isAr ? "إعلانات البنر العلوي" : "Top Banner Announcements"}</h2>
-            <form action={addAnnouncement}>
-              <div style={{ display: "grid", gap: 10 }}>
-                <input name="text" placeholder={isAr ? "نص الإعلان" : "Announcement text"} style={{ padding: 10, borderRadius: 10, border: "1px solid #e2e8f0" }} />
-                <button type="submit" style={{ padding: 10, borderRadius: 10, border: "1px solid #111", background: "#111", color: "#fff", fontWeight: 900 }}>
-                  {isAr ? "إضافة" : "Add"}
-                </button>
-              </div>
-            </form>
-            <div style={{ marginTop: 16 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 800 }}>{isAr ? "النصوص الحالية" : "Current Items"}</h3>
-              <ul>
-                {announcements.map(a => (
-                  <li key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", gap: 10 }}>
-                    <span style={{ fontWeight: 700 }}>{a.text}</span>
-                    <form action={deleteAnnouncement}>
-                      <input type="hidden" name="id" value={String(a.id)} />
-                      <button type="submit" style={{ padding: "6px 10px", borderRadius: 10, border: "1px solid #ef4444", background: "#ef4444", color: "#fff", fontWeight: 900 }}>
-                        {isAr ? "حذف" : "Delete"}
-                      </button>
-                    </form>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
+      {/* Management hubs */}
+      <section>
+        <h2 style={{ fontSize: 18, fontWeight: 900, color: "#1e293b", marginBottom: 12 }}>
+          {isAr ? "أقسام الإدارة" : "Management sections"}
+        </h2>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+            gap: 14,
+          }}
+        >
+          {SECTIONS.map((s) => (
+            <Link key={s.href} href={localeHref(locale, s.href)} style={adminCardStyle}>
+              <div style={{ fontSize: 32 }}>{s.icon}</div>
+              <div style={{ fontSize: 16, fontWeight: 900 }}>{isAr ? s.titleAr : s.titleEn}</div>
+              <div style={{ fontSize: 13, color: "#64748b" }}>{isAr ? s.descAr : s.descEn}</div>
+            </Link>
+          ))}
         </div>
-      </div>
-    </main>
+        <div style={{ marginTop: 16, display: "flex", flexWrap: "wrap", gap: 12 }}>
+          <Link
+            href={localeHref(locale, "/admin/requests")}
+            style={{ fontSize: 13, color: "#475569", fontWeight: 700 }}
+          >
+            {isAr ? "لوحة طلبات العملاء (مباشر)" : "Customer requests (direct)"}
+          </Link>
+          <span style={{ color: "#cbd5e1" }}>·</span>
+          <Link
+            href={localeHref(locale, "/admin/history")}
+            style={{ fontSize: 13, color: "#475569", fontWeight: 700 }}
+          >
+            {isAr ? "سجل الحالة" : "Status history"}
+          </Link>
+        </div>
+      </section>
+    </AdminPageShell>
   );
 }

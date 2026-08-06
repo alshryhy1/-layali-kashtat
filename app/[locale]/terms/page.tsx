@@ -1,5 +1,4 @@
 import React from "react";
-import LegalFooter from "@/components/LegalFooter";
 
 const H2 = ({ children }: { children: React.ReactNode }) => (
   <h2 style={{ fontSize: 20, fontWeight: 700, marginTop: 24, marginBottom: 12 }}>{children}</h2>
@@ -118,7 +117,6 @@ export default async function TermsPage({
         )}
       </P>
       </main>
-      <LegalFooter locale={locale} />
     </>
   );
 }

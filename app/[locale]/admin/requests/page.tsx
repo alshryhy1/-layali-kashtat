@@ -74,13 +74,25 @@ export default async function AdminRequestsPage({
   if (!verifyAdminSession(token)) redirect(localeHref(locale, "/admin/login"));
 
   // عرض طلبات العملاء (customer_requests)
+  // Live schema: no name/phone/city/ref — join profiles + cities.
   let rows: Row[] = [];
   try {
     const r = await db.query(
-      "SELECT id::text as id, name, phone, service_type, city, status, ref, created_at," +
-        " (SELECT ok FROM mail_logs WHERE ref = customer_requests.ref ORDER BY created_at DESC LIMIT 1) as mail_ok," +
-        " (SELECT error FROM mail_logs WHERE ref = customer_requests.ref ORDER BY created_at DESC LIMIT 1) as mail_error" +
-        " FROM customer_requests ORDER BY created_at DESC LIMIT 200"
+      `SELECT cr.id::text AS id,
+              COALESCE(p.name, NULLIF(TRIM(COALESCE(cr.notes, '')), ''), cr.id::text) AS name,
+              p.phone::text AS phone,
+              cr.service_type,
+              c.name::text AS city,
+              cr.status,
+              cr.id::text AS ref,
+              cr.created_at::text AS created_at,
+              NULL::boolean AS mail_ok,
+              NULL::text AS mail_error
+       FROM customer_requests cr
+       LEFT JOIN profiles p ON p.id = cr.customer_id
+       LEFT JOIN cities c ON c.id = cr.city_id
+       ORDER BY cr.created_at DESC
+       LIMIT 200`
     );
     rows = r.rows as Row[];
   } catch {

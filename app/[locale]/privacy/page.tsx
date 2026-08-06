@@ -1,5 +1,4 @@
 import React from "react";
-import LegalFooter from "@/components/LegalFooter";
 
 export const metadata = {
   title: "سياسة الخصوصية | Privacy Policy",
@@ -151,7 +150,6 @@ export default async function PrivacyPage({
         </p>
       </div>
       </main>
-      <LegalFooter locale={locale} />
     </>
   );
 }
