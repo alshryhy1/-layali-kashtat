@@ -3,6 +3,7 @@
  import { useState, useEffect } from "react";
  import { useRouter, useParams } from "next/navigation";
  import { CreditCard, Calculator, Send, CheckCircle, Wallet } from "lucide-react";
+import SubPageHeader, { SUB_PAGE_BG, SUB_PAGE_CARD_BG } from "@/components/SubPageHeader";
  
  export default function CommissionPage() {
    const params = useParams();
@@ -153,8 +154,9 @@
  
    if (success) {
      return (
-       <div className="page-container" dir={isAr ? "rtl" : "ltr"}>
-         <div style={{ maxWidth: 600, margin: "40px auto", textAlign: "center", padding: 40, background: "#fff", borderRadius: 24 }}>
+       <div className="page-container" dir={isAr ? "rtl" : "ltr"} style={{ background: SUB_PAGE_BG, minHeight: "100vh" }}>
+         <SubPageHeader locale={locale} title={isAr ? "دفع العمولة" : "Pay Commission"} fallbackHref="/haraj" />
+         <div style={{ maxWidth: 600, margin: "20px auto", textAlign: "center", padding: 40, background: SUB_PAGE_CARD_BG, borderRadius: 24, border: "1px solid #E4D5C2" }}>
            <CheckCircle size={64} color="#10b981" style={{ margin: "0 auto 20px" }} />
            <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 10 }}>
              {isAr ? "تم إرسال النموذج بنجاح" : "Report Sent Successfully"}
@@ -168,14 +170,17 @@
    }
  
    return (
-     <div className="page-container" dir={isAr ? "rtl" : "ltr"} style={{ background: "#fcfcfc", minHeight: "100vh" }}>
-       <div style={{ maxWidth: 800, margin: "0 auto", padding: "20px" }}>
+     <div className="page-container" dir={isAr ? "rtl" : "ltr"} style={{ background: SUB_PAGE_BG, minHeight: "100vh" }}>
+       <SubPageHeader
+         locale={locale}
+         title={isAr ? "دفع العمولة" : "Pay Commission"}
+         subtitle={isAr ? "عمولة 1%" : "1% fee"}
+         fallbackHref="/haraj"
+       />
+       <div style={{ maxWidth: 800, margin: "0 auto", padding: "8px 20px 20px" }}>
          
-         <div style={{ marginBottom: 32, textAlign: "center" }}>
-           <h1 style={{ fontSize: 32, fontWeight: 900, color: "#92400e", marginBottom: 12 }}>
-             {isAr ? "دفع العمولة (1%)" : "Pay Commission (1%)"}
-           </h1>
-           <p style={{ fontSize: 18, color: "#666", maxWidth: 600, margin: "0 auto" }}>
+         <div style={{ marginBottom: 24, textAlign: "center", background: SUB_PAGE_CARD_BG, border: "1px solid #E4D5C2", borderRadius: 16, padding: 16 }}>
+           <p style={{ fontSize: 15, color: "#666", maxWidth: 600, margin: "0 auto", lineHeight: 1.6, fontWeight: 600 }}>
              {isAr 
                ? "العمولة أمانة في ذمة المعلن سواء تمت البيعة عن طريق الموقع أو بسببه." 
                : "Commission is mandatory if the sale was made through or because of this site."}

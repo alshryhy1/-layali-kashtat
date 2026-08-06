@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 
 import HarajFilters from "./HarajFilters";
+import SubPageHeader, { SUB_PAGE_BG, SUB_PAGE_CARD_BG } from "@/components/SubPageHeader";
 import { db } from "@/lib/db";
 
 // ⚠️ IMPORTANT: Force dynamic rendering so we always get fresh DB data
@@ -31,94 +32,63 @@ export default async function HarajPage({
   };
   
   return (
-    <div className="page-container" dir={isAr ? "rtl" : "ltr"} style={{ background: "#fcfcfc", minHeight: "100vh" }}>
-      {/* Header Section */}
-      <div
-        style={{
-          background: "#eeeeee",
-          color: "#333",
-          padding: "32px 20px",
-          borderRadius: 24,
-          marginBottom: 24,
-          border: "1px solid #e0e0e0",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        <div style={{ position: "relative", zIndex: 2, textAlign: "center" }}>
-          <h1 style={{ margin: "0 0 8px 0", fontSize: 28, fontWeight: 900, color: "#111" }}>
-            {t.title}
-          </h1>
-          <div
+    <div className="page-container" dir={isAr ? "rtl" : "ltr"} style={{ background: SUB_PAGE_BG, minHeight: "100vh" }}>
+      <SubPageHeader
+        locale={locale}
+        title={isAr ? "الحراج" : "Marketplace"}
+        subtitle={t.desc}
+        fallbackHref="/sections"
+        right={
+          <Link
+            href={locale === "en" ? `/en/haraj/commission` : `/haraj/commission`}
             style={{
-              margin: "10px auto 0",
+              background: "#0B6B63",
+              color: "#fff",
+              padding: "8px 12px",
+              borderRadius: 12,
+              fontWeight: 800,
+              textDecoration: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 13,
+              whiteSpace: "nowrap",
+            }}
+          >
+            <Handshake size={16} />
+            {isAr ? "عمولة" : "Fee"}
+          </Link>
+        }
+      />
+
+      <div style={{ padding: "0 16px 8px", maxWidth: 920, margin: "0 auto" }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
+          <Link
+            href={locale === "en" ? `/en/haraj/new` : `/haraj/new`}
+            style={{
+              background: SUB_PAGE_CARD_BG,
+              color: "#173B5B",
+              padding: "10px 16px",
+              borderRadius: 12,
+              fontWeight: 800,
+              textDecoration: "none",
               display: "inline-flex",
               alignItems: "center",
               gap: 8,
-              padding: "10px 14px",
-              borderRadius: 999,
-              border: "1px solid #ddd",
-              background:
-                "linear-gradient(135deg, rgba(255,255,255,0.9), rgba(238,238,238,0.9))",
-              color: "#444",
+              border: "1px solid #E4D5C2",
             }}
           >
-            <ShoppingBag size={16} />
-            <span style={{ fontSize: 14 }}>{t.desc}</span>
-          </div>
-          
-          <div style={{ marginTop: 24, display: "flex", gap: 12 }}>
-            <Link
-              href={`/${locale}/haraj/new`}
-              style={{
-                background: "#e0e0e0",
-                color: "#333",
-                padding: "10px 20px",
-                borderRadius: 12,
-                fontWeight: 700,
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                border: "1px solid #ccc"
-              }}
-            >
-              <ShoppingBag size={18} />
-              {t.addItem}
-            </Link>
-
-            <Link
-              href={`/${locale}/haraj/commission`}
-              style={{
-                background: "#e0e0e0",
-                color: "#333",
-                padding: "10px 20px",
-                borderRadius: 12,
-                fontWeight: 700,
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                border: "1px solid #ccc"
-              }}
-            >
-              <Handshake size={18} />
-              {isAr ? "دفع العمولة" : "Pay Commission"}
-            </Link>
-          </div>
-          
+            <ShoppingBag size={18} />
+            {t.addItem}
+          </Link>
         </div>
+
+        {/* Client-side Filters (Search + Categories) */}
+        <HarajFilters isAr={isAr} />
+
+        {/* Listings Grid */}
+        <HarajGrid searchParams={searchParams} t={t} locale={locale} isAr={isAr} />
       </div>
-
-      
-
-      {/* Client-side Filters (Search + Categories) */}
-      <HarajFilters isAr={isAr} />
-      
-      {/* Listings Grid */}
-      <HarajGrid searchParams={searchParams} t={t} locale={locale} isAr={isAr} />
-      
-      
     </div>
   );
 }
@@ -184,9 +154,25 @@ async function HarajGrid({
 
   if (items.length === 0) {
     return (
-      <div style={{ textAlign: "center", padding: "40px 0", color: "#6b7280" }}>
-        <p style={{ fontSize: 18, fontWeight: 600 }}>
-          {isAr ? "لا توجد نتائج مطابقة لبحثك." : "No items found matching your search."}
+      <div
+        style={{
+          textAlign: "center",
+          padding: "36px 20px",
+          color: "#6b7280",
+          background: SUB_PAGE_CARD_BG,
+          border: "1px solid #E4D5C2",
+          borderRadius: 18,
+          marginTop: 8,
+        }}
+      >
+        <ShoppingBag size={36} style={{ margin: "0 auto 12px", opacity: 0.45, color: "#173B5B" }} />
+        <p style={{ fontSize: 17, fontWeight: 800, color: "#173B5B", margin: "0 0 8px" }}>
+          {isAr ? "لا توجد إعلانات حالياً" : "No listings yet"}
+        </p>
+        <p style={{ fontSize: 14, fontWeight: 600, margin: 0, lineHeight: 1.5 }}>
+          {isAr
+            ? "جرّب تغيير البحث أو ارجع للأقسام من زر رجوع أعلاه."
+            : "Try adjusting filters, or use Back to return to Sections."}
         </p>
       </div>
     );
@@ -209,7 +195,7 @@ async function HarajGrid({
             <div
               className="card"
               style={{
-                background: "#f5f5f5",
+                background: SUB_PAGE_CARD_BG,
                 borderRadius: 16,
                 overflow: "hidden",
                 boxShadow: "0 2px 8px rgba(0,0,0,0.04)",

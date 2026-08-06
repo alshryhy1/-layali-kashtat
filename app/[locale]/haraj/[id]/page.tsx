@@ -7,6 +7,7 @@ import ShareButtons from "@/components/ShareButtons";
 import FavoriteButton from "@/components/FavoriteButton";
 import PrintAdButton from "@/components/PrintAdButton";
 import ReviewsSection from "@/components/ReviewsSection";
+import SubPageHeader, { SUB_PAGE_BG, SUB_PAGE_CARD_BG } from "@/components/SubPageHeader";
 import { verifyAdminSession } from "@/lib/auth-admin";
 import { cookies } from "next/headers";
 import { getSession } from "@/lib/auth-customer";
@@ -47,12 +48,13 @@ export default async function HarajItemPage({
 
   if (!item) {
     return (
-      <div className="page-container" dir={isAr ? "rtl" : "ltr"} style={{ background: "#fcfcfc", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ textAlign: "center", padding: 40, background: "#fff", borderRadius: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.05)", maxWidth: 400 }}>
+      <div className="page-container" dir={isAr ? "rtl" : "ltr"} style={{ background: SUB_PAGE_BG, minHeight: "100vh" }}>
+        <SubPageHeader locale={locale} title={isAr ? "تفاصيل الإعلان" : "Listing details"} fallbackHref="/haraj" />
+        <div style={{ textAlign: "center", padding: 40, background: SUB_PAGE_CARD_BG, borderRadius: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.05)", maxWidth: 400, margin: "24px auto", border: "1px solid #E4D5C2" }}>
           <div style={{ background: "#fee2e2", color: "#ef4444", width: 64, height: 64, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
             <AlertTriangle size={32} />
           </div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111", marginBottom: 12 }}>{t.notFound}</h1>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: "#173B5B", marginBottom: 12 }}>{t.notFound}</h1>
           <p style={{ color: "#666", marginBottom: 32, lineHeight: "1.6" }}>{t.notFoundDesc}</p>
           <Link
             href={`/${locale}/haraj`}
@@ -60,7 +62,7 @@ export default async function HarajItemPage({
               display: "inline-flex",
               alignItems: "center",
               gap: 8,
-              background: "#111",
+              background: "#0B6B63",
               color: "#fff",
               padding: "12px 24px",
               borderRadius: 12,
@@ -99,37 +101,21 @@ export default async function HarajItemPage({
   );
 
   return (
-    <div className="page-container" dir={isAr ? "rtl" : "ltr"} style={{ background: "#fcfcfc", minHeight: "100vh" }}>
-      <div style={{ maxWidth: 800, margin: "0 auto", paddingBottom: 40, paddingTop: 20 }}>
-        
-        {/* Back Button */}
-        <Link
-          href={`/${locale}/haraj`}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            color: "#6b7280",
-            textDecoration: "none",
-            marginBottom: 24,
-            fontWeight: 600,
-            background: "#eeeeee",
-            padding: "8px 16px",
-            borderRadius: 8,
-          }}
-        >
-          <div style={{ transform: isAr ? "rotate(180deg)" : "none" }}>
-            <ArrowRight size={20} />
-          </div>
-          {t.back}
-        </Link>
+    <div className="page-container" dir={isAr ? "rtl" : "ltr"} style={{ background: SUB_PAGE_BG, minHeight: "100vh" }}>
+      <SubPageHeader
+        locale={locale}
+        title={isAr ? "تفاصيل الإعلان" : "Listing details"}
+        fallbackHref="/haraj"
+      />
+      <div style={{ maxWidth: 800, margin: "0 auto", paddingBottom: 40, paddingTop: 4, paddingLeft: 16, paddingRight: 16 }}>
 
         {/* Main Content */}
         <div style={{
-          background: "#f5f5f5",
+          background: SUB_PAGE_CARD_BG,
           borderRadius: 24,
           overflow: "hidden",
           boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
+          border: "1px solid #E4D5C2",
         }}>
           
           {/* Image */}

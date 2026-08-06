@@ -1,9 +1,9 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
-import { localeHref, type Locale } from "@/lib/locales";
+import { type Locale } from "@/lib/locales";
+import SubPageHeader, { SUB_PAGE_BG, SUB_PAGE_CARD_BG } from "@/components/SubPageHeader";
 
 type CommunityPostType = "help_request" | "alert" | "place";
 
@@ -130,22 +130,24 @@ export default function CommunityClient({ locale }: { locale: Locale }) {
     selectedType === "all" ? posts : posts.filter((p) => p.type === selectedType);
 
   return (
-    <div dir="rtl" style={S.page}>
-      <div style={S.topRow}>
-        <Link href={localeHref(locale, "/sections")} style={S.back}>
-          › الأقسام
-        </Link>
-        <h1 style={S.title}>المجتمع</h1>
-        <button
-          type="button"
-          style={S.createBtn}
-          onClick={() => setCreateNotice(true)}
-          aria-label="مشاركة جديدة"
-        >
-          +
-        </button>
-      </div>
+    <div dir="rtl" style={{ ...S.page, paddingTop: 0, paddingRight: 0, paddingLeft: 0 }}>
+      <SubPageHeader
+        locale={locale}
+        title="المجتمع"
+        fallbackHref="/sections"
+        right={
+          <button
+            type="button"
+            style={S.createBtn}
+            onClick={() => setCreateNotice(true)}
+            aria-label="مشاركة جديدة"
+          >
+            +
+          </button>
+        }
+      />
 
+      <div style={{ paddingRight: 16, paddingLeft: 16, paddingBottom: 24 }}>
       {createNotice ? (
         <div style={S.notice}>
           تعذّر إنشاء مشاركة مجتمع على الويب حالياً (شاشة الإنشاء + الاعتدال غير منقولة بالكامل).
@@ -182,7 +184,9 @@ export default function CommunityClient({ locale }: { locale: Locale }) {
       {loading ? (
         <div style={S.empty}>جاري التحميل…</div>
       ) : filtered.length === 0 ? (
-        <div style={S.empty}>لا توجد مشاركات حالياً</div>
+        <div style={{ ...S.empty, background: SUB_PAGE_CARD_BG, border: "1px solid #E4D5C2", borderRadius: 18, padding: 28 }}>
+          لا توجد مشاركات حالياً — استخدم زر رجوع للعودة للأقسام.
+        </div>
       ) : (
         <div style={{ display: "grid", gap: 12 }}>
           {filtered.map((post) => (
@@ -207,6 +211,7 @@ export default function CommunityClient({ locale }: { locale: Locale }) {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }
@@ -219,7 +224,7 @@ const S: Record<string, React.CSSProperties> = {
     paddingRight: 16,
     paddingBottom: 24,
     paddingLeft: 16,
-    background: "#EFE3D2",
+    background: SUB_PAGE_BG,
     minHeight: "100vh",
     boxSizing: "border-box",
     fontFamily:

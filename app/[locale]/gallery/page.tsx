@@ -2,9 +2,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Camera, Heart, MessageCircle, Send, X, Trash2 } from "lucide-react";
 import GalleryUploadModal from "../../../components/GalleryUploadModal";
+import SubPageHeader, { SUB_PAGE_BG, SUB_PAGE_CARD_BG } from "@/components/SubPageHeader";
 
 type Comment = {
   id: number;
@@ -389,7 +390,6 @@ function PostCard({
 
 export default function GalleryPage() {
   const pathname = usePathname();
-  const router = useRouter();
   const isAr = !(pathname === "/en" || pathname?.startsWith("/en/"));
 
   const [posts, setPosts] = useState<Post[]>([]);
@@ -473,26 +473,76 @@ export default function GalleryPage() {
     }
   };
 
+  const locale = isAr ? "ar" : "en";
+
   return (
-    <div className="min-h-screen pb-20" style={{ background: "#fcfcfc" }} dir={isAr ? "rtl" : "ltr"}>
-      {/* Header */}
-      <div className="shadow-sm p-4 sticky top-0 z-10 flex justify-between items-center" style={{ background: "#eeeeee" }}>
-        <h1 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-          <Camera className="w-6 h-6 text-purple-600" />
-          {isAr ? "تجارب العملاء" : "Moments"}
-        </h1>
-        <button
-          onClick={() => setShowUpload(true)}
-          className="bg-purple-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-purple-700 transition"
-        >
-          {isAr ? "شارك صورة" : "Share Photo"}
-        </button>
-      </div>
+    <div className="min-h-screen pb-20" style={{ background: SUB_PAGE_BG }} dir={isAr ? "rtl" : "ltr"}>
+      <SubPageHeader
+        locale={locale}
+        title={isAr ? "المعرض" : "Gallery"}
+        subtitle={isAr ? "شارك رحلاتك وتجاربك" : "Share your trips and moments"}
+        fallbackHref="/sections"
+        right={
+          <button
+            type="button"
+            onClick={() => setShowUpload(true)}
+            style={{
+              background: "#0B6B63",
+              color: "#fff",
+              padding: "8px 12px",
+              borderRadius: 12,
+              fontWeight: 800,
+              border: "none",
+              cursor: "pointer",
+              fontSize: 13,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {isAr ? "شارك" : "Share"}
+          </button>
+        }
+      />
 
       {/* Grid */}
-      <div className="max-w-md mx-auto p-4">
+      <div className="max-w-md mx-auto p-4" style={{ paddingTop: 0 }}>
         {loading ? (
           <div className="text-center py-10 text-gray-500">{isAr ? "جاري التحميل..." : "Loading..."}</div>
+        ) : posts.length === 0 ? (
+          <div
+            style={{
+              textAlign: "center",
+              padding: "36px 20px",
+              background: SUB_PAGE_CARD_BG,
+              border: "1px solid #E4D5C2",
+              borderRadius: 18,
+              color: "#6b7280",
+            }}
+          >
+            <Camera size={36} style={{ margin: "0 auto 12px", opacity: 0.45, color: "#173B5B" }} />
+            <p style={{ fontSize: 17, fontWeight: 800, color: "#173B5B", margin: "0 0 8px" }}>
+              {isAr ? "لا توجد مشاركات بعد" : "No posts yet"}
+            </p>
+            <p style={{ fontSize: 14, fontWeight: 600, margin: "0 0 16px", lineHeight: 1.5 }}>
+              {isAr
+                ? "كن أول من يشارك صورة، أو ارجع للأقسام من زر رجوع."
+                : "Be the first to share, or use Back to return to Sections."}
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowUpload(true)}
+              style={{
+                background: "#0B6B63",
+                color: "#fff",
+                padding: "10px 18px",
+                borderRadius: 12,
+                fontWeight: 800,
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              {isAr ? "شارك صورة" : "Share Photo"}
+            </button>
+          </div>
         ) : (
           posts.map(post => (
             <PostCard 
