@@ -2,7 +2,7 @@
  * Document navigations always go to the network. Never respond with undefined
  * (that surfaces in Chrome as net::ERR_FAILED on /).
  */
-const STATIC_CACHE = "lk-static-v2";
+const STATIC_CACHE = "lk-static-v3";
 
 self.addEventListener("install", (e) => {
   e.waitUntil(self.skipWaiting());

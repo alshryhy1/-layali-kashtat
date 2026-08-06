@@ -100,6 +100,20 @@ function weatherIcon(line: string): string {
   return "☀️";
 }
 
+function nameFromAuthUser(user: { user_metadata?: Record<string, unknown> } | null | undefined): string | null {
+  const meta = (user?.user_metadata ?? {}) as Record<string, unknown>;
+  for (const key of ["full_name", "name", "display_name"]) {
+    const v = meta[key];
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  return null;
+}
+
+type AuthSessionLike = {
+  access_token?: string;
+  user?: { id?: string; user_metadata?: Record<string, unknown> };
+} | null;
+
 const C = {
   bg: "#EFE3D2",
   navy: "#173B5B",
@@ -164,42 +178,36 @@ export default function HomeClient({
   >([]);
   const [serviceOpenNotice, setServiceOpenNotice] = React.useState<string | null>(null);
   const [isAdmin, setIsAdmin] = React.useState(false);
+  const homeAuthGen = React.useRef(0);
 
-  React.useEffect(() => {
-    let alive = true;
-    void (async () => {
-      try {
-        const [statusRes, sessionRes] = await Promise.all([
-          fetch("/api/auth/status", { cache: "no-store" }).then((r) => r.json().catch(() => null)),
-          supabase.auth.getSession(),
-        ]);
-        if (!alive) return;
-        if (Boolean(statusRes?.isAdmin)) {
-          setIsAdmin(true);
-          return;
-        }
-        const uid = sessionRes.data.session?.user?.id ?? null;
-        if (!uid) {
-          setIsAdmin(false);
-          return;
-        }
-        const profileRes = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", uid)
-          .maybeSingle();
-        if (!alive) return;
-        const role = String((profileRes.data as { role?: string } | null)?.role ?? "")
-          .trim()
-          .toLowerCase();
-        setIsAdmin(role === "admin");
-      } catch {
-        if (alive) setIsAdmin(false);
+  const refreshAdmin = React.useCallback(async (session: AuthSessionLike) => {
+    try {
+      const accessToken = session?.access_token ?? null;
+      const statusRes = await fetch("/api/auth/status", {
+        cache: "no-store",
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+      }).then((r) => r.json().catch(() => null));
+      if (Boolean(statusRes?.isAdmin)) {
+        setIsAdmin(true);
+        return;
       }
-    })();
-    return () => {
-      alive = false;
-    };
+      const uid = session?.user?.id ?? null;
+      if (!uid) {
+        setIsAdmin(false);
+        return;
+      }
+      const profileRes = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", uid)
+        .maybeSingle();
+      const role = String((profileRes.data as { role?: string } | null)?.role ?? "")
+        .trim()
+        .toLowerCase();
+      setIsAdmin(role === "admin");
+    } catch {
+      setIsAdmin(false);
+    }
   }, []);
 
   React.useEffect(() => {
@@ -234,12 +242,54 @@ export default function HomeClient({
     };
   }, [initialWeatherText, locale]);
 
-  const loadFeed = React.useCallback(async () => {
+  const loadFeed = React.useCallback(async (sessionOverride?: AuthSessionLike | undefined) => {
+    const gen = ++homeAuthGen.current;
+    const stillCurrent = () => gen === homeAuthGen.current;
     setFeedLoading(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const uid = sessionData.session?.user?.id ?? null;
+      const session =
+        sessionOverride !== undefined
+          ? sessionOverride
+          : (await supabase.auth.getSession()).data.session;
+      if (!stillCurrent()) return;
+
+      const uid = session?.user?.id ?? null;
       setSessionUid(uid);
+
+      // Apply identity BEFORE geolocation so a slow/denied location prompt
+      // cannot leave the header stuck as a guest while a later auth run finishes.
+      if (uid) {
+        setDisplayName(nameFromAuthUser(session?.user) ?? null);
+        const profileRes = await supabase
+          .from("profiles")
+          .select("full_name, name, display_name")
+          .eq("id", uid)
+          .maybeSingle();
+        if (!stillCurrent()) return;
+        const p = (profileRes.data ?? {}) as Record<string, unknown>;
+        const name =
+          (typeof p.full_name === "string" && p.full_name.trim()) ||
+          (typeof p.display_name === "string" && p.display_name.trim()) ||
+          (typeof p.name === "string" && p.name.trim()) ||
+          nameFromAuthUser(session?.user) ||
+          null;
+        setDisplayName(name);
+        const imgRes = await supabase
+          .from("profile_images")
+          .select("image_url")
+          .eq("user_id", uid)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (!stillCurrent()) return;
+        setProfileImageUrl(normalizeRemoteUri((imgRes.data as { image_url?: string } | null)?.image_url));
+      } else {
+        setDisplayName(null);
+        setProfileImageUrl(null);
+        setUnreadCount(0);
+        setNotifications([]);
+        setActiveBookings([]);
+      }
 
       let viewerLat: number | null = null;
       let viewerLng: number | null = null;
@@ -253,42 +303,24 @@ export default function HomeClient({
               maximumAge: 60_000,
             });
           });
+          if (!stillCurrent()) return;
           viewerLat = pos.coords.latitude;
           viewerLng = pos.coords.longitude;
         } catch {
+          if (!stillCurrent()) return;
           permissionDenied = true;
           setFeedEmptyHint("فعّل إذن الموقع من إعدادات المتصفح لعرض الخدمات الأقرب إليك.");
         }
       }
 
       if (uid) {
-        const profileRes = await supabase
-          .from("profiles")
-          .select("full_name, name, display_name")
-          .eq("id", uid)
-          .maybeSingle();
-        const p = (profileRes.data ?? {}) as Record<string, unknown>;
-        const name =
-          (typeof p.full_name === "string" && p.full_name.trim()) ||
-          (typeof p.display_name === "string" && p.display_name.trim()) ||
-          (typeof p.name === "string" && p.name.trim()) ||
-          null;
-        setDisplayName(name);
-        const imgRes = await supabase
-          .from("profile_images")
-          .select("image_url")
-          .eq("user_id", uid)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        setProfileImageUrl(normalizeRemoteUri((imgRes.data as { image_url?: string } | null)?.image_url));
-
         const notifRes = await supabase
           .from("notifications")
           .select("id, title, body, read_at")
           .eq("user_id", uid)
           .order("created_at", { ascending: false })
           .limit(20);
+        if (!stillCurrent()) return;
         const rows = (notifRes.data ?? []) as Array<{
           id: string | number;
           title?: string;
@@ -323,6 +355,7 @@ export default function HomeClient({
           id: string;
           provider_service_id?: string;
         }>) {
+          if (!stillCurrent()) return;
           let title = "حجز نشط";
           let other = "المزوّد";
           if (b.provider_service_id) {
@@ -366,6 +399,7 @@ export default function HomeClient({
             customer_id?: string;
             provider_service_id?: string;
           }>) {
+            if (!stillCurrent()) return;
             let title = "طلب نشط";
             if (b.provider_service_id) {
               const ps = await supabase
@@ -393,13 +427,8 @@ export default function HomeClient({
             });
           }
         }
+        if (!stillCurrent()) return;
         setActiveBookings(bookingCards);
-      } else {
-        setDisplayName(null);
-        setProfileImageUrl(null);
-        setUnreadCount(0);
-        setNotifications([]);
-        setActiveBookings([]);
       }
 
       let psQuery = supabase
@@ -412,6 +441,7 @@ export default function HomeClient({
         .limit(80);
       if (uid) psQuery = psQuery.neq("user_id", uid);
       const psRes = await psQuery;
+      if (!stillCurrent()) return;
       if (psRes.error) {
         setFeed([]);
         setFeedEmptyHint(psRes.error.message || "حاول لاحقًا أو وسّع نطاق البحث.");
@@ -472,6 +502,7 @@ export default function HomeClient({
             ? supabase.from("bookings").select("provider_service_id").in("provider_service_id", serviceIds)
             : Promise.resolve({ data: [] as unknown[] }),
         ]);
+      if (!stillCurrent()) return;
 
       const packagesByService = new Map<string, Array<{ price?: number; is_active?: boolean }>>();
       for (const row of (packagesRes.data ?? []) as Array<{
@@ -529,6 +560,7 @@ export default function HomeClient({
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
+        if (!stillCurrent()) return;
         const cid = (own.data as { city_id?: string } | null)?.city_id;
         viewerCityId = cid ? String(cid) : null;
       }
@@ -574,20 +606,25 @@ export default function HomeClient({
         };
       });
 
+      if (!stillCurrent()) return;
       setFeed(items);
       if (!permissionDenied) setFeedEmptyHint("حاول لاحقًا أو وسّع نطاق البحث.");
     } finally {
-      setFeedLoading(false);
+      if (stillCurrent()) setFeedLoading(false);
     }
   }, []);
 
   React.useEffect(() => {
-    void loadFeed();
-    const { data: sub } = supabase.auth.onAuthStateChange(() => {
-      void loadFeed();
+    // Drive home identity + feed from auth events only (includes INITIAL_SESSION).
+    // Defer async work: awaiting auth APIs inside onAuthStateChange deadlocks supabase-js.
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      window.setTimeout(() => {
+        void refreshAdmin(session);
+        void loadFeed(session);
+      }, 0);
     });
     return () => sub.subscription.unsubscribe();
-  }, [loadFeed]);
+  }, [loadFeed, refreshAdmin]);
 
   const filteredByIdea = React.useMemo(() => {
     if (!ideaFilter) return feed;
