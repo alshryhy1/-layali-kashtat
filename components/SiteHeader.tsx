@@ -91,19 +91,10 @@ export default function SiteHeader({ locale }: { locale: Locale }) {
          )}
          <div style={{ display: "flex", flexDirection: "column" }}>
            {isHomePage ? (
-            <a
-              href={localeHref(locale, "/admin/login")}
-              style={{
-                fontSize: 11,
-                color: "#64748b",
-                textDecoration: "none",
-                marginTop: 2,
-                fontWeight: 500,
-              }}
-            >
-              {isAr ? "الإدارة" : "Administration"}
-            </a>
-          ) : (
+             <span aria-hidden style={{ fontSize: 11, marginTop: 2, visibility: "hidden" }}>
+               .
+             </span>
+           ) : (
             <a
               href={homeHref}
               style={{

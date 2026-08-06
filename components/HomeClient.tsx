@@ -163,6 +163,44 @@ export default function HomeClient({
     Array<{ id: string; title: string; otherParty: string; role: "customer" | "provider" }>
   >([]);
   const [serviceOpenNotice, setServiceOpenNotice] = React.useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = React.useState(false);
+
+  React.useEffect(() => {
+    let alive = true;
+    void (async () => {
+      try {
+        const [statusRes, sessionRes] = await Promise.all([
+          fetch("/api/auth/status", { cache: "no-store" }).then((r) => r.json().catch(() => null)),
+          supabase.auth.getSession(),
+        ]);
+        if (!alive) return;
+        if (Boolean(statusRes?.isAdmin)) {
+          setIsAdmin(true);
+          return;
+        }
+        const uid = sessionRes.data.session?.user?.id ?? null;
+        if (!uid) {
+          setIsAdmin(false);
+          return;
+        }
+        const profileRes = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", uid)
+          .maybeSingle();
+        if (!alive) return;
+        const role = String((profileRes.data as { role?: string } | null)?.role ?? "")
+          .trim()
+          .toLowerCase();
+        setIsAdmin(role === "admin");
+      } catch {
+        if (alive) setIsAdmin(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   React.useEffect(() => {
     setClock(new Date());
@@ -764,6 +802,25 @@ export default function HomeClient({
 
   return (
     <div dir="rtl" style={S.page}>
+      {isAdmin ? (
+        <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: 6 }}>
+          <a
+            href={localeHref(locale, "/admin/portal")}
+            style={{
+              fontSize: 11,
+              color: "#64748b",
+              textDecoration: "none",
+              fontWeight: 600,
+              padding: "2px 6px",
+              borderRadius: 8,
+              background: "rgba(100, 116, 139, 0.08)",
+            }}
+          >
+            الإدارة
+          </a>
+        </div>
+      ) : null}
+
       <div style={S.header}>
         <div style={S.clock}>{clockText}</div>
         <div style={{ flex: 1, textAlign: "center" }}>

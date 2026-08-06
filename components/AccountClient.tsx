@@ -164,22 +164,6 @@ function IconBack({ size = 22, color = "#173B5B" }: { size?: number; color?: str
     </svg>
   );
 }
-function IconAdmin({ size = 18, color = "#173B5B" }: { size?: number; color?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      <path d="M9 12l2 2 4-4" />
-    </svg>
-  );
-}
-function IconLegal({ size = 18, color = "#173B5B" }: { size?: number; color?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <path d="M14 2v6h6M8 13h8M8 17h8M8 9h2" />
-    </svg>
-  );
-}
 function IconImageEmpty({ size = 20, color = "#A89886" }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -1670,83 +1654,6 @@ export default function AccountClient({
                 </div>
               </button>
             ))}
-
-            <a
-              href={localeHref(locale, "/privacy")}
-              style={{ ...menuCard, textDecoration: "none", color: "inherit" }}
-            >
-              <div
-                style={{
-                  width: "100%",
-                  display: "flex",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 10,
-                  }}
-                >
-                  <div style={menuIconWrap}>
-                    <IconLegal />
-                  </div>
-                  <span
-                    style={{
-                      color: C.navy,
-                      fontSize: 18,
-                      fontWeight: 900,
-                      textAlign: "right",
-                    }}
-                  >
-                    المعلومات القانونية
-                  </span>
-                </div>
-              </div>
-            </a>
-
-            {/* Entry restored from SiteHeader «الإدارة»; portal enforces admin session. */}
-            <a
-              href={localeHref(locale, "/admin/portal")}
-              style={{ ...menuCard, textDecoration: "none", color: "inherit" }}
-            >
-              <div
-                style={{
-                  width: "100%",
-                  display: "flex",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 10,
-                  }}
-                >
-                  <div style={menuIconWrap}>
-                    <IconAdmin />
-                  </div>
-                  <span
-                    style={{
-                      color: C.navy,
-                      fontSize: 18,
-                      fontWeight: 900,
-                      textAlign: "right",
-                    }}
-                  >
-                    لوحة الإدارة
-                  </span>
-                </div>
-              </div>
-            </a>
 
             {notice ? <p style={noticeStyle}>{notice}</p> : null}
             {error ? <p style={errorStyle}>{error}</p> : null}
