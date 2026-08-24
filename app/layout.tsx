@@ -28,7 +28,7 @@
        <body>
          {children}
          <SnapPixel />
-         {/* <TikTokPixel /> */}
+         <TikTokPixel />
        </body>
      </html>
    );
