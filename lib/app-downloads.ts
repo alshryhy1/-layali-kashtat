@@ -203,14 +203,14 @@ export function readAscConfig(): AscConfig {
   const missing: string[] = [];
   if (!keyId) missing.push("ASC_KEY_ID");
   if (!issuerId) missing.push("ASC_ISSUER_ID");
-  if (!privateKey) missing.push("APP_STORE_CONNECT_PRIVATE_KEY_PATH (.p8)");
+  if (!privateKey) missing.push("ASC_PRIVATE_KEY (or AuthKey_*.p8 on disk)");
 
   let jwtError: string | null = null;
   if (privateKey) {
     const validated = validateAscPrivateKey(privateKey);
     if (!validated.ok) {
       jwtError = validated.error;
-      if (!missing.includes("APP_STORE_CONNECT_PRIVATE_KEY_PATH (.p8)")) {
+      if (!missing.includes("ASC_PRIVATE_KEY (or AuthKey_*.p8 on disk)")) {
         missing.push("valid AuthKey_*.p8 (ES256)");
       }
     } else if (keyId && keyPath) {
@@ -254,24 +254,56 @@ export function readAscConfig(): AscConfig {
   };
 }
 
+function isProductionRuntime(): boolean {
+  return process.env.VERCEL === "1" || process.env.NODE_ENV === "production";
+}
+
 function setupStepsAr(cfg: AscConfig): string[] {
   const steps: string[] = [];
+  const onProd = isProductionRuntime();
+
+  if (onProd && !cfg.configured) {
+    steps.push(
+      "الإعدادات في .env.local على جهازك لا تصل لخوادم Vercel — لازم تضيفها في Vercel → Project → Settings → Environment Variables (Production) ثم Redeploy"
+    );
+  }
+
   if (!cfg.issuerId) {
     steps.push(
       "انسخ Issuer ID من App Store Connect → Users and Access → Integrations → App Store Connect API"
     );
-    steps.push("أضفه في .env.local: ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx");
-    steps.push("أو: echo 'UUID' > ~/.appstoreconnect/issuer_id ثم أعد تشغيل npm run dev");
+    if (onProd) {
+      steps.push("أضفه في Vercel (Production): ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx");
+    } else {
+      steps.push("أضفه في .env.local: ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx");
+      steps.push("أو: echo 'UUID' > ~/.appstoreconnect/issuer_id ثم أعد تشغيل npm run dev");
+    }
   }
-  if (!cfg.keyId || !cfg.privateKey) {
-    steps.push("ضع ملف AuthKey_XXXX.p8 في ~/.appstoreconnect/private_keys/");
-    steps.push("اضبط ASC_KEY_ID ليطابق اسم الملف");
+  if (!cfg.keyId) {
+    steps.push(
+      onProd
+        ? "أضف ASC_KEY_ID في Vercel (Production) ليطابق Key ID في App Store Connect"
+        : "اضبط ASC_KEY_ID في .env.local ليطابق اسم ملف AuthKey_XXXX.p8"
+    );
+  }
+  if (!cfg.privateKey) {
+    if (onProd) {
+      steps.push(
+        "على Vercel لا يوجد مجلد ~/.appstoreconnect — الصق محتوى ملف .p8 كاملاً في متغير ASC_PRIVATE_KEY (متعدد الأسطر، بما فيها BEGIN/END PRIVATE KEY)"
+      );
+      steps.push("بديل مقبول لنفس المحتوى: APP_STORE_CONNECT_PRIVATE_KEY أو ASC_API_KEY_P8");
+    } else {
+      steps.push("ضع ملف AuthKey_XXXX.p8 في ~/.appstoreconnect/private_keys/");
+      steps.push("أو الصق محتوى المفتاح في ASC_PRIVATE_KEY داخل .env.local");
+    }
   }
   if (cfg.jwtError) {
     steps.push(
-      "ملف AuthKey_*.p8 الحالي لا يصلح لتوقيع JWT (ES256) — نزّل المفتاح الحقيقي من App Store Connect واستبدل الملف"
+      "ملف AuthKey_*.p8 الحالي لا يصلح لتوقيع JWT (ES256) — نزّل المفتاح الحقيقي من App Store Connect واستبدل الملف / المتغير"
     );
-    steps.push(`المسار المتوقع: ${cfg.keyPath || "~/.appstoreconnect/private_keys/AuthKey_<ASC_KEY_ID>.p8"}`);
+    if (!onProd) {
+      steps.push(`المسار المتوقع: ${cfg.keyPath || "~/.appstoreconnect/private_keys/AuthKey_<ASC_KEY_ID>.p8"}`);
+    }
     steps.push(`خطأ التوقيع: ${cfg.jwtError}`);
   }
   if (cfg.configured && !cfg.vendorNumber) {
@@ -280,6 +312,9 @@ function setupStepsAr(cfg: AscConfig): string[] {
     );
   }
   steps.push(`ASC_APP_ID=${cfg.appId || DEFAULT_ASC_APP_ID} (ليالي كشتات)`);
+  if (onProd && !cfg.configured) {
+    steps.push("بعد حفظ المتغيرات في Vercel: Deployments → … → Redeploy (أو ادفع commit جديد)");
+  }
   return steps;
 }
 
@@ -674,16 +709,21 @@ export async function resolveIosAppDownloads(
       };
     }
     const keyProblem = Boolean(cfg.jwtError);
+    const missingLabel = cfg.missing.length ? cfg.missing.join("، ") : "إعدادات ASC";
+    const prodHint =
+      isProductionRuntime() && !cfg.configured
+        ? " (غالباً موجودة محلياً في .env.local لكن غير مضافة في Vercel Production)"
+        : "";
     return {
       ...base,
       count: null,
       source: "unavailable",
       sourceLabelAr: keyProblem
         ? "التحديث التلقائي متوقف — ملف AuthKey غير صالح لتوقيع JWT"
-        : "التحديث التلقائي متوقف — ينقص ASC_ISSUER_ID أو إعدادات ASC",
+        : `التحديث التلقائي متوقف — ينقص: ${missingLabel}${prodHint}`,
       sourceLabelEn: keyProblem
         ? "Auto-update stopped — AuthKey cannot sign JWT"
-        : "Auto-update stopped — ASC credentials incomplete",
+        : `Auto-update stopped — missing: ${cfg.missing.join(", ") || "ASC settings"}`,
       lastUpdatedAt: null,
       cacheHit: false,
       detail: cfg.jwtError

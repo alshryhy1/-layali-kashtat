@@ -51,11 +51,12 @@ export async function GET(req: Request) {
         stepsAr: metrics.setupStepsAr,
         instructionsAr: [
           "1) App Store Connect → Users and Access → Integrations → App Store Connect API",
-          "2) انسخ Issuer ID (UUID) → ASC_ISSUER_ID في .env.local أو ~/.appstoreconnect/issuer_id",
-          "3) Key ID + ملف AuthKey_XXXX.p8 في ~/.appstoreconnect/private_keys/ (موجود محلياً إن وُجد)",
-          "4) اختياري أسرع: ASC_VENDOR_NUMBER من Payments and Financial Reports",
-          "5) ASC_APP_ID=6771470757 ثم أعد تشغيل npm run dev وحدّث /admin/reports",
-          "6) التقارير الأولى من Analytics قد تتأخر ٢٤–٤٨ ساعة بعد أول طلب",
+          "2) محلياً: ASC_ISSUER_ID + ASC_KEY_ID في .env.local، وملف AuthKey_XXXX.p8 في ~/.appstoreconnect/private_keys/",
+          "3) على Vercel (Production): نفس ASC_ISSUER_ID و ASC_KEY_ID و ASC_APP_ID=6771470757 — .env.local لا يُرفع مع النشر",
+          "4) على Vercel أيضاً: ASC_PRIVATE_KEY = محتوى ملف .p8 كاملاً (متعدد الأسطر) — مسار الملفات على القرص غير متاح في السحابة",
+          "5) بعد إضافة المتغيرات: Redeploy من Vercel ثم حدّث /admin/reports",
+          "6) اختياري أسرع: ASC_VENDOR_NUMBER من Payments and Financial Reports",
+          "7) التقارير الأولى من Analytics قد تتأخر ٢٤–٤٨ ساعة بعد أول طلب",
         ],
       },
     });

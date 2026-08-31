@@ -47,3 +47,6 @@ next-env.d.ts
 
 # local generated Capacitor/iOS artifacts
 /ios/
+
+# local scratch — never commit
+.tmp/
